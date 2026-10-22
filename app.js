@@ -20,11 +20,12 @@
             const email = document.getElementById('signup-email').value.trim();
             const password = document.getElementById('signup-password').value;
             const name = document.getElementById('signup-name').value.trim();
+            const telephone = document.getElementById('signup-telephone').value.trim();
             if (!email || !password) return alert('Please enter email and password.');
             setLoading(true, 'Creating account...');
             try {
                 const data = await requireResult(sb.auth.signUp({ email, password,
-                    options: { data: { full_name: name }, emailRedirectTo: new URL('.', location.href).href }
+                    options: { data: { full_name: name, telephone }, emailRedirectTo: new URL('.', location.href).href }
                 }), 'Create account');
                 if (data.session) { currentUser = data.user; await loadDashboard(); }
                 else {

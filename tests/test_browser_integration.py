@@ -33,6 +33,7 @@ class Fixture:
         self.tables = {table:[] for table in ['properties','extensions','rooms','exterior_photos','extension_photos','sketch_photos','room_photos']}
         self.objects = {}
         self.emails = 0
+        self.signups = []
         self.public_reads = 0
         self.signatures = 0
         self.unexpected = []
@@ -63,6 +64,9 @@ class Fixture:
             self.unexpected.append(req.url)
             return route.abort()
         if u.path.startswith('/auth/v1/'):
+            if u.path.endswith('/signup'):
+                self.signups.append(req.post_data_json)
+                return reply({'user':{**self.user,'email':req.post_data_json['email'],'user_metadata':req.post_data_json.get('data',{})},'session':None})
             if u.path.endswith('/token'):
                 return reply({'access_token':self.token,'token_type':'bearer','expires_in':3600,'expires_at':int(time.time())+3600,
                               'refresh_token':'fixture-refresh-token','user':self.user})
@@ -165,6 +169,16 @@ def main():
         page.goto(ORIGIN)
         assert page.title()=='Urbanfold Property Survey'
         assert page.evaluate('!!window.supabase && !!window.JSZip && !!window.html2pdf')
+        page.get_by_text('Sign Up',exact=True).click()
+        page.locator('#signup-name').fill('Test signup')
+        page.locator('#signup-email').fill('signup@example.test')
+        page.locator('#signup-telephone').fill('  +44 7700 900123  ')
+        page.locator('#signup-password').fill('fixture-password-not-a-real-account')
+        page.get_by_role('button',name='Create Account',exact=True).click()
+        expect(page.locator('#form-login')).to_be_visible()
+        assert fixture.signups[0]['data']['telephone']=='+44 7700 900123'
+        assert fixture.signups[0]['data']['full_name']=='Test signup'
+        print('PASS sign-up sends telephone number as profile metadata using the real client')
         page.locator('#login-email').fill('urbanfolduk@gmail.com')
         page.locator('#login-password').fill('fixture-password-not-a-real-account')
         page.get_by_role('button',name='Log In',exact=True).click()
