@@ -3,6 +3,7 @@ Run: python3 tests/test_survey_flow.py (requires playwright and Chromium).
 """
 from pathlib import Path
 import os
+import shutil
 import re
 from playwright.sync_api import sync_playwright
 
@@ -12,19 +13,19 @@ window.fixture = {tables: {properties:[{id:'p1', address:'Initial'}], extensions
  rooms:[], exterior_photos:[], extension_photos:[], sketch_photos:[], room_photos:[]},
  fail:null, uploads:[], emails:0};
 window.fetch=async()=>{fixture.emails++; return {ok:true}};
-window.supabase={createClient:()=>({
+window.supabase={createClient:()=>({supabaseUrl:'https://arnzqizcycesukplmvuc.supabase.co',
  auth:{getSession:async()=>({data:{session:null}})},
  storage:{from:bucket=>({
   upload:async(path)=>{if(fixture.fail==='upload:'+bucket)return {error:{message:'upload denied'}};
    fixture.uploads.push([bucket,path]);return {data:{path}}},
-  getPublicUrl:path=>({data:{publicUrl:'https://photos.test/'+bucket+'/'+path}})
+  createSignedUrls:async paths=>({data:paths.map(path=>({path,signedUrl:'https://photos.test/'+bucket+'/'+path}))})
  })},
  from:table=>{
   let op='select', payload, filters=[], single=false;
   const q={select(){return q},eq(k,v){filters.push(row=>row[k]===v);return q},
    in(k,v){filters.push(row=>v.includes(row[k]));return q},
    order(){return q}, single(){single=true;return q},
-   insert(v){op='insert';payload=v;return q}, update(v){op='update';payload=v;return q},
+   delete(){op='delete';return q},insert(v){op='insert';payload=v;return q}, update(v){op='update';payload=v;return q},
    then(resolve,reject){return Promise.resolve().then(()=>{
     if(fixture.fail===table+':'+op)return {error:{message:'database denied'}};
     let rows=fixture.tables[table].filter(row=>filters.every(f=>f(row)));
@@ -33,6 +34,7 @@ window.supabase={createClient:()=>({
      fixture.tables[table].push(...rows);
     }
     if(op==='update')rows.forEach(row=>Object.assign(row,payload));
+    if(op==='delete')fixture.tables[table]=fixture.tables[table].filter(row=>!rows.includes(row));
     return {data:single?(rows[0]||null):rows,error:null};
    }).then(resolve,reject)}
   };return q;
@@ -65,8 +67,9 @@ def main():
     html = ROOT.joinpath('index.html').read_text()
     html = re.sub(r'<script src="[^"]+"></script>', '', html)
     html = html.replace('<head>', '<head><script>' + STUB + '</script>')
+    html = html.replace('</body>', '<script>' + ROOT.joinpath('app.js').read_text() + '</script></body>')
     with sync_playwright() as p:
-        browser = p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH', '/usr/bin/chromium'), args=['--no-sandbox'])
+        browser = p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or shutil.which('chromium') or None, args=['--no-sandbox'])
         errors = []
         dialogs = []
         page = browser.new_page()

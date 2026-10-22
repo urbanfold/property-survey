@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Urbanfold Property Survey</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="app-version" content="stabilisation-1">
+    <script src="vendor/html2pdf.bundle.min.js"></script>
+    <script src="vendor/jszip.min.js"></script>
+    <script src="vendor/supabase.js"></script>
     <style>
         :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; --text-light: #6b7280; --success: #10b981; --danger: #ef4444; --leica-red: #e30613; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -73,7 +74,7 @@
         .survey-item p { font-size: 12px; color: var(--text-light); }
         .success-icon { font-size: 60px; color: var(--success); text-align: center; margin-bottom: 20px; }
         .success-text { text-align: center; line-height: 1.6; color: var(--text); margin-bottom: 20px; }
-        
+
         #pdf-content { display: none; padding: 20px; font-family: Arial, sans-serif; color: #333; }
         #pdf-content h1 { color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
         #pdf-content h2 { color: #1f2937; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
@@ -104,6 +105,11 @@
     </div>
 
     <div class="container">
+        <div id="survey-tools" class="card" hidden>
+            <p id="save-status" role="status" aria-live="polite">Changes are saved on this device until you save progress to the cloud.</p>
+            <button class="btn" onclick="saveCloudProgress()">Save progress to cloud</button>
+            <button class="btn btn-secondary" onclick="loadDashboard()">Return to My Surveys</button>
+        </div>
         <div id="view-auth" class="view active">
             <h1>Urbanfold Survey</h1>
             <p class="subtitle">Please log in or create an account to continue.</p>
@@ -161,7 +167,7 @@
                         <option value="flat">Flat</option>
                     </select>
                 </div>
-                <button class="btn" id="btn-to-exterior" onclick="showView('view-exterior')" disabled>Continue to Exterior Photos</button>
+                <button class="btn" id="btn-to-exterior" onclick="saveCloudProgress('view-exterior')" disabled>Continue to Exterior Photos</button>
                 <button class="btn btn-secondary" onclick="showView('view-details')">Back</button>
             </div>
         </div>
@@ -221,8 +227,8 @@
         <div id="view-interior-rooms" class="view">
             <h1>Room Details</h1>
             <div class="bt-status" id="bt-status-bar">
-                <div style="display:flex; align-items:center;"><div class="bt-indicator"></div><span id="bt-status-text">Laser Disconnected</span></div>
-                <button class="btn btn-leica" style="width:auto; padding:8px 15px; margin:0; font-size:12px;" onclick="connectBluetooth()">Connect Leica</button>
+                <div style="display:flex; align-items:center;"><div class="bt-indicator"></div><span id="bt-status-text">Manual measurement entry</span></div>
+                <button class="btn btn-leica" style="width:auto; padding:8px 15px; margin:0; font-size:12px;" onclick="connectBluetooth()">About Leica support</button>
             </div>
             <div class="info-box"><strong>Please note:</strong> Enter information in the required fields only.</div>
             <div id="rooms-list"></div>
@@ -239,6 +245,7 @@
                     Our architectural team will now review this information to begin developing comprehensive architectural drawings and sections for your project.<br><br>
                     We will be in touch shortly with the next steps. Should you have any immediate questions, please contact us at <strong>survey@urbanfold.uk</strong>.
                 </p>
+                <p id="notification-status" role="status" aria-live="polite"></p>
                 <div id="admin-pdf-section" style="display: none;">
                     <button class="btn btn-pdf" onclick="generatePDF()">Download Measurements PDF</button>
                     <p style="font-size: 12px; color: #666; margin-top: 10px;">Admin Access Only</p>
@@ -248,440 +255,7 @@
         </div>
     </div>
 
-    <script>
-        const sb = window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
-        const ADMIN_EMAIL = 'urbanfolduk@gmail.com'; 
-        let currentUser = null;
-        let currentPropertyId = null;
-        let draftWritesEnabled = true;
-        let appState = { photos: {}, roomPhotos: {} };
-
-        function showView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); const source = document.getElementById('survey-source'); if (source) source.hidden = ['view-auth', 'view-dashboard', 'view-success'].includes(viewId); }
-        function setLoading(show, text = "Processing...") { document.getElementById('loading').style.display = show ? 'flex' : 'none'; document.getElementById('loading-text').innerText = text; }
-
-        function switchAuthTab(tab, element) {
-            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-            element.classList.add('active');
-            document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
-            document.getElementById('form-signup').style.display = tab === 'signup' ? 'block' : 'none';
-        }
-
-        async function handleSignup() {
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const name = document.getElementById('signup-name').value;
-            if(!email || !password) return alert("Please enter email and password");
-            setLoading(true, "Creating account...");
-            const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
-            setLoading(false);
-            if (error) alert(error.message);
-            else if (data.session) { currentUser = data.user; loadDashboard(); } 
-            else { alert("Account created! Please check your email to confirm, then log in."); switchAuthTab('login', document.querySelector('.auth-tab')); document.getElementById('login-email').value = email; }
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            setLoading(true, "Logging in...");
-            const { data, error } = await sb.auth.signInWithPassword({ email, password });
-            setLoading(false);
-            if (error) { alert(error.message); } 
-            else { currentUser = data.user; loadDashboard(); }
-        }
-
-        async function handleLogout() { await sb.auth.signOut(); currentUser = null; localStorage.removeItem('urbanfold_draft'); showView('view-auth'); }
-
-        sb.auth.getSession().then(({ data: { session } }) => {
-            if (session) { currentUser = session.user; loadDashboard(); }
-        });
-
-        async function loadDashboard() {
-            showView('view-dashboard');
-            const list = document.getElementById('dashboard-list');
-            list.innerHTML = '<p style="text-align:center; color:#666;">Loading surveys...</p>';
-            
-            let query = sb.from('properties').select('*').order('created_at', { ascending: false });
-            
-            if (currentUser.email !== ADMIN_EMAIL) {
-                query = query.eq('user_id', currentUser.id);
-            }
-            
-            const { data, error } = await query;
-            
-            if (error) { list.innerHTML = '<p>Error loading surveys.</p>'; return; }
-            if (data.length === 0) { list.innerHTML = '<p style="text-align:center; color:#666;">No surveys yet. Start a new one above!</p>'; return; }
-            list.innerHTML = '';
-            
-            const isAdmin = currentUser.email === ADMIN_EMAIL;
-
-            data.forEach(prop => {
-                const item = document.createElement('div');
-                item.className = 'survey-item';
-                item.onclick = () => resumeSurvey(prop.id);
-                item.innerHTML = `<h3>${prop.address || 'Untitled Property'}</h3><p>${prop.postcode || 'No postcode'} &bull; ${new Date(prop.created_at).toLocaleDateString()}</p>`;
-                
-                if (isAdmin) {
-                    const dlBtn = document.createElement('button');
-                    dlBtn.className = 'btn btn-download';
-                    dlBtn.innerText = ' Download Survey Pack (ZIP)';
-                    dlBtn.onclick = (e) => { e.stopPropagation(); downloadSurveyPack(prop.id, prop.address); };
-                    item.appendChild(dlBtn);
-                }
-                list.appendChild(item);
-            });
-        }
-
-        async function downloadSurveyPack(propertyId, address) {
-            setLoading(true, "Gathering data and photos... This may take a minute.");
-            try {
-                const zip = new JSZip();
-                const folder = zip.folder(address.replace(/[^a-z0-9]/gi, '_').toLowerCase());
-
-                const { data: prop } = await sb.from('properties').select('*').eq('id', propertyId).single();
-                let textData = `URBANFOLD SURVEY REPORT\n=======================\nAddress: ${prop.address}\nPostcode: ${prop.postcode}\nClient: ${prop.surveyor_name}\nEmail: ${prop.client_email}\nType: ${prop.property_type}\nNotes: ${prop.notes}\n\n`;
-
-                const { data: rooms } = await sb.from('rooms').select('*').eq('property_id', propertyId);
-                textData += "ROOM MEASUREMENTS\n-------------------\n";
-                if (rooms) {
-                    for (const room of rooms) {
-                        textData += `\nRoom: ${room.room_name}\nShape: ${room.shape}\nDimensions: ${JSON.stringify(room.dimensions)}\nNotes: ${room.additional_measurements}\n`;
-                        const { data: rPhotos } = await sb.from('room_photos').select('*').eq('room_id', room.id);
-                        if (rPhotos) {
-                            for (let i = 0; i < rPhotos.length; i++) {
-                                const res = await fetch(rPhotos[i].photo_url);
-                                const arrayBuffer = await res.arrayBuffer();
-                                folder.file(`rooms/${room.room_name.replace(/[^a-z0-9]/gi, '_')}_${i}.jpg`, arrayBuffer);
-                            }
-                        }
-                    }
-                }
-
-                const { data: exts } = await sb.from('extensions').select('*').eq('property_id', propertyId);
-                if (exts && exts.length > 0) {
-                    textData += `\nEXTENSION DETAILS\n-----------------\nTypes: ${exts[0].extension_types.join(', ')}\nWidth: ${exts[0].width}m\nLength: ${exts[0].length}m\nDesc: ${exts[0].description}\n`;
-                }
-
-                const { data: ePhotos } = await sb.from('exterior_photos').select('*').eq('property_id', propertyId);
-                if (ePhotos) {
-                    for (let i = 0; i < ePhotos.length; i++) {
-                        const res = await fetch(ePhotos[i].photo_url);
-                        const arrayBuffer = await res.arrayBuffer();
-                        folder.file(`exterior/${ePhotos[i].elevation_type}_${i}.jpg`, arrayBuffer);
-                    }
-                }
-                const { data: sPhotos } = await sb.from('sketch_photos').select('*').eq('property_id', propertyId);
-                if (sPhotos) {
-                    for (let i = 0; i < sPhotos.length; i++) {
-                        const res = await fetch(sPhotos[i].photo_url);
-                        const arrayBuffer = await res.arrayBuffer();
-                        folder.file(`sketches/sketch_${i}.jpg`, arrayBuffer);
-                    }
-                }
-
-                folder.file("survey_data.txt", textData);
-                const content = await zip.generateAsync({ type: "blob" });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(content);
-                link.download = `Urbanfold_${address.replace(/[^a-z0-9]/gi, '_')}.zip`;
-                link.click();
-                setLoading(false);
-            } catch (err) {
-                setLoading(false);
-                alert("Error downloading pack: " + err.message);
-            }
-        }
-
-        function startNewSurvey() {
-            if (confirm("This will clear your current draft. Are you sure?")) {
-                localStorage.removeItem('urbanfold_draft');
-                currentPropertyId = null;
-                draftWritesEnabled = true;
-                document.getElementById('survey-source')?.remove();
-                appState = { photos: {}, roomPhotos: {} };
-                document.getElementById('detail-name').value = '';
-                document.getElementById('detail-client-email').value = '';
-                document.getElementById('detail-address').value = '';
-                document.getElementById('detail-postcode').value = '';
-                document.getElementById('detail-notes').value = '';
-                document.getElementById('prop-type').value = '';
-                document.getElementById('ext-description').value = '';
-                document.getElementById('ext-width').value = '';
-                document.getElementById('ext-length').value = '';
-                document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = false; cb.parentElement.classList.remove('selected'); });
-                roomList.forEach(room => {
-                    const rid = roomId(room);
-                    const shapeEl = document.getElementById(`shape-${rid}`);
-                    if (shapeEl) { shapeEl.value = 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); }
-                    const setVal = (id) => { const el = document.getElementById(id); if (el) el.value = ''; };
-                    setVal(`len-${rid}`); setVal(`wid-${rid}`); setVal(`hei-${rid}`);
-                    setVal(`len1-${rid}`); setVal(`wid1-${rid}`); setVal(`len2-${rid}`); setVal(`wid2-${rid}`);
-                    setVal(`len3-${rid}`); setVal(`wid3-${rid}`); setVal(`add-${rid}`);
-                });
-                showView('view-details');
-            }
-        }
-
-        function showSurveySource(message, restoreDraft) {
-            document.getElementById('survey-source')?.remove();
-            const notice = document.createElement('div');
-            notice.id = 'survey-source';
-            notice.className = 'info-box';
-            notice.textContent = message;
-            if (restoreDraft) {
-                const button = document.createElement('button');
-                button.id = 'restore-device-draft';
-                button.className = 'btn btn-secondary';
-                button.textContent = 'Open draft from this device';
-                button.onclick = restoreDraft;
-                notice.appendChild(button);
-            }
-            document.querySelector('.container').prepend(notice);
-        }
-
-        async function resumeSurvey(id) {
-            setLoading(true, "Opening survey...");
-            draftWritesEnabled = false;
-            try {
-                // A draft belongs to one survey. Never apply it to another record.
-                const saved = localStorage.getItem(`urbanfold_draft_${id}`) || localStorage.getItem('urbanfold_draft');
-                let draft = null;
-                try { draft = saved ? JSON.parse(saved) : null; } catch (_) { /* Fetch the saved property instead. */ }
-                const matchingDraft = draft && draft.propertyId === id &&
-                    (!draft.userId || draft.userId === currentUser?.id);
-                const openDeviceDraft = () => {
-                    renderRoomsList();
-                    if (!loadDraft(saved)) throw new Error('Unable to display the draft.');
-                    // Reopening a survey always starts at property details.
-                    showView('view-details');
-                    draftWritesEnabled = true;
-                    showSurveySource('Draft from this device. Changes have not been submitted.');
-                };
-                const { data, error } = await sb.from('properties').select('*').eq('id', id).single();
-                if (error) throw error;
-                if (!data) throw new Error('Survey could not be found.');
-                const readRows = async (table) => {
-                    const result = await sb.from(table).select('*').eq('property_id', id);
-                    if (result.error) throw new Error(`${table}: ${result.error.message}`);
-                    return result.data || [];
-                };
-                const [extensions, rooms, exterior, extensionPhotos, sketches] = await Promise.all([
-                    readRows('extensions'), readRows('rooms'), readRows('exterior_photos'),
-                    readRows('extension_photos'), readRows('sketch_photos')
-                ]);
-                let roomPhotos = [];
-                if (rooms.length) {
-                    const result = await sb.from('room_photos').select('*').in('room_id', rooms.map(room => room.id));
-                    if (result.error) throw new Error(`room_photos: ${result.error.message}`);
-                    roomPhotos = result.data || [];
-                }
-                const hasSubmittedData = extensions.length || rooms.length || exterior.length ||
-                    extensionPhotos.length || sketches.length;
-                if (matchingDraft && !hasSubmittedData) {
-                    openDeviceDraft();
-                    return;
-                }
-                const extension = extensions[extensions.length - 1] || {};
-                const restored = {
-                    propertyId: id, userId: currentUser?.id, view: 'view-details',
-                    details: { name: data.surveyor_name, clientEmail: data.client_email,
-                        address: data.address, postcode: data.postcode, notes: data.notes },
-                    propType: data.property_type || '',
-                    extension: { types: extension.extension_types || [], description: extension.description,
-                        width: extension.width, length: extension.length },
-                    rooms: {}, appState: { photos: {}, roomPhotos: {} }
-                };
-                for (const photo of exterior) {
-                    const photos = restored.appState.photos[photo.elevation_type] ||= [];
-                    if (!photos.includes(photo.photo_url)) photos.push(photo.photo_url);
-                }
-                restored.appState.photos['extension-location'] = [...new Set(extensionPhotos.map(photo => photo.photo_url))];
-                restored.appState.photos.sketch = [...new Set(sketches.map(photo => photo.photo_url))];
-                for (const room of rooms) {
-                    const dims = room.dimensions || {};
-                    restored.rooms[roomId(room.room_name)] = {
-                        shape: room.shape, len: dims.l, wid: dims.w, hei: dims.h,
-                        len1: dims.l1, wid1: dims.w1, len2: dims.l2, wid2: dims.w2,
-                        len3: dims.l3, wid3: dims.w3, add: room.additional_measurements
-                    };
-                    // Include photos from earlier duplicate room rows created by the old submit flow.
-                    const photos = restored.appState.roomPhotos[room.room_name] ||= [];
-                    for (const photo of roomPhotos.filter(photo => photo.room_id === room.id)) {
-                        if (!photos.includes(photo.photo_url)) photos.push(photo.photo_url);
-                    }
-                }
-                renderRoomsList();
-                if (!loadDraft(JSON.stringify(restored))) throw new Error('Unable to display this survey.');
-                draftWritesEnabled = false;
-                showView('view-details');
-                showSurveySource(matchingDraft
-                    ? 'Saved submission loaded from the database. A separate draft on this device is also available.'
-                    : 'Saved survey loaded from the database.', matchingDraft ? openDeviceDraft : null);
-            } catch (error) {
-                alert('Unable to open survey: ' + error.message);
-            } finally { setLoading(false); }
-        }
-        function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
-
-        function saveDraft() {
-            // Login fields and an empty dashboard must not overwrite a recoverable draft.
-            const activeView = document.querySelector('.view.active')?.id;
-            if (!draftWritesEnabled || !currentPropertyId || !currentUser || ['view-auth', 'view-dashboard', 'view-success'].includes(activeView)) return;
-            const draft = { propertyId: currentPropertyId, view: document.querySelector('.view.active') ? document.querySelector('.view.active').id : 'view-auth', details: { name: document.getElementById('detail-name').value, clientEmail: document.getElementById('detail-client-email').value, address: document.getElementById('detail-address').value, postcode: document.getElementById('detail-postcode').value, notes: document.getElementById('detail-notes').value }, propType: document.getElementById('prop-type').value, extension: { types: Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value), description: document.getElementById('ext-description').value, width: document.getElementById('ext-width').value, length: document.getElementById('ext-length').value }, rooms: {}, appState: appState };
-            roomList.forEach(room => { const rid = roomId(room); draft.rooms[rid] = { shape: document.getElementById(`shape-${rid}`).value, len: document.getElementById(`len-${rid}`).value, wid: document.getElementById(`wid-${rid}`).value, hei: document.getElementById(`hei-${rid}`).value, len1: document.getElementById(`len1-${rid}`).value, wid1: document.getElementById(`wid1-${rid}`).value, len2: document.getElementById(`len2-${rid}`).value, wid2: document.getElementById(`wid2-${rid}`).value, len3: document.getElementById(`len3-${rid}`).value, wid3: document.getElementById(`wid3-${rid}`).value, add: document.getElementById(`add-${rid}`).value }; });
-            try {
-                draft.userId = currentUser.id;
-                localStorage.setItem(`urbanfold_draft_${currentPropertyId}`, JSON.stringify(draft));
-                localStorage.setItem('urbanfold_draft', JSON.stringify(draft));
-            } catch (e) { alert('Your draft could not be saved on this device. Keep this page open and free browser storage before continuing.'); }
-        }
-
-        function loadDraft(saved = localStorage.getItem('urbanfold_draft')) { if (!saved) return false;
-            try { const draft = JSON.parse(saved); if (!draft) return false; currentPropertyId = draft.propertyId || null; appState = draft.appState || { photos: {}, roomPhotos: {} }; document.querySelectorAll('.preview-gallery').forEach(gallery => { gallery.innerHTML = '<div class="empty-state">No Photos</div>'; }); if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } document.getElementById('prop-type').value = draft.propType || ''; document.getElementById('exterior-grid').innerHTML = ''; updateExteriorRequirements(); if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width || ''; document.getElementById('ext-length').value = draft.extension.length || ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
-        }
-
-        const enableDraftWrites = () => {
-            const active = document.querySelector('.view.active')?.id;
-            if (currentPropertyId && !['view-auth', 'view-dashboard', 'view-success'].includes(active)) draftWritesEnabled = true;
-        };
-        document.addEventListener('input', enableDraftWrites);
-        document.addEventListener('change', enableDraftWrites);
-        document.addEventListener('input', debounce(saveDraft, 500)); document.addEventListener('change', debounce(saveDraft, 500));
-        window.addEventListener('pagehide', saveDraft);
-        window.addEventListener('beforeunload', saveDraft);
-
-        async function saveDetails() {
-            draftWritesEnabled = true;
-            const address = document.getElementById('detail-address').value; const postcode = document.getElementById('detail-postcode').value;
-            if (!address || !postcode) return alert("Address and Postcode are required.");
-            setLoading(true, "Saving property..."); let data, error;
-            const payload = { surveyor_name: document.getElementById('detail-name').value, client_email: document.getElementById('detail-client-email').value, address: address, postcode: postcode, notes: document.getElementById('detail-notes').value };
-            if (currentPropertyId) { const res = await sb.from('properties').update(payload).eq('id', currentPropertyId).select().single(); data = res.data; error = res.error; } else { payload.user_id = currentUser.id; const res = await sb.from('properties').insert([payload]).select().single(); data = res.data; error = res.error; if (!error) currentPropertyId = data.id; }
-            setLoading(false); if (error) alert("Error saving property: " + error.message); else { saveDraft(); showView('view-type'); }
-        }
-
-        const elevationsMap = { 'terraced': ['front', 'rear', 'roof'], 'end-terraced': ['front', 'rear', 'side', 'roof'], 'semi-detached': ['front', 'rear', 'side', 'roof'], 'detached': ['front', 'rear', 'left-side', 'right-side', 'roof'], 'bungalow': ['front', 'rear', 'left-side', 'right-side', 'roof'], 'flat': ['front', 'rear', 'side'] };
-        function formatElevationName(key) { return key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '); }
-        function updateExteriorRequirements() { const type = document.getElementById('prop-type').value; document.getElementById('btn-to-exterior').disabled = !type; if (type) renderExteriorGrid(type); }
-        function renderExteriorGrid(type) { const grid = document.getElementById('exterior-grid'); grid.innerHTML = ''; elevationsMap[type].forEach(elev => { if (!appState.photos[elev]) appState.photos[elev] = []; const card = document.createElement('div'); card.className = 'elevation-card'; card.id = `card-${elev}`; card.innerHTML = `<h3>${formatElevationName(elev)}</h3><div class="preview-gallery" id="preview-${elev}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${elev}')">Take Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${elev}" onchange="handlePhoto('${elev}', this)">`; grid.appendChild(card); renderGallery(elev); }); }
-        function triggerCamera(id) { document.getElementById(`input-${id}`).click(); }
-
-        async function compressImage(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = (event) => { const img = new Image(); img.src = event.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = 1200; const scaleSize = MAX_WIDTH / img.width; canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }; }); }
-
-        function handlePhoto(id, inputElement) { draftWritesEnabled = true; Array.from(inputElement.files).forEach(async (file) => { const compressedDataUrl = await compressImage(file); const isRoom = roomList.includes(id); if (isRoom) { if (!appState.roomPhotos[id]) appState.roomPhotos[id] = []; appState.roomPhotos[id].push(compressedDataUrl); } else { if (!appState.photos[id]) appState.photos[id] = []; appState.photos[id].push(compressedDataUrl); } renderGallery(id); saveDraft(); }); inputElement.value = ''; }
-        function renderGallery(id) { const gallery = document.getElementById(`preview-${id}`); if (!gallery) return; const isRoom = roomList.includes(id); const photos = isRoom ? (appState.roomPhotos[id] || []) : (appState.photos[id] || []); if (photos.length === 0) { gallery.innerHTML = '<div class="empty-state">No Photos</div>'; const c = document.getElementById(`card-${id}`); if(c) c.classList.remove('completed'); } else { gallery.innerHTML = ''; photos.forEach((src, index) => { const container = document.createElement('div'); container.className = 'thumb-container'; container.innerHTML = `<img src="${src}"><button class="thumb-delete" onclick="deletePhoto('${id}', ${index})">×</button>`; gallery.appendChild(container); }); const c = document.getElementById(`card-${id}`); if(c) c.classList.add('completed'); } }
-        function deletePhoto(id, index) { draftWritesEnabled = true; const isRoom = roomList.includes(id); if (isRoom) appState.roomPhotos[id].splice(index, 1); else appState.photos[id].splice(index, 1); renderGallery(id); saveDraft(); }
-        function finishExterior() { showView('view-extension'); }
-        function toggleCheck(element) { const cb = element.querySelector('input'); setTimeout(() => { element.classList.toggle('selected', cb.checked); saveDraft(); }, 10); }
-        function finishExtension() { showView('view-interior-sketch'); }
-        function finishSketches() { showView('view-interior-rooms'); }
-
-        const roomList = ['Porch', 'Living Room', 'Kitchen', 'Conservatory', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3', 'Bedroom 4', 'Bathroom 1', 'Bathroom 2', 'Ensuite', 'Loft Room', 'Other'];
-        function roomId(name) { return name.replace(/\s+/g, '-'); }
-        function toggleLShapedDimensions(selectElement) { const rid = selectElement.id.replace('shape-', ''); document.getElementById(`l-shaped-${rid}`).classList.toggle('active', selectElement.value === 'L-shaped room'); document.getElementById(`standard-${rid}`).style.display = selectElement.value === 'L-shaped room' ? 'none' : 'block'; }
-
-        function renderRoomsList() { const list = document.getElementById('rooms-list'); list.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); if (!appState.roomPhotos[room]) appState.roomPhotos[room] = []; const acc = document.createElement('div'); acc.className = 'room-accordion'; acc.innerHTML = `<div class="room-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');"><span>${room}</span><span class="arrow">▼</span></div><div class="room-body"><div class="form-group"><label>Room Shape</label><select id="shape-${rid}" onchange="toggleLShapedDimensions(this)"><option value="Square/Rectangular">Square/Rectangular</option><option value="L-shaped room">L-shaped room</option></select></div><div id="standard-${rid}" class="form-row"><div class="form-group"><label>Length (m)</label><input type="number" step="0.01" id="len-${rid}"></div><div class="form-group"><label>Width (m)</label><input type="number" step="0.01" id="wid-${rid}"></div></div><div id="l-shaped-${rid}" class="l-shaped-dimensions"><h4>L-Shaped Dimensions</h4><div class="form-row"><div class="form-group"><label>Length 1</label><input type="number" step="0.01" id="len1-${rid}"></div><div class="form-group"><label>Width 1</label><input type="number" step="0.01" id="wid1-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 2</label><input type="number" step="0.01" id="len2-${rid}"></div><div class="form-group"><label>Width 2</label><input type="number" step="0.01" id="wid2-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 3</label><input type="number" step="0.01" id="len3-${rid}"></div><div class="form-group"><label>Width 3</label><input type="number" step="0.01" id="wid3-${rid}"></div></div></div><div class="form-group"><label>Height (m)</label><input type="number" step="0.01" id="hei-${rid}"></div><div class="form-group"><label>Additional Measurements</label><textarea id="add-${rid}"></textarea></div><hr class="room-divider"><label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Room Photos</label><div class="preview-gallery" id="preview-${room}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${room}')">Take Room Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${room}" onchange="handlePhoto('${room}', this)"></div>`; list.appendChild(acc); }); }
-
-        async function connectBluetooth() { if (!navigator.bluetooth) return alert("Web Bluetooth not supported in this browser."); try { const device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'DISTO' }] }); document.getElementById('bt-status-bar').classList.add('connected'); document.getElementById('bt-status-text').innerText = "Leica DISTO Connected"; alert("Connected! Ensure device is in Data Transfer mode."); } catch (e) { alert("Connection failed: " + e.message); } }
-
-        function generatePDF() { document.getElementById('pdf-date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf-address').innerText = document.getElementById('detail-address').value; document.getElementById('pdf-postcode').innerText = document.getElementById('detail-postcode').value; document.getElementById('pdf-name').innerText = document.getElementById('detail-name').value; document.getElementById('pdf-type').innerText = document.getElementById('prop-type').value; const extTypes = Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value).join(', '); document.getElementById('pdf-ext-type').innerText = extTypes || 'None'; document.getElementById('pdf-ext-dims').innerText = `${document.getElementById('ext-width').value}m x ${document.getElementById('ext-length').value}m`; document.getElementById('pdf-ext-desc').innerText = document.getElementById('ext-description').value; const roomsContainer = document.getElementById('pdf-rooms-list'); roomsContainer.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); const shape = document.getElementById(`shape-${rid}`).value; let dimsText = ''; if (shape === 'L-shaped room') { dimsText = `L-Shape: (${document.getElementById(`len1-${rid}`).value}x${document.getElementById(`wid1-${rid}`).value}), (${document.getElementById(`len2-${rid}`).value}x${document.getElementById(`wid2-${rid}`).value}), (${document.getElementById(`len3-${rid}`).value}x${document.getElementById(`wid3-${rid}`).value}), H: ${document.getElementById(`hei-${rid}`).value}m`; } else { dimsText = `L: ${document.getElementById(`len-${rid}`).value}m, W: ${document.getElementById(`wid-${rid}`).value}m, H: ${document.getElementById(`hei-${rid}`).value}m`; } if (document.getElementById(`len-${rid}`).value || document.getElementById(`len1-${rid}`).value) { roomsContainer.innerHTML += `<div class="room-item"><strong>${room}</strong> (${shape})<br>${dimsText}</div>`; } }); const element = document.getElementById('pdf-content'); element.style.display = 'block'; const opt = { margin: 1, filename: `Urbanfold_Survey_${document.getElementById('detail-postcode').value}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; }); }
-
-        let submittingSurvey = false;
-
-        async function requireResult(operation, label) {
-            const result = await operation;
-            if (result.error) throw new Error(`${label}: ${result.error.message}`);
-            return result.data;
-        }
-
-        async function saveSurveyPhotos(photos, bucket, table, parent, extra = {}) {
-            for (let i = 0; i < photos.length; i++) {
-                // Photos loaded from Supabase already have database records.
-                if (!photos[i].startsWith('data:')) continue;
-                const fileName = `${currentPropertyId}/${crypto.randomUUID()}.jpg`;
-                await requireResult(sb.storage.from(bucket).upload(fileName,
-                    dataURLtoFile(photos[i], fileName), { contentType: 'image/jpeg' }), `Upload ${table}`);
-                const { data: urlData } = sb.storage.from(bucket).getPublicUrl(fileName);
-                await requireResult(sb.from(table).insert({ ...parent, ...extra, photo_url: urlData.publicUrl }), `Save ${table}`);
-                // A retry must not upload photos whose records were already saved.
-                photos[i] = urlData.publicUrl;
-                saveDraft();
-            }
-        }
-
-        async function finishSurvey() {
-            if (submittingSurvey) return;
-            if (!currentPropertyId) return alert("Property not saved. Please go back to details.");
-            submittingSurvey = true;
-            draftWritesEnabled = true;
-            saveDraft();
-            setLoading(true, "Uploading photos and saving data... This may take a minute.");
-            try {
-                const value = id => document.getElementById(id).value;
-                await requireResult(sb.from('properties').update({
-                    property_type: value('prop-type'), surveyor_name: value('detail-name'),
-                    client_email: value('detail-client-email'), address: value('detail-address'),
-                    postcode: value('detail-postcode'), notes: value('detail-notes')
-                }).eq('id', currentPropertyId).select().single(), 'Save property');
-                const elevations = elevationsMap[value('prop-type')] || [];
-                for (const elevation of elevations) {
-                    await saveSurveyPhotos(appState.photos[elevation] || [], 'exterior-photos',
-                        'exterior_photos', { property_id: currentPropertyId }, { elevation_type: elevation });
-                }
-                const existingExtensions = await requireResult(sb.from('extensions').select('*')
-                    .eq('property_id', currentPropertyId), 'Read extension');
-                const extension = {
-                    property_id: currentPropertyId,
-                    extension_types: Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value),
-                    description: value('ext-description'), width: value('ext-width') || null, length: value('ext-length') || null
-                };
-                const existingExtension = existingExtensions?.[existingExtensions.length - 1];
-                await requireResult(existingExtension
-                    ? sb.from('extensions').update(extension).eq('id', existingExtension.id).select().single()
-                    : sb.from('extensions').insert(extension).select().single(), 'Save extension');
-                await saveSurveyPhotos(appState.photos['extension-location'] || [], 'exterior-photos',
-                    'extension_photos', { property_id: currentPropertyId });
-                await saveSurveyPhotos(appState.photos.sketch || [], 'sketch-photos',
-                    'sketch_photos', { property_id: currentPropertyId });
-                const existingRooms = await requireResult(sb.from('rooms').select('*')
-                    .eq('property_id', currentPropertyId), 'Read rooms');
-                for (const room of roomList) {
-                    const rid = roomId(room);
-                    const shape = value(`shape-${rid}`);
-                    const dimensions = shape === 'L-shaped room'
-                        ? { l1: value(`len1-${rid}`), w1: value(`wid1-${rid}`),
-                            l2: value(`len2-${rid}`), w2: value(`wid2-${rid}`),
-                            l3: value(`len3-${rid}`), w3: value(`wid3-${rid}`), h: value(`hei-${rid}`) }
-                        : { l: value(`len-${rid}`), w: value(`wid-${rid}`), h: value(`hei-${rid}`) };
-                    const payload = { property_id: currentPropertyId, room_name: room, shape,
-                        dimensions, additional_measurements: value(`add-${rid}`) };
-                    const existingRoom = existingRooms?.filter(row => row.room_name === room).pop();
-                    const roomData = await requireResult(existingRoom
-                        ? sb.from('rooms').update(payload).eq('id', existingRoom.id).select().single()
-                        : sb.from('rooms').insert(payload).select().single(), `Save room ${room}`);
-                    await saveSurveyPhotos(appState.roomPhotos[room] || [], 'room-photos',
-                        'room_photos', { room_id: roomData.id });
-                }
-                localStorage.removeItem('urbanfold_draft');
-                localStorage.removeItem(`urbanfold_draft_${currentPropertyId}`);
-                const zapierUrl = 'https://hooks.zapier.com/hooks/catch/29202657/410hu8q/';
-                fetch(zapierUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ client_email: value('detail-client-email'), address: value('detail-address'),
-                        surveyor_name: value('detail-name'), property_id: currentPropertyId })
-                }).catch(err => console.error('Zapier error:', err));
-                showView('view-success');
-                document.getElementById('admin-pdf-section').style.display =
-                    currentUser && currentUser.email === ADMIN_EMAIL ? 'block' : 'none';
-            } catch (err) {
-                saveDraft();
-                alert("Survey was not fully submitted. Your draft has been kept. " + err.message);
-            } finally {
-                submittingSurvey = false;
-                setLoading(false);
-            }
-        }
-
-        function dataURLtoFile(dataurl, filename) { let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n); while(n--){ u8arr[n] = bstr.charCodeAt(n); } return new File([u8arr], filename, {type:mime}); }
-        document.addEventListener('DOMContentLoaded', () => { renderRoomsList(); });
-    </script>
+    <p class="subtitle">App version: stabilisation-1</p>
+    <script src="app.js"></script>
 </body>
 </html>
