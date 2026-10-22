@@ -418,7 +418,59 @@
             }
         }
 
-        async function resumeSurvey(id) { currentPropertyId = id; showView('view-details'); }
+       async function resumeSurvey(id) {
+    setLoading(true, "Opening survey...");
+    try {
+        let draft = null;
+        try {
+            draft = JSON.parse(
+                localStorage.getItem('urbanfold_draft') || 'null'
+            );
+        } catch (_) {}
+
+        if (draft && draft.propertyId === id) {
+            renderRoomsList();
+            if (loadDraft()) return;
+        }
+
+        const { data, error } = await sb
+            .from('properties')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("Survey not found.");
+
+        currentPropertyId = id;
+        appState = { photos: {}, roomPhotos: {} };
+        renderRoomsList();
+
+        document.getElementById('detail-name').value =
+            data.surveyor_name || '';
+        document.getElementById('detail-client-email').value =
+            data.client_email || '';
+        document.getElementById('detail-address').value =
+            data.address || '';
+        document.getElementById('detail-postcode').value =
+            data.postcode || '';
+        document.getElementById('detail-notes').value =
+            data.notes || '';
+        document.getElementById('prop-type').value =
+            data.property_type || '';
+
+        updateExteriorRequirements();
+        showView('view-details');
+    } catch (error) {
+        alert("Unable to open survey: " + error.message);
+    } finally {
+        setLoading(false);
+    }
+}            const activeView = document.querySelector('.view.active')?.id;
+            if (!currentPropertyId || !currentUser ||
+                ['view-auth', 'view-dashboard', 'view-success'].includes(activeView)) {
+                return;
+            }
         function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
 
         function saveDraft() {
