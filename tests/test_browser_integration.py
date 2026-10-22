@@ -299,7 +299,11 @@ def main():
         with ZipFile(BytesIO(Path(download.value.path()).read_bytes())) as archive:
             assert len([name for name in archive.namelist() if name.endswith('.jpg')])==4
             report=next(name for name in archive.namelist() if name.endswith('survey_data.txt'))
-            assert 'Test extension' in archive.read(report).decode()
+            text = archive.read(report).decode()
+            assert 'Test extension' in text
+            assert 'PORCH' in text and 'Length: 4 m' in text and 'Height: 2.4 m' in text
+            assert 'Bedroom-1' not in text and 'BEDROOM 1' not in text
+            assert '{"shape"' not in text and '"len"' not in text
         assert len(fixture.objects)==5  # Removed photo bytes retained; its survey reference is deleted.
         assert not errors,errors
         assert not fixture.unexpected,fixture.unexpected

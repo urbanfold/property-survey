@@ -108,6 +108,20 @@
             } catch (error) { list.textContent = 'Unable to load surveys: ' + error.message; }
         }
 
+        function readableRooms(rooms, photos = {}) {
+            const present = value => value !== undefined && value !== null && String(value).trim() !== '';
+            return Object.entries(rooms).flatMap(([id, room]) => {
+                const shaped = room.shape === 'L-shaped room';
+                const fields = shaped
+                    ? [['len1','Length 1'],['wid1','Width 1'],['len2','Length 2'],['wid2','Width 2'],['len3','Length 3'],['wid3','Width 3'],['hei','Height']]
+                    : [['len','Length'],['wid','Width'],['hei','Height']];
+                if (!fields.some(([key]) => present(room[key])) && !present(room.add) && !(photos[id.replace(/-/g, ' ')] || []).length) return [];
+                return [{ name: id.replace(/-/g, ' '), shape: shaped ? 'L-shaped' : 'Rectangular',
+                    measurements: fields.map(([key, label]) => `${label}: ${present(room[key]) ? room[key] + ' m' : 'Not recorded'}`),
+                    notes: present(room.add) ? String(room.add).trim() : '' }];
+            });
+        }
+
         async function downloadSurveyPack(propertyId, address) {
             setLoading(true, 'Gathering saved survey data and photos...');
             try {
@@ -116,12 +130,12 @@
                 const zip = new JSZip();
                 const folder = zip.folder(safeName);
                 const lines = ['URBANFOLD SURVEY REPORT', '',
-                    ...Object.entries(snapshot.details).map(([key, value]) => `${key}: ${value || ''}`),
+                    ...Object.entries({ 'Surveyor / client name': snapshot.details.name, 'Client email': snapshot.details.clientEmail, Address: snapshot.details.address, Postcode: snapshot.details.postcode, Notes: snapshot.details.notes }).map(([key, value]) => `${key}: ${value || 'Not recorded'}`),
                     `Property type: ${snapshot.propType}`, '', 'EXTENSION',
                     `Types: ${snapshot.extension.types.join(', ')}`,
                     `Description: ${snapshot.extension.description || ''}`,
                     `Width: ${snapshot.extension.width ?? ''}m; length: ${snapshot.extension.length ?? ''}m`,
-                    '', 'ROOMS', ...Object.entries(snapshot.rooms).map(([room, values]) => `${room}: ${JSON.stringify(values)}`)];
+                    '', 'ROOM MEASUREMENTS (metres)', ...readableRooms(snapshot.rooms, snapshot.appState.roomPhotos).flatMap(room => ['', room.name.toUpperCase(), `Shape: ${room.shape}`, ...room.measurements, ...(room.notes ? [`Notes: ${room.notes}`] : [])])];
                 folder.file('survey_data.txt', lines.join('\n'));
                 folder.file('survey_data.json', JSON.stringify(snapshot, null, 2));
                 for (const group of ['photos', 'roomPhotos']) {
@@ -544,7 +558,43 @@
             alert('Automatic Leica measurement transfer is not implemented in this app. Please enter measurements manually. Selecting a Bluetooth device alone does not transfer measurements.');
         }
 
-        function generatePDF() { document.getElementById('pdf-date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf-address').innerText = document.getElementById('detail-address').value; document.getElementById('pdf-postcode').innerText = document.getElementById('detail-postcode').value; document.getElementById('pdf-name').innerText = document.getElementById('detail-name').value; document.getElementById('pdf-type').innerText = document.getElementById('prop-type').value; const extTypes = Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value).join(', '); document.getElementById('pdf-ext-type').innerText = extTypes || 'None'; document.getElementById('pdf-ext-dims').innerText = `${document.getElementById('ext-width').value}m x ${document.getElementById('ext-length').value}m`; document.getElementById('pdf-ext-desc').innerText = document.getElementById('ext-description').value; const roomsContainer = document.getElementById('pdf-rooms-list'); roomsContainer.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); const shape = document.getElementById(`shape-${rid}`).value; let dimsText = ''; if (shape === 'L-shaped room') { dimsText = `L-Shape: (${document.getElementById(`len1-${rid}`).value}x${document.getElementById(`wid1-${rid}`).value}), (${document.getElementById(`len2-${rid}`).value}x${document.getElementById(`wid2-${rid}`).value}), (${document.getElementById(`len3-${rid}`).value}x${document.getElementById(`wid3-${rid}`).value}), H: ${document.getElementById(`hei-${rid}`).value}m`; } else { dimsText = `L: ${document.getElementById(`len-${rid}`).value}m, W: ${document.getElementById(`wid-${rid}`).value}m, H: ${document.getElementById(`hei-${rid}`).value}m`; } if (document.getElementById(`len-${rid}`).value || document.getElementById(`len1-${rid}`).value) { roomsContainer.innerHTML += `<div class="room-item"><strong>${room}</strong> (${shape})<br>${dimsText}</div>`; } }); const element = document.getElementById('pdf-content'); element.style.display = 'block'; const opt = { margin: 1, filename: `Urbanfold_Survey_${document.getElementById('detail-postcode').value}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; }); }
+        async function generatePDF() {
+            const survey = captureSurvey();
+            const setText = (id, value) => { document.getElementById(id).textContent = value || 'Not recorded'; };
+            setText('pdf-date', new Date().toLocaleDateString('en-GB'));
+            for (const [id, key] of [['pdf-address','address'],['pdf-postcode','postcode'],['pdf-name','name']]) setText(id, survey.details[key]);
+            setText('pdf-type', survey.propType.replace(/-/g, ' '));
+            setText('pdf-ext-type', survey.extension.types.join(', ') || 'None recorded');
+            setText('pdf-ext-dims', `Width: ${survey.extension.width ? survey.extension.width + ' m' : 'Not recorded'}; Length: ${survey.extension.length ? survey.extension.length + ' m' : 'Not recorded'}`);
+            setText('pdf-ext-desc', survey.extension.description);
+            const container = document.getElementById('pdf-rooms-list');
+            container.replaceChildren();
+            const rooms = readableRooms(survey.rooms, survey.appState.roomPhotos);
+            if (!rooms.length) container.textContent = 'No room measurements or notes recorded.';
+            for (const room of rooms) {
+                const section = document.createElement('div');
+                section.className = 'room-item';
+                const heading = document.createElement('h3');
+                heading.textContent = room.name;
+                section.appendChild(heading);
+                for (const text of [`Shape: ${room.shape}`, ...room.measurements, ...(room.notes ? [`Notes: ${room.notes}`] : [])]) {
+                    const line = document.createElement('p');
+                    line.textContent = text;
+                    section.appendChild(line);
+                }
+                container.appendChild(section);
+            }
+            const element = document.getElementById('pdf-content');
+            element.style.display = 'block';
+            try {
+                await html2pdf().set({ margin: 12, filename: `Urbanfold_Survey_${survey.details.postcode || 'report'}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'], avoid: '.room-item' }
+                }).from(element).save();
+            } catch (error) { alert('Unable to generate PDF: ' + error.message); }
+            finally { element.style.display = 'none'; }
+        }
 
         let submittingSurvey = false;
 
