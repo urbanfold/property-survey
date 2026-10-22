@@ -432,15 +432,51 @@
                 const { data, error } = await sb.from('properties').select('*').eq('id', id).single();
                 if (error) throw error;
                 if (!data) throw new Error('Survey could not be found.');
-                // Reuse draft hydration so stale fields from another survey are cleared.
-                renderRoomsList();
+                const readRows = async (table) => {
+                    const result = await sb.from(table).select('*').eq('property_id', id);
+                    if (result.error) throw new Error(`${table}: ${result.error.message}`);
+                    return result.data || [];
+                };
+                const [extensions, rooms, exterior, extensionPhotos, sketches] = await Promise.all([
+                    readRows('extensions'), readRows('rooms'), readRows('exterior_photos'),
+                    readRows('extension_photos'), readRows('sketch_photos')
+                ]);
+                let roomPhotos = [];
+                if (rooms.length) {
+                    const result = await sb.from('room_photos').select('*').in('room_id', rooms.map(room => room.id));
+                    if (result.error) throw new Error(`room_photos: ${result.error.message}`);
+                    roomPhotos = result.data || [];
+                }
+                const extension = extensions[extensions.length - 1] || {};
                 const restored = {
                     propertyId: id, userId: currentUser?.id, view: 'view-details',
                     details: { name: data.surveyor_name, clientEmail: data.client_email,
                         address: data.address, postcode: data.postcode, notes: data.notes },
-                    propType: data.property_type || '', extension: {}, rooms: {},
-                    appState: { photos: {}, roomPhotos: {} }
+                    propType: data.property_type || '',
+                    extension: { types: extension.extension_types || [], description: extension.description,
+                        width: extension.width, length: extension.length },
+                    rooms: {}, appState: { photos: {}, roomPhotos: {} }
                 };
+                for (const photo of exterior) {
+                    const photos = restored.appState.photos[photo.elevation_type] ||= [];
+                    if (!photos.includes(photo.photo_url)) photos.push(photo.photo_url);
+                }
+                restored.appState.photos['extension-location'] = [...new Set(extensionPhotos.map(photo => photo.photo_url))];
+                restored.appState.photos.sketch = [...new Set(sketches.map(photo => photo.photo_url))];
+                for (const room of rooms) {
+                    const dims = room.dimensions || {};
+                    restored.rooms[roomId(room.room_name)] = {
+                        shape: room.shape, len: dims.l, wid: dims.w, hei: dims.h,
+                        len1: dims.l1, wid1: dims.w1, len2: dims.l2, wid2: dims.w2,
+                        len3: dims.l3, wid3: dims.w3, add: room.additional_measurements
+                    };
+                    // Include photos from earlier duplicate room rows created by the old submit flow.
+                    const photos = restored.appState.roomPhotos[room.room_name] ||= [];
+                    for (const photo of roomPhotos.filter(photo => photo.room_id === room.id)) {
+                        if (!photos.includes(photo.photo_url)) photos.push(photo.photo_url);
+                    }
+                }
+                renderRoomsList();
                 if (!loadDraft(JSON.stringify(restored))) throw new Error('Unable to display this survey.');
             } catch (error) {
                 alert('Unable to open survey: ' + error.message);
@@ -462,7 +498,7 @@
         }
 
         function loadDraft(saved = localStorage.getItem('urbanfold_draft')) { if (!saved) return false;
-            try { const draft = JSON.parse(saved); if (!draft) return false; currentPropertyId = draft.propertyId || null; appState = draft.appState || { photos: {}, roomPhotos: {} }; if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } document.getElementById('prop-type').value = draft.propType || ''; document.getElementById('exterior-grid').innerHTML = ''; updateExteriorRequirements(); if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width || ''; document.getElementById('ext-length').value = draft.extension.length || ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
+            try { const draft = JSON.parse(saved); if (!draft) return false; currentPropertyId = draft.propertyId || null; appState = draft.appState || { photos: {}, roomPhotos: {} }; if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } document.getElementById('prop-type').value = draft.propType || ''; document.getElementById('exterior-grid').innerHTML = ''; updateExteriorRequirements(); if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width || ''; document.getElementById('ext-length').value = draft.extension.length || ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
         }
 
         document.addEventListener('input', debounce(saveDraft, 500)); document.addEventListener('change', debounce(saveDraft, 500));
@@ -498,28 +534,104 @@
         function roomId(name) { return name.replace(/\s+/g, '-'); }
         function toggleLShapedDimensions(selectElement) { const rid = selectElement.id.replace('shape-', ''); document.getElementById(`l-shaped-${rid}`).classList.toggle('active', selectElement.value === 'L-shaped room'); document.getElementById(`standard-${rid}`).style.display = selectElement.value === 'L-shaped room' ? 'none' : 'block'; }
 
-        function renderRoomsList() { const list = document.getElementById('rooms-list'); list.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); if (!appState.roomPhotos[room]) appState.roomPhotos[room] = []; const acc = document.createElement('div'); acc.className = 'room-accordion'; acc.innerHTML = `<div class="room-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');"><span>${room}</span><span class="arrow">▼</span></div><div class="room-body"><div class="form-group"><label>Room Shape</label><select id="shape-${rid}" onchange="toggleLShapedDimensions(this)"><option value="Square/Rectangular">Square/Rectangular</option><option value="L-shaped room">L-shaped room</option></select></div><div id="standard-${rid}" class="form-row"><div class="form-group"><label>Length (m)</label><input type="number" step="0.01" id="len-${rid}"></div><div class="form-group"><label>Width (m)</label><input type="number" step="0.01" id="wid-${rid}"></div><div class="form-group"><label>Height (m)</label><input type="number" step="0.01" id="hei-${rid}"></div></div><div id="l-shaped-${rid}" class="l-shaped-dimensions"><h4>L-Shaped Dimensions</h4><div class="form-row"><div class="form-group"><label>Length 1</label><input type="number" step="0.01" id="len1-${rid}"></div><div class="form-group"><label>Width 1</label><input type="number" step="0.01" id="wid1-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 2</label><input type="number" step="0.01" id="len2-${rid}"></div><div class="form-group"><label>Width 2</label><input type="number" step="0.01" id="wid2-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 3</label><input type="number" step="0.01" id="len3-${rid}"></div><div class="form-group"><label>Width 3</label><input type="number" step="0.01" id="wid3-${rid}"></div></div><div class="form-group"><label>Height</label><input type="number" step="0.01" id="hei-${rid}"></div></div><div class="form-group"><label>Additional Measurements</label><textarea id="add-${rid}"></textarea></div><hr class="room-divider"><label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Room Photos</label><div class="preview-gallery" id="preview-${room}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${room}')">Take Room Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${room}" onchange="handlePhoto('${room}', this)"></div>`; list.appendChild(acc); }); }
+        function renderRoomsList() { const list = document.getElementById('rooms-list'); list.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); if (!appState.roomPhotos[room]) appState.roomPhotos[room] = []; const acc = document.createElement('div'); acc.className = 'room-accordion'; acc.innerHTML = `<div class="room-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');"><span>${room}</span><span class="arrow">▼</span></div><div class="room-body"><div class="form-group"><label>Room Shape</label><select id="shape-${rid}" onchange="toggleLShapedDimensions(this)"><option value="Square/Rectangular">Square/Rectangular</option><option value="L-shaped room">L-shaped room</option></select></div><div id="standard-${rid}" class="form-row"><div class="form-group"><label>Length (m)</label><input type="number" step="0.01" id="len-${rid}"></div><div class="form-group"><label>Width (m)</label><input type="number" step="0.01" id="wid-${rid}"></div></div><div id="l-shaped-${rid}" class="l-shaped-dimensions"><h4>L-Shaped Dimensions</h4><div class="form-row"><div class="form-group"><label>Length 1</label><input type="number" step="0.01" id="len1-${rid}"></div><div class="form-group"><label>Width 1</label><input type="number" step="0.01" id="wid1-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 2</label><input type="number" step="0.01" id="len2-${rid}"></div><div class="form-group"><label>Width 2</label><input type="number" step="0.01" id="wid2-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 3</label><input type="number" step="0.01" id="len3-${rid}"></div><div class="form-group"><label>Width 3</label><input type="number" step="0.01" id="wid3-${rid}"></div></div></div><div class="form-group"><label>Height (m)</label><input type="number" step="0.01" id="hei-${rid}"></div><div class="form-group"><label>Additional Measurements</label><textarea id="add-${rid}"></textarea></div><hr class="room-divider"><label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Room Photos</label><div class="preview-gallery" id="preview-${room}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${room}')">Take Room Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${room}" onchange="handlePhoto('${room}', this)"></div>`; list.appendChild(acc); }); }
 
         async function connectBluetooth() { if (!navigator.bluetooth) return alert("Web Bluetooth not supported in this browser."); try { const device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'DISTO' }] }); document.getElementById('bt-status-bar').classList.add('connected'); document.getElementById('bt-status-text').innerText = "Leica DISTO Connected"; alert("Connected! Ensure device is in Data Transfer mode."); } catch (e) { alert("Connection failed: " + e.message); } }
 
         function generatePDF() { document.getElementById('pdf-date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf-address').innerText = document.getElementById('detail-address').value; document.getElementById('pdf-postcode').innerText = document.getElementById('detail-postcode').value; document.getElementById('pdf-name').innerText = document.getElementById('detail-name').value; document.getElementById('pdf-type').innerText = document.getElementById('prop-type').value; const extTypes = Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value).join(', '); document.getElementById('pdf-ext-type').innerText = extTypes || 'None'; document.getElementById('pdf-ext-dims').innerText = `${document.getElementById('ext-width').value}m x ${document.getElementById('ext-length').value}m`; document.getElementById('pdf-ext-desc').innerText = document.getElementById('ext-description').value; const roomsContainer = document.getElementById('pdf-rooms-list'); roomsContainer.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); const shape = document.getElementById(`shape-${rid}`).value; let dimsText = ''; if (shape === 'L-shaped room') { dimsText = `L-Shape: (${document.getElementById(`len1-${rid}`).value}x${document.getElementById(`wid1-${rid}`).value}), (${document.getElementById(`len2-${rid}`).value}x${document.getElementById(`wid2-${rid}`).value}), (${document.getElementById(`len3-${rid}`).value}x${document.getElementById(`wid3-${rid}`).value}), H: ${document.getElementById(`hei-${rid}`).value}m`; } else { dimsText = `L: ${document.getElementById(`len-${rid}`).value}m, W: ${document.getElementById(`wid-${rid}`).value}m, H: ${document.getElementById(`hei-${rid}`).value}m`; } if (document.getElementById(`len-${rid}`).value || document.getElementById(`len1-${rid}`).value) { roomsContainer.innerHTML += `<div class="room-item"><strong>${room}</strong> (${shape})<br>${dimsText}</div>`; } }); const element = document.getElementById('pdf-content'); element.style.display = 'block'; const opt = { margin: 1, filename: `Urbanfold_Survey_${document.getElementById('detail-postcode').value}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; }); }
 
+        let submittingSurvey = false;
+
+        async function requireResult(operation, label) {
+            const result = await operation;
+            if (result.error) throw new Error(`${label}: ${result.error.message}`);
+            return result.data;
+        }
+
+        async function saveSurveyPhotos(photos, bucket, table, parent, extra = {}) {
+            for (let i = 0; i < photos.length; i++) {
+                // Photos loaded from Supabase already have database records.
+                if (!photos[i].startsWith('data:')) continue;
+                const fileName = `${currentPropertyId}/${crypto.randomUUID()}.jpg`;
+                await requireResult(sb.storage.from(bucket).upload(fileName,
+                    dataURLtoFile(photos[i], fileName), { contentType: 'image/jpeg' }), `Upload ${table}`);
+                const { data: urlData } = sb.storage.from(bucket).getPublicUrl(fileName);
+                await requireResult(sb.from(table).insert({ ...parent, ...extra, photo_url: urlData.publicUrl }), `Save ${table}`);
+                // A retry must not upload photos whose records were already saved.
+                photos[i] = urlData.publicUrl;
+                saveDraft();
+            }
+        }
+
         async function finishSurvey() {
+            if (submittingSurvey) return;
             if (!currentPropertyId) return alert("Property not saved. Please go back to details.");
+            submittingSurvey = true;
+            saveDraft();
             setLoading(true, "Uploading photos and saving data... This may take a minute.");
             try {
-                await sb.from('properties').update({ property_type: document.getElementById('prop-type').value }).eq('id', currentPropertyId);
-                for (const [elev, photos] of Object.entries(appState.photos)) { for (let i = 0; i < photos.length; i++) { const fileName = `${currentPropertyId}/${elev}_${Date.now()}_${i}.jpg`; const { error } = await sb.storage.from('exterior-photos').upload(fileName, dataURLtoFile(photos[i], fileName), { contentType: 'image/jpeg' }); if (!error) { const { data: urlData } = sb.storage.from('exterior-photos').getPublicUrl(fileName); await sb.from('exterior_photos').insert({ property_id: currentPropertyId, elevation_type: elev, photo_url: urlData.publicUrl }); } } }
-                const extTypes = Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value); await sb.from('extensions').insert([{ property_id: currentPropertyId, extension_types: extTypes, description: document.getElementById('ext-description').value, width: document.getElementById('ext-width').value, length: document.getElementById('ext-length').value }]);
-                const extPhotos = appState.photos['extension-location'] || []; for (let i = 0; i < extPhotos.length; i++) { const fileName = `${currentPropertyId}/ext_loc_${Date.now()}_${i}.jpg`; await sb.storage.from('exterior-photos').upload(fileName, dataURLtoFile(extPhotos[i], fileName), { contentType: 'image/jpeg' }); const { data: urlData } = sb.storage.from('exterior-photos').getPublicUrl(fileName); await sb.from('extension_photos').insert({ property_id: currentPropertyId, photo_url: urlData.publicUrl }); }
-                const sketchPhotos = appState.photos['sketch'] || []; for (let i = 0; i < sketchPhotos.length; i++) { const fileName = `${currentPropertyId}/sketch_${Date.now()}_${i}.jpg`; await sb.storage.from('sketch-photos').upload(fileName, dataURLtoFile(sketchPhotos[i], fileName), { contentType: 'image/jpeg' }); const { data: urlData } = sb.storage.from('sketch-photos').getPublicUrl(fileName); await sb.from('sketch_photos').insert({ property_id: currentPropertyId, photo_url: urlData.publicUrl }); }
-                for (const room of roomList) { const rid = roomId(room); const shape = document.getElementById(`shape-${rid}`).value; let dims = {}; if (shape === 'L-shaped room') { dims = { l1: document.getElementById(`len1-${rid}`).value, w1: document.getElementById(`wid1-${rid}`).value, l2: document.getElementById(`len2-${rid}`).value, w2: document.getElementById(`wid2-${rid}`).value, l3: document.getElementById(`len3-${rid}`).value, w3: document.getElementById(`wid3-${rid}`).value, h: document.getElementById(`hei-${rid}`).value }; } else { dims = { l: document.getElementById(`len-${rid}`).value, w: document.getElementById(`wid-${rid}`).value, h: document.getElementById(`hei-${rid}`).value }; } const { data: roomData, error: roomError } = await sb.from('rooms').insert([{ property_id: currentPropertyId, room_name: room, shape: shape, dimensions: dims, additional_measurements: document.getElementById(`add-${rid}`).value }]).select().single(); if (!roomError && roomData) { const roomPhotos = appState.roomPhotos[room] || []; for (let i = 0; i < roomPhotos.length; i++) { const fileName = `${currentPropertyId}/${rid}_${Date.now()}_${i}.jpg`; await sb.storage.from('room-photos').upload(fileName, dataURLtoFile(roomPhotos[i], fileName), { contentType: 'image/jpeg' }); const { data: urlData } = sb.storage.from('room-photos').getPublicUrl(fileName); await sb.from('room_photos').insert({ room_id: roomData.id, photo_url: urlData.publicUrl }); } } }
-                setLoading(false); localStorage.removeItem('urbanfold_draft'); localStorage.removeItem(`urbanfold_draft_${currentPropertyId}`);
-                const zapierUrl = 'https://hooks.zapier.com/hooks/catch/29202657/410hu8q/'; const clientEmail = document.getElementById('detail-client-email').value; const address = document.getElementById('detail-address').value; const name = document.getElementById('detail-name').value;
-                fetch(zapierUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_email: clientEmail, address: address, surveyor_name: name, property_id: currentPropertyId }) }).catch(err => console.error('Zapier error:', err));
+                const value = id => document.getElementById(id).value;
+                await requireResult(sb.from('properties').update({
+                    property_type: value('prop-type'), surveyor_name: value('detail-name'),
+                    client_email: value('detail-client-email'), address: value('detail-address'),
+                    postcode: value('detail-postcode'), notes: value('detail-notes')
+                }).eq('id', currentPropertyId).select().single(), 'Save property');
+                const elevations = elevationsMap[value('prop-type')] || [];
+                for (const elevation of elevations) {
+                    await saveSurveyPhotos(appState.photos[elevation] || [], 'exterior-photos',
+                        'exterior_photos', { property_id: currentPropertyId }, { elevation_type: elevation });
+                }
+                const existingExtensions = await requireResult(sb.from('extensions').select('*')
+                    .eq('property_id', currentPropertyId), 'Read extension');
+                const extension = {
+                    property_id: currentPropertyId,
+                    extension_types: Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value),
+                    description: value('ext-description'), width: value('ext-width') || null, length: value('ext-length') || null
+                };
+                const existingExtension = existingExtensions?.[existingExtensions.length - 1];
+                await requireResult(existingExtension
+                    ? sb.from('extensions').update(extension).eq('id', existingExtension.id).select().single()
+                    : sb.from('extensions').insert(extension).select().single(), 'Save extension');
+                await saveSurveyPhotos(appState.photos['extension-location'] || [], 'exterior-photos',
+                    'extension_photos', { property_id: currentPropertyId });
+                await saveSurveyPhotos(appState.photos.sketch || [], 'sketch-photos',
+                    'sketch_photos', { property_id: currentPropertyId });
+                const existingRooms = await requireResult(sb.from('rooms').select('*')
+                    .eq('property_id', currentPropertyId), 'Read rooms');
+                for (const room of roomList) {
+                    const rid = roomId(room);
+                    const shape = value(`shape-${rid}`);
+                    const dimensions = shape === 'L-shaped room'
+                        ? { l1: value(`len1-${rid}`), w1: value(`wid1-${rid}`),
+                            l2: value(`len2-${rid}`), w2: value(`wid2-${rid}`),
+                            l3: value(`len3-${rid}`), w3: value(`wid3-${rid}`), h: value(`hei-${rid}`) }
+                        : { l: value(`len-${rid}`), w: value(`wid-${rid}`), h: value(`hei-${rid}`) };
+                    const payload = { property_id: currentPropertyId, room_name: room, shape,
+                        dimensions, additional_measurements: value(`add-${rid}`) };
+                    const existingRoom = existingRooms?.filter(row => row.room_name === room).pop();
+                    const roomData = await requireResult(existingRoom
+                        ? sb.from('rooms').update(payload).eq('id', existingRoom.id).select().single()
+                        : sb.from('rooms').insert(payload).select().single(), `Save room ${room}`);
+                    await saveSurveyPhotos(appState.roomPhotos[room] || [], 'room-photos',
+                        'room_photos', { room_id: roomData.id });
+                }
+                localStorage.removeItem('urbanfold_draft');
+                localStorage.removeItem(`urbanfold_draft_${currentPropertyId}`);
+                const zapierUrl = 'https://hooks.zapier.com/hooks/catch/29202657/410hu8q/';
+                fetch(zapierUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_email: value('detail-client-email'), address: value('detail-address'),
+                        surveyor_name: value('detail-name'), property_id: currentPropertyId })
+                }).catch(err => console.error('Zapier error:', err));
                 showView('view-success');
-                if (currentUser && currentUser.email === ADMIN_EMAIL) { document.getElementById('admin-pdf-section').style.display = 'block'; } else { document.getElementById('admin-pdf-section').style.display = 'none'; }
-            } catch (err) { setLoading(false); alert("Error submitting survey: " + err.message); }
+                document.getElementById('admin-pdf-section').style.display =
+                    currentUser && currentUser.email === ADMIN_EMAIL ? 'block' : 'none';
+            } catch (err) {
+                saveDraft();
+                alert("Survey was not fully submitted. Your draft has been kept. " + err.message);
+            } finally {
+                submittingSurvey = false;
+                setLoading(false);
+            }
         }
 
         function dataURLtoFile(dataurl, filename) { let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n); while(n--){ u8arr[n] = bstr.charCodeAt(n); } return new File([u8arr], filename, {type:mime}); }
