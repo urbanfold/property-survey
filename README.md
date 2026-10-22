@@ -12,7 +12,7 @@ photo buckets, and broad legacy access policies. Automated tests exercise that
 structure and the replacement policies. Live verification still requires applying
 the reviewed SQL and testing the deployed website with an authorised account.
 
-- Forward steps and **Save progress to cloud** persist all sections without sending email.
+- Forward steps and **Save progress** on the final Room Details page persist all sections without sending email.
 - A save reads the records back and compares details, extension choices, both room
   shapes, measurements, and photo references before claiming cloud success.
 - Private photos use expiring authenticated links. Existing public-URL references

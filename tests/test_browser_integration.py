@@ -203,7 +203,7 @@ def main():
         page.locator('#hei-Porch').fill('2.4')
         page.locator('#input-Porch').set_input_files(photo)
         expect(page.locator('#preview-Porch img')).to_have_count(1)
-        page.get_by_role('button',name='Save progress to cloud',exact=True).click()
+        page.get_by_role('button',name='Save progress',exact=True).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
         assert fixture.emails==0
         assert len(fixture.objects)==4
@@ -216,7 +216,8 @@ def main():
         assert page.locator('#len-Porch').input_value()=='4.5'
         assert 'Draft from this device' in page.locator('#survey-source').inner_text()
         page.evaluate("document.getElementById('len-Porch').value='4';document.getElementById('len-Porch').dispatchEvent(new Event('input',{bubbles:true}))")
-        page.get_by_role('button',name='Save progress to cloud',exact=True).click()
+        page.evaluate("showView('view-interior-rooms')")
+        page.get_by_role('button',name='Save progress',exact=True).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
         print('PASS newer device edits survive refresh even after earlier progress was saved to the cloud')
         # Verify all content without device state, as if opening from the GitHub Pages origin.
@@ -243,7 +244,7 @@ def main():
         saved_reference=row['photo_url']
         bucket,path=saved_reference.removeprefix('storage://').split('/',1)
         row['photo_url']=f'https://{BACKEND}/storage/v1/object/public/{bucket}/{path}'
-        page.locator('#survey-tools').get_by_role('button',name='Return to My Surveys').click()
+        page.get_by_role('button',name='Back to Dashboard',exact=True).click()
         page.locator('.survey-item').first.click()
         expect(page.locator('#view-details')).to_be_visible(timeout=15000)
         page.wait_for_function('document.querySelector("#preview-front img").naturalWidth>0')
@@ -251,12 +252,13 @@ def main():
         print('PASS existing public URL references are signed without changing or exposing private buckets')
         page.evaluate("showView('view-exterior')")
         page.get_by_role('button',name='Remove front photo 1',exact=True).click()
-        page.get_by_role('button',name='Save progress to cloud',exact=True).click()
-        expect(page.locator('#loading')).to_be_hidden(timeout=15000)
+        page.get_by_role('button',name='Finish Existing Exterior',exact=False).click()
+        expect(page.locator('#view-extension')).to_be_visible(timeout=15000)
         assert not fixture.tables['exterior_photos']
+        page.evaluate("showView('view-exterior')")
         page.locator('#input-front').set_input_files(photo)
         expect(page.locator('#preview-front img')).to_have_count(1)
-        page.get_by_role('button',name='Save progress to cloud',exact=True).click()
+        page.get_by_role('button',name='Finish Existing Exterior',exact=False).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
         assert len(fixture.tables['exterior_photos'])==1
         print('PASS deleting and replacing a saved photo updates cloud records')

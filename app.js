@@ -387,7 +387,7 @@
                 draft.savedOnDeviceAt = new Date().toISOString();
                 localStorage.setItem(`urbanfold_draft_${currentPropertyId}`, JSON.stringify(draft));
                 localStorage.setItem('urbanfold_draft', JSON.stringify(draft));
-                setSaveStatus('Draft saved on this device. Use Save progress to store it in the cloud.');
+                setSaveStatus('Draft saved on this device. Continue or save progress to store it in the cloud.');
             } catch (e) { setSaveStatus('Device storage is full or unavailable. Keep this page open and save progress to the cloud now.', 'error'); }
         }
 

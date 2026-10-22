@@ -106,9 +106,7 @@
 
     <div class="container">
         <div id="survey-tools" class="card" hidden>
-            <p id="save-status" role="status" aria-live="polite">Changes are saved on this device until you save progress to the cloud.</p>
-            <button class="btn" onclick="saveCloudProgress()">Save progress to cloud</button>
-            <button class="btn btn-secondary" onclick="loadDashboard()">Return to My Surveys</button>
+            <p id="save-status" role="status" aria-live="polite">Continue to save progress to the cloud. On the final page, use Save progress or Submit.</p>
         </div>
         <div id="view-auth" class="view active">
             <h1>Urbanfold Survey</h1>
@@ -232,6 +230,7 @@
             </div>
             <div class="info-box"><strong>Please note:</strong> Enter information in the required fields only.</div>
             <div id="rooms-list"></div>
+            <button class="btn btn-secondary" onclick="saveCloudProgress()">Save progress</button>
             <button class="btn" onclick="finishSurvey()" style="margin-top:20px;">Finish Survey & Submit to Cloud</button>
             <button class="btn btn-secondary" onclick="showView('view-interior-sketch')">Back</button>
         </div>
