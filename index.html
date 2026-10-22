@@ -253,9 +253,10 @@
         const ADMIN_EMAIL = 'urbanfolduk@gmail.com'; 
         let currentUser = null;
         let currentPropertyId = null;
+        let draftWritesEnabled = true;
         let appState = { photos: {}, roomPhotos: {} };
 
-        function showView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); }
+        function showView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); const source = document.getElementById('survey-source'); if (source) source.hidden = ['view-auth', 'view-dashboard', 'view-success'].includes(viewId); }
         function setLoading(show, text = "Processing...") { document.getElementById('loading').style.display = show ? 'flex' : 'none'; document.getElementById('loading-text').innerText = text; }
 
         function switchAuthTab(tab, element) {
@@ -394,6 +395,8 @@
             if (confirm("This will clear your current draft. Are you sure?")) {
                 localStorage.removeItem('urbanfold_draft');
                 currentPropertyId = null;
+                draftWritesEnabled = true;
+                document.getElementById('survey-source')?.remove();
                 appState = { photos: {}, roomPhotos: {} };
                 document.getElementById('detail-name').value = '';
                 document.getElementById('detail-client-email').value = '';
@@ -418,17 +421,41 @@
             }
         }
 
+        function showSurveySource(message, restoreDraft) {
+            document.getElementById('survey-source')?.remove();
+            const notice = document.createElement('div');
+            notice.id = 'survey-source';
+            notice.className = 'info-box';
+            notice.textContent = message;
+            if (restoreDraft) {
+                const button = document.createElement('button');
+                button.id = 'restore-device-draft';
+                button.className = 'btn btn-secondary';
+                button.textContent = 'Open draft from this device';
+                button.onclick = restoreDraft;
+                notice.appendChild(button);
+            }
+            document.querySelector('.container').prepend(notice);
+        }
+
         async function resumeSurvey(id) {
             setLoading(true, "Opening survey...");
+            draftWritesEnabled = false;
             try {
                 // A draft belongs to one survey. Never apply it to another record.
                 const saved = localStorage.getItem(`urbanfold_draft_${id}`) || localStorage.getItem('urbanfold_draft');
                 let draft = null;
                 try { draft = saved ? JSON.parse(saved) : null; } catch (_) { /* Fetch the saved property instead. */ }
-                if (draft && draft.propertyId === id && (!draft.userId || draft.userId === currentUser?.id)) {
+                const matchingDraft = draft && draft.propertyId === id &&
+                    (!draft.userId || draft.userId === currentUser?.id);
+                const openDeviceDraft = () => {
                     renderRoomsList();
-                    if (loadDraft(saved)) return;
-                }
+                    if (!loadDraft(saved)) throw new Error('Unable to display the draft.');
+                    // Reopening a survey always starts at property details.
+                    showView('view-details');
+                    draftWritesEnabled = true;
+                    showSurveySource('Draft from this device. Changes have not been submitted.');
+                };
                 const { data, error } = await sb.from('properties').select('*').eq('id', id).single();
                 if (error) throw error;
                 if (!data) throw new Error('Survey could not be found.');
@@ -446,6 +473,12 @@
                     const result = await sb.from('room_photos').select('*').in('room_id', rooms.map(room => room.id));
                     if (result.error) throw new Error(`room_photos: ${result.error.message}`);
                     roomPhotos = result.data || [];
+                }
+                const hasSubmittedData = extensions.length || rooms.length || exterior.length ||
+                    extensionPhotos.length || sketches.length;
+                if (matchingDraft && !hasSubmittedData) {
+                    openDeviceDraft();
+                    return;
                 }
                 const extension = extensions[extensions.length - 1] || {};
                 const restored = {
@@ -478,6 +511,11 @@
                 }
                 renderRoomsList();
                 if (!loadDraft(JSON.stringify(restored))) throw new Error('Unable to display this survey.');
+                draftWritesEnabled = false;
+                showView('view-details');
+                showSurveySource(matchingDraft
+                    ? 'Saved submission loaded from the database. A separate draft on this device is also available.'
+                    : 'Saved survey loaded from the database.', matchingDraft ? openDeviceDraft : null);
             } catch (error) {
                 alert('Unable to open survey: ' + error.message);
             } finally { setLoading(false); }
@@ -487,7 +525,7 @@
         function saveDraft() {
             // Login fields and an empty dashboard must not overwrite a recoverable draft.
             const activeView = document.querySelector('.view.active')?.id;
-            if (!currentPropertyId || !currentUser || ['view-auth', 'view-dashboard', 'view-success'].includes(activeView)) return;
+            if (!draftWritesEnabled || !currentPropertyId || !currentUser || ['view-auth', 'view-dashboard', 'view-success'].includes(activeView)) return;
             const draft = { propertyId: currentPropertyId, view: document.querySelector('.view.active') ? document.querySelector('.view.active').id : 'view-auth', details: { name: document.getElementById('detail-name').value, clientEmail: document.getElementById('detail-client-email').value, address: document.getElementById('detail-address').value, postcode: document.getElementById('detail-postcode').value, notes: document.getElementById('detail-notes').value }, propType: document.getElementById('prop-type').value, extension: { types: Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value), description: document.getElementById('ext-description').value, width: document.getElementById('ext-width').value, length: document.getElementById('ext-length').value }, rooms: {}, appState: appState };
             roomList.forEach(room => { const rid = roomId(room); draft.rooms[rid] = { shape: document.getElementById(`shape-${rid}`).value, len: document.getElementById(`len-${rid}`).value, wid: document.getElementById(`wid-${rid}`).value, hei: document.getElementById(`hei-${rid}`).value, len1: document.getElementById(`len1-${rid}`).value, wid1: document.getElementById(`wid1-${rid}`).value, len2: document.getElementById(`len2-${rid}`).value, wid2: document.getElementById(`wid2-${rid}`).value, len3: document.getElementById(`len3-${rid}`).value, wid3: document.getElementById(`wid3-${rid}`).value, add: document.getElementById(`add-${rid}`).value }; });
             try {
@@ -498,14 +536,21 @@
         }
 
         function loadDraft(saved = localStorage.getItem('urbanfold_draft')) { if (!saved) return false;
-            try { const draft = JSON.parse(saved); if (!draft) return false; currentPropertyId = draft.propertyId || null; appState = draft.appState || { photos: {}, roomPhotos: {} }; if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } document.getElementById('prop-type').value = draft.propType || ''; document.getElementById('exterior-grid').innerHTML = ''; updateExteriorRequirements(); if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width || ''; document.getElementById('ext-length').value = draft.extension.length || ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
+            try { const draft = JSON.parse(saved); if (!draft) return false; currentPropertyId = draft.propertyId || null; appState = draft.appState || { photos: {}, roomPhotos: {} }; document.querySelectorAll('.preview-gallery').forEach(gallery => { gallery.innerHTML = '<div class="empty-state">No Photos</div>'; }); if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } document.getElementById('prop-type').value = draft.propType || ''; document.getElementById('exterior-grid').innerHTML = ''; updateExteriorRequirements(); if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width || ''; document.getElementById('ext-length').value = draft.extension.length || ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
         }
 
+        const enableDraftWrites = () => {
+            const active = document.querySelector('.view.active')?.id;
+            if (currentPropertyId && !['view-auth', 'view-dashboard', 'view-success'].includes(active)) draftWritesEnabled = true;
+        };
+        document.addEventListener('input', enableDraftWrites);
+        document.addEventListener('change', enableDraftWrites);
         document.addEventListener('input', debounce(saveDraft, 500)); document.addEventListener('change', debounce(saveDraft, 500));
         window.addEventListener('pagehide', saveDraft);
         window.addEventListener('beforeunload', saveDraft);
 
         async function saveDetails() {
+            draftWritesEnabled = true;
             const address = document.getElementById('detail-address').value; const postcode = document.getElementById('detail-postcode').value;
             if (!address || !postcode) return alert("Address and Postcode are required.");
             setLoading(true, "Saving property..."); let data, error;
@@ -522,9 +567,9 @@
 
         async function compressImage(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = (event) => { const img = new Image(); img.src = event.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = 1200; const scaleSize = MAX_WIDTH / img.width; canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }; }); }
 
-        function handlePhoto(id, inputElement) { Array.from(inputElement.files).forEach(async (file) => { const compressedDataUrl = await compressImage(file); const isRoom = roomList.includes(id); if (isRoom) { if (!appState.roomPhotos[id]) appState.roomPhotos[id] = []; appState.roomPhotos[id].push(compressedDataUrl); } else { if (!appState.photos[id]) appState.photos[id] = []; appState.photos[id].push(compressedDataUrl); } renderGallery(id); saveDraft(); }); inputElement.value = ''; }
+        function handlePhoto(id, inputElement) { draftWritesEnabled = true; Array.from(inputElement.files).forEach(async (file) => { const compressedDataUrl = await compressImage(file); const isRoom = roomList.includes(id); if (isRoom) { if (!appState.roomPhotos[id]) appState.roomPhotos[id] = []; appState.roomPhotos[id].push(compressedDataUrl); } else { if (!appState.photos[id]) appState.photos[id] = []; appState.photos[id].push(compressedDataUrl); } renderGallery(id); saveDraft(); }); inputElement.value = ''; }
         function renderGallery(id) { const gallery = document.getElementById(`preview-${id}`); if (!gallery) return; const isRoom = roomList.includes(id); const photos = isRoom ? (appState.roomPhotos[id] || []) : (appState.photos[id] || []); if (photos.length === 0) { gallery.innerHTML = '<div class="empty-state">No Photos</div>'; const c = document.getElementById(`card-${id}`); if(c) c.classList.remove('completed'); } else { gallery.innerHTML = ''; photos.forEach((src, index) => { const container = document.createElement('div'); container.className = 'thumb-container'; container.innerHTML = `<img src="${src}"><button class="thumb-delete" onclick="deletePhoto('${id}', ${index})">×</button>`; gallery.appendChild(container); }); const c = document.getElementById(`card-${id}`); if(c) c.classList.add('completed'); } }
-        function deletePhoto(id, index) { const isRoom = roomList.includes(id); if (isRoom) appState.roomPhotos[id].splice(index, 1); else appState.photos[id].splice(index, 1); renderGallery(id); saveDraft(); }
+        function deletePhoto(id, index) { draftWritesEnabled = true; const isRoom = roomList.includes(id); if (isRoom) appState.roomPhotos[id].splice(index, 1); else appState.photos[id].splice(index, 1); renderGallery(id); saveDraft(); }
         function finishExterior() { showView('view-extension'); }
         function toggleCheck(element) { const cb = element.querySelector('input'); setTimeout(() => { element.classList.toggle('selected', cb.checked); saveDraft(); }, 10); }
         function finishExtension() { showView('view-interior-sketch'); }
@@ -567,6 +612,7 @@
             if (submittingSurvey) return;
             if (!currentPropertyId) return alert("Property not saved. Please go back to details.");
             submittingSurvey = true;
+            draftWritesEnabled = true;
             saveDraft();
             setLoading(true, "Uploading photos and saving data... This may take a minute.");
             try {

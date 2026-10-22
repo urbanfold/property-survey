@@ -114,6 +114,28 @@ def main():
         assert page.locator('[id^="len1-"]').nth(1).input_value() == '2'
         assert page.evaluate('appState.roomPhotos[roomList[0]].length') == 1
         print('PASS full submission, fresh-page cloud recovery of all sections and photos')
+        # Reproduce the reported failure: an old blank room-screen draft masks a submission.
+        stale = {'propertyId':'p1', 'userId':'u1', 'view':'view-interior-rooms',
+                 'details':{'address':'Stale device draft'}, 'propType':'',
+                 'extension':{}, 'rooms':{}, 'appState':{'photos':{},'roomPhotos':{}}}
+        page.evaluate('(draft)=>localStorage.setItem("urbanfold_draft_p1",JSON.stringify(draft))', stale)
+        page.evaluate("resumeSurvey('p1')")
+        assert page.locator('#view-details').is_visible()
+        assert page.locator('#detail-address').input_value() == 'Test property'
+        assert page.locator('[id^="len-"]').first.input_value() == '4'
+        assert page.locator('#preview-front img').count() == 1
+        assert 'database' in page.locator('#survey-source').inner_text()
+        page.evaluate('saveDraft()')
+        assert page.evaluate('JSON.parse(localStorage.getItem("urbanfold_draft_p1")).details.address') == 'Stale device draft'
+        page.locator('#restore-device-draft').click()
+        assert page.locator('#view-details').is_visible()
+        assert page.locator('#detail-address').input_value() == 'Stale device draft'
+        assert page.locator('#preview-front img').count() == 0
+        assert page.locator('#preview-sketch img').count() == 0
+        page.evaluate("resumeSurvey('p1')")
+        assert page.locator('#detail-address').input_value() == 'Test property'
+        print('PASS stale room-screen draft cannot hide cloud data; preserved draft can be opened explicitly')
+
         page.evaluate('finishSurvey()')
         assert page.locator('#view-success').is_visible()
         assert page.evaluate('fixture.uploads.length') == 0
