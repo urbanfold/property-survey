@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Urbanfold Property Survey</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; --text-light: #6b7280; --success: #10b981; --danger: #ef4444; --leica-red: #e30613; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; padding-bottom: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { font-size: 24px; margin-bottom: 10px; text-align: center; color: var(--primary); }
+        .subtitle { text-align: center; color: var(--text-light); margin-bottom: 25px; font-size: 14px;}
+        .btn { display: block; width: 100%; padding: 15px; font-size: 16px; font-weight: 600; color: white; background-color: var(--primary); border: none; border-radius: 8px; cursor: pointer; text-align: center; margin-top: 10px; }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: #6b7280; }
+        .btn-leica { background-color: var(--leica-red); }
+        .btn-pdf { background-color: #059669; margin-top: 15px; }
+        .btn-download { background-color: #7c3aed; margin-top: 10px; font-size: 14px; padding: 10px;}
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; background: white; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; }
+        .auth-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: 600; color: var(--text-light); }
+        .auth-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); margin-bottom: -2px;}
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .elevation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .elevation-card { background: var(--card-bg); border: 2px dashed #d1d5db; border-radius: 12px; padding: 15px; text-align: center; }
+        .elevation-card.completed { border: 2px solid var(--success); background: #ecfdf5; }
+        .elevation-card h3 { font-size: 16px; margin-bottom: 10px; }
+        .preview-gallery { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; min-height: 70px; background: #f9fafb; border-radius: 8px; padding: 5px; align-items: center; justify-content: center; }
+        .preview-gallery .empty-state { color: var(--text-light); font-size: 12px; }
+        .thumb-container { position: relative; width: 60px; height: 60px; }
+        .thumb-container img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+        .thumb-delete { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; cursor: pointer; }
+        .camera-btn { padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 14px; width: 100%; cursor: pointer;}
+        .hidden-input { display: none; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .checkbox-item { flex: 1 1 calc(50% - 5px); background: white; border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .checkbox-item input { width: auto; transform: scale(1.2); }
+        .checkbox-item.selected { border-color: var(--primary); background: #eff6ff; }
+        .instruction-box { background: #eff6ff; border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; color: #1e3a8a; }
+        .info-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; color: #78350f; }
+        .room-accordion { margin-bottom: 10px; }
+        .room-header { background: var(--card-bg); padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; border: 1px solid #e5e7eb; }
+        .room-header.active { border-color: var(--primary); color: var(--primary); background: #f9fafb; border-bottom-left-radius: 0; border-bottom-right-radius: 0;}
+        .room-header .arrow { transition: transform 0.2s; }
+        .room-header.active .arrow { transform: rotate(180deg); }
+        .room-body { display: none; background: var(--card-bg); padding: 15px; border: 1px solid var(--primary); border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+        .room-body.active { display: block; }
+        .room-divider { border: 0; border-top: 1px dashed #d1d5db; margin: 15px 0; }
+        .l-shaped-dimensions { display: none; background: #f9fafb; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid #e5e7eb; }
+        .l-shaped-dimensions.active { display: block; }
+        .bt-status { display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .bt-status.connected { background: #dcfce7; border-color: #86efac; }
+        .bt-indicator { width: 10px; height: 10px; border-radius: 50%; background: #ccc; margin-right: 10px; }
+        .bt-status.connected .bt-indicator { background: var(--success); box-shadow: 0 0 5px var(--success); }
+        .view { display: none; }
+        .view.active { display: block; }
+        .loading-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; flex-direction: column;}
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .survey-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e5e7eb; cursor: pointer; }
+        .survey-item:hover { border-color: var(--primary); }
+        .survey-item h3 { font-size: 16px; margin-bottom: 5px; }
+        .survey-item p { font-size: 12px; color: var(--text-light); }
+        .success-icon { font-size: 60px; color: var(--success); text-align: center; margin-bottom: 20px; }
+        .success-text { text-align: center; line-height: 1.6; color: var(--text); margin-bottom: 20px; }
+        
+        #pdf-content { display: none; padding: 20px; font-family: Arial, sans-serif; color: #333; }
+        #pdf-content h1 { color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        #pdf-content h2 { color: #1f2937; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        #pdf-content p { margin: 5px 0; font-size: 14px; }
+        #pdf-content .room-item { background: #f9fafb; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; font-weight:600;" id="loading-text">Processing...</p>
+    </div>
+
+    <div id="pdf-content">
+        <h1>Urbanfold Property Survey Report</h1>
+        <p><strong>Generated:</strong> <span id="pdf-date"></span></p>
+        <h2>Property Details</h2>
+        <p><strong>Address:</strong> <span id="pdf-address"></span></p>
+        <p><strong>Postcode:</strong> <span id="pdf-postcode"></span></p>
+        <p><strong>Client Name:</strong> <span id="pdf-name"></span></p>
+        <p><strong>Property Type:</strong> <span id="pdf-type"></span></p>
+        <h2>Extension Details</h2>
+        <p><strong>Type:</strong> <span id="pdf-ext-type"></span></p>
+        <p><strong>Dimensions:</strong> <span id="pdf-ext-dims"></span></p>
+        <p><strong>Description:</strong> <span id="pdf-ext-desc"></span></p>
+        <h2>Room Measurements</h2>
+        <div id="pdf-rooms-list"></div>
+    </div>
+
+    <div class="container">
+        <div id="view-auth" class="view active">
+            <h1>Urbanfold Survey</h1>
+            <p class="subtitle">Please log in or create an account to continue.</p>
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuthTab('login', this)">Log In</div>
+                <div class="auth-tab" onclick="switchAuthTab('signup', this)">Sign Up</div>
+            </div>
+            <div id="form-login" class="card">
+                <div class="form-group"><label>Email Address</label><input type="email" id="login-email"></div>
+                <div class="form-group"><label>Password</label><input type="password" id="login-password"></div>
+                <button class="btn" onclick="handleLogin()">Log In</button>
+            </div>
+            <div id="form-signup" class="card" style="display:none;">
+                <div class="form-group"><label>Full Name</label><input type="text" id="signup-name"></div>
+                <div class="form-group"><label>Email Address</label><input type="email" id="signup-email"></div>
+                <div class="form-group"><label>Password</label><input type="password" id="signup-password"></div>
+                <button class="btn" onclick="handleSignup()">Create Account</button>
+            </div>
+        </div>
+
+        <div id="view-dashboard" class="view">
+            <h1>My Surveys</h1>
+            <p class="subtitle">Select a survey to continue or start a new one.</p>
+            <button class="btn" onclick="startNewSurvey()">+ Start New Survey</button>
+            <div id="dashboard-list" style="margin-top: 20px;"></div>
+            <button class="btn btn-secondary" onclick="handleLogout()" style="margin-top: 20px;">Log Out</button>
+        </div>
+
+        <div id="view-details" class="view">
+            <h1>Property Details</h1>
+            <p class="subtitle">Enter the details of the property.</p>
+            <div class="card">
+                <div class="form-group"><label>Client / Surveyor Name</label><input type="text" id="detail-name"></div>
+                <div class="form-group"><label>Client Email Address</label><input type="email" id="detail-client-email" placeholder="client@example.com"></div>
+                <div class="form-group"><label>Property Address</label><input type="text" id="detail-address"></div>
+                <div class="form-group"><label>Postcode</label><input type="text" id="detail-postcode" style="text-transform: uppercase;"></div>
+                <div class="form-group"><label>Property Details / Notes</label><textarea id="detail-notes"></textarea></div>
+                <button class="btn" onclick="saveDetails()">Save & Continue</button>
+                <button class="btn btn-secondary" onclick="showView('view-dashboard')">Back to Dashboard</button>
+            </div>
+        </div>
+
+        <div id="view-type" class="view">
+            <h1>Property Type</h1>
+            <div class="card">
+                <div class="form-group">
+                    <label>Property Type</label>
+                    <select id="prop-type" onchange="updateExteriorRequirements()">
+                        <option value="">-- Select Property Type --</option>
+                        <option value="terraced">Terraced</option>
+                        <option value="end-terraced">End Terraced</option>
+                        <option value="semi-detached">Semi-Detached</option>
+                        <option value="detached">Detached</option>
+                        <option value="bungalow">Bungalow</option>
+                        <option value="flat">Flat</option>
+                    </select>
+                </div>
+                <button class="btn" id="btn-to-exterior" onclick="showView('view-exterior')" disabled>Continue to Exterior Photos</button>
+                <button class="btn btn-secondary" onclick="showView('view-details')">Back</button>
+            </div>
+        </div>
+
+        <div id="view-exterior" class="view">
+            <h1>Exterior Elevations</h1>
+            <div class="elevation-grid" id="exterior-grid"></div>
+            <button class="btn" onclick="finishExterior()">Finish Existing Exterior &rarr;</button>
+            <button class="btn btn-secondary" onclick="showView('view-type')">Back</button>
+        </div>
+
+        <div id="view-extension" class="view">
+            <h1>Extension Details</h1>
+            <div class="card">
+                <label style="font-weight: 500; margin-bottom: 10px; display: block;">Extension Position / Type</label>
+                <div class="checkbox-group" id="ext-type-group">
+                    <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="ext-type" value="Front"> Front</label>
+                    <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="ext-type" value="Rear"> Rear</label>
+                    <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="ext-type" value="Side"> Side Extension</label>
+                    <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="ext-type" value="Single"> Single Storey</label>
+                    <label class="checkbox-item" onclick="toggleCheck(this)"><input type="checkbox" name="ext-type" value="Double"> Double Storey</label>
+                    <label class="checkbox-item" onclick="toggleCheck(this)" style="flex: 1 1 100%;"><input type="checkbox" name="ext-type" value="Loft Conversion"> Loft Conversion</label>
+                </div>
+                <div class="form-group"><label>Extension Description</label><textarea id="ext-description"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Width (m)</label><input type="number" step="0.01" id="ext-width"></div>
+                    <div class="form-group"><label>Length (m)</label><input type="number" step="0.01" id="ext-length"></div>
+                </div>
+                <hr class="room-divider">
+                <label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Extension Location Photos</label>
+                <div class="preview-gallery" id="preview-extension-location"><div class="empty-state">No Photos</div></div>
+                <button class="camera-btn" onclick="triggerCamera('extension-location')">Take Photo of Location</button>
+                <input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-extension-location" onchange="handlePhoto('extension-location', this)">
+            </div>
+            <button class="btn" onclick="finishExtension()">Continue to Interior &rarr;</button>
+            <button class="btn btn-secondary" onclick="showView('view-exterior')">Back</button>
+        </div>
+
+        <div id="view-interior-sketch" class="view">
+            <h1>Interior Floor Plans</h1>
+            <div class="instruction-box">
+                <strong>Instructions:</strong><br>
+                1. Draw a clear sketch layout of the floor plan for each level.<br>
+                2. Include all rooms, doors, and windows.<br>
+                3. Draw where you want the extension positioned.<br>
+                4. Take clear photos of your sketches below.
+            </div>
+            <div class="card">
+                <div class="preview-gallery" id="preview-sketch"><div class="empty-state">No Sketch Photos</div></div>
+                <button class="camera-btn" onclick="triggerCamera('sketch')">Take Photo of Sketch</button>
+                <input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-sketch" onchange="handlePhoto('sketch', this)">
+            </div>
+            <button class="btn" onclick="finishSketches()">Continue to Room Details &rarr;</button>
+            <button class="btn btn-secondary" onclick="showView('view-extension')">Back</button>
+        </div>
+
+        <div id="view-interior-rooms" class="view">
+            <h1>Room Details</h1>
+            <div class="bt-status" id="bt-status-bar">
+                <div style="display:flex; align-items:center;"><div class="bt-indicator"></div><span id="bt-status-text">Laser Disconnected</span></div>
+                <button class="btn btn-leica" style="width:auto; padding:8px 15px; margin:0; font-size:12px;" onclick="connectBluetooth()">Connect Leica</button>
+            </div>
+            <div class="info-box"><strong>Please note:</strong> Enter information in the required fields only.</div>
+            <div id="rooms-list"></div>
+            <button class="btn" onclick="finishSurvey()" style="margin-top:20px;">Finish Survey & Submit to Cloud</button>
+            <button class="btn btn-secondary" onclick="showView('view-interior-sketch')">Back</button>
+        </div>
+
+        <div id="view-success" class="view">
+            <div class="card" style="text-align: center; padding: 40px 20px;">
+                <div class="success-icon">✓</div>
+                <h1 style="color: var(--success); margin-bottom: 20px;">Submission Successful</h1>
+                <p class="success-text">
+                    Thank you for submitting your property survey. We have successfully received your details, measurements, and photographs.<br><br>
+                    Our architectural team will now review this information to begin developing comprehensive architectural drawings and sections for your project.<br><br>
+                    We will be in touch shortly with the next steps. Should you have any immediate questions, please contact us at <strong>survey@urbanfold.uk</strong>.
+                </p>
+                <div id="admin-pdf-section" style="display: none;">
+                    <button class="btn btn-pdf" onclick="generatePDF()">Download Measurements PDF</button>
+                    <p style="font-size: 12px; color: #666; margin-top: 10px;">Admin Access Only</p>
+                </div>
+                <button class="btn btn-secondary" onclick="loadDashboard()" style="margin-top: 20px;">Return to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sb = window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
+        const ADMIN_EMAIL = 'urbanfolduk@gmail.com'; 
+        let currentUser = null;
+        let currentPropertyId = null;
+        let appState = { photos: {}, roomPhotos: {} };
+
+        function showView(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); }
+        function setLoading(show, text = "Processing...") { document.getElementById('loading').style.display = show ? 'flex' : 'none'; document.getElementById('loading-text').innerText = text; }
+
+        function switchAuthTab(tab, element) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('form-signup').style.display = tab === 'signup' ? 'block' : 'none';
+        }
+
+        async function handleSignup() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const name = document.getElementById('signup-name').value;
+            if(!email || !password) return alert("Please enter email and password");
+            setLoading(true, "Creating account...");
+            const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+            setLoading(false);
+            if (error) alert(error.message);
+            else if (data.session) { currentUser = data.user; loadDashboard(); } 
+            else { alert("Account created! Please check your email to confirm, then log in."); switchAuthTab('login', document.querySelector('.auth-tab')); document.getElementById('login-email').value = email; }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            setLoading(true, "Logging in...");
+            const { data, error } = await sb.auth.signInWithPassword({ email, password });
+            setLoading(false);
+            if (error) { alert(error.message); } 
+            else { currentUser = data.user; loadDashboard(); }
+        }
+
+        async function handleLogout() { await sb.auth.signOut(); currentUser = null; localStorage.removeItem('urbanfold_draft'); showView('view-auth'); }
+
+        sb.auth.getSession().then(({ data: { session } }) => {
+            if (session) { currentUser = session.user; loadDashboard(); }
+        });
+
+        async function loadDashboard() {
+            showView('view-dashboard');
+            const list = document.getElementById('dashboard-list');
+            list.innerHTML = '<p style="text-align:center; color:#666;">Loading surveys...</p>';
+            
+            let query = sb.from('properties').select('*').order('created_at', { ascending: false });
+            
+            if (currentUser.email !== ADMIN_EMAIL) {
+                query = query.eq('user_id', currentUser.id);
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) { list.innerHTML = '<p>Error loading surveys.</p>'; return; }
+            if (data.length === 0) { list.innerHTML = '<p style="text-align:center; color:#666;">No surveys yet. Start a new one above!</p>'; return; }
+            list.innerHTML = '';
+            
+            const isAdmin = currentUser.email === ADMIN_EMAIL;
+
+            data.forEach(prop => {
+                const item = document.createElement('div');
+                item.className = 'survey-item';
+                item.onclick = () => resumeSurvey(prop.id);
+                item.innerHTML = `<h3>${prop.address || 'Untitled Property'}</h3><p>${prop.postcode || 'No postcode'} &bull; ${new Date(prop.created_at).toLocaleDateString()}</p>`;
+                
+                if (isAdmin) {
+                    const dlBtn = document.createElement('button');
+                    dlBtn.className = 'btn btn-download';
+                    dlBtn.innerText = ' Download Survey Pack (ZIP)';
+                    dlBtn.onclick = (e) => { e.stopPropagation(); downloadSurveyPack(prop.id, prop.address); };
+                    item.appendChild(dlBtn);
+                }
+                list.appendChild(item);
+            });
+        }
+
+        async function downloadSurveyPack(propertyId, address) {
+            setLoading(true, "Gathering data and photos... This may take a minute.");
+            try {
+                const zip = new JSZip();
+                const folder = zip.folder(address.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+
+                const { data: prop } = await sb.from('properties').select('*').eq('id', propertyId).single();
+                let textData = `URBANFOLD SURVEY REPORT\n=======================\nAddress: ${prop.address}\nPostcode: ${prop.postcode}\nClient: ${prop.surveyor_name}\nEmail: ${prop.client_email}\nType: ${prop.property_type}\nNotes: ${prop.notes}\n\n`;
+
+                const { data: rooms } = await sb.from('rooms').select('*').eq('property_id', propertyId);
+                textData += "ROOM MEASUREMENTS\n-------------------\n";
+                if (rooms) {
+                    for (const room of rooms) {
+                        textData += `\nRoom: ${room.room_name}\nShape: ${room.shape}\nDimensions: ${JSON.stringify(room.dimensions)}\nNotes: ${room.additional_measurements}\n`;
+                        const { data: rPhotos } = await sb.from('room_photos').select('*').eq('room_id', room.id);
+                        if (rPhotos) {
+                            for (let i = 0; i < rPhotos.length; i++) {
+                                const res = await fetch(rPhotos[i].photo_url);
+                                const arrayBuffer = await res.arrayBuffer();
+                                folder.file(`rooms/${room.room_name.replace(/[^a-z0-9]/gi, '_')}_${i}.jpg`, arrayBuffer);
+                            }
+                        }
+                    }
+                }
+
+                const { data: exts } = await sb.from('extensions').select('*').eq('property_id', propertyId);
+                if (exts && exts.length > 0) {
+                    textData += `\nEXTENSION DETAILS\n-----------------\nTypes: ${exts[0].extension_types.join(', ')}\nWidth: ${exts[0].width}m\nLength: ${exts[0].length}m\nDesc: ${exts[0].description}\n`;
+                }
+
+                const { data: ePhotos } = await sb.from('exterior_photos').select('*').eq('property_id', propertyId);
+                if (ePhotos) {
+                    for (let i = 0; i < ePhotos.length; i++) {
+                        const res = await fetch(ePhotos[i].photo_url);
+                        const arrayBuffer = await res.arrayBuffer();
+                        folder.file(`exterior/${ePhotos[i].elevation_type}_${i}.jpg`, arrayBuffer);
+                    }
+                }
+                const { data: sPhotos } = await sb.from('sketch_photos').select('*').eq('property_id', propertyId);
+                if (sPhotos) {
+                    for (let i = 0; i < sPhotos.length; i++) {
+                        const res = await fetch(sPhotos[i].photo_url);
+                        const arrayBuffer = await res.arrayBuffer();
+                        folder.file(`sketches/sketch_${i}.jpg`, arrayBuffer);
+                    }
+                }
+
+                folder.file("survey_data.txt", textData);
+                const content = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `Urbanfold_${address.replace(/[^a-z0-9]/gi, '_')}.zip`;
+                link.click();
+                setLoading(false);
+            } catch (err) {
+                setLoading(false);
+                alert("Error downloading pack: " + err.message);
+            }
+        }
+
+        function startNewSurvey() {
+            if (confirm("This will clear your current draft. Are you sure?")) {
+                localStorage.removeItem('urbanfold_draft');
+                currentPropertyId = null;
+                appState = { photos: {}, roomPhotos: {} };
+                document.getElementById('detail-name').value = '';
+                document.getElementById('detail-client-email').value = '';
+                document.getElementById('detail-address').value = '';
+                document.getElementById('detail-postcode').value = '';
+                document.getElementById('detail-notes').value = '';
+                document.getElementById('prop-type').value = '';
+                document.getElementById('ext-description').value = '';
+                document.getElementById('ext-width').value = '';
+                document.getElementById('ext-length').value = '';
+                document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = false; cb.parentElement.classList.remove('selected'); });
+                roomList.forEach(room => {
+                    const rid = roomId(room);
+                    const shapeEl = document.getElementById(`shape-${rid}`);
+                    if (shapeEl) { shapeEl.value = 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); }
+                    const setVal = (id) => { const el = document.getElementById(id); if (el) el.value = ''; };
+                    setVal(`len-${rid}`); setVal(`wid-${rid}`); setVal(`hei-${rid}`);
+                    setVal(`len1-${rid}`); setVal(`wid1-${rid}`); setVal(`len2-${rid}`); setVal(`wid2-${rid}`);
+                    setVal(`len3-${rid}`); setVal(`wid3-${rid}`); setVal(`add-${rid}`);
+                });
+                showView('view-details');
+            }
+        }
+
+        async function resumeSurvey(id) { currentPropertyId = id; showView('view-details'); }
+        function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
+
+        function saveDraft() {
+            const draft = { propertyId: currentPropertyId, view: document.querySelector('.view.active') ? document.querySelector('.view.active').id : 'view-auth', details: { name: document.getElementById('detail-name').value, clientEmail: document.getElementById('detail-client-email').value, address: document.getElementById('detail-address').value, postcode: document.getElementById('detail-postcode').value, notes: document.getElementById('detail-notes').value }, propType: document.getElementById('prop-type').value, extension: { types: Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value), description: document.getElementById('ext-description').value, width: document.getElementById('ext-width').value, length: document.getElementById('ext-length').value }, rooms: {}, appState: appState };
+            roomList.forEach(room => { const rid = roomId(room); draft.rooms[rid] = { shape: document.getElementById(`shape-${rid}`).value, len: document.getElementById(`len-${rid}`).value, wid: document.getElementById(`wid-${rid}`).value, hei: document.getElementById(`hei-${rid}`).value, len1: document.getElementById(`len1-${rid}`).value, wid1: document.getElementById(`wid1-${rid}`).value, len2: document.getElementById(`len2-${rid}`).value, wid2: document.getElementById(`wid2-${rid}`).value, len3: document.getElementById(`len3-${rid}`).value, wid3: document.getElementById(`wid3-${rid}`).value, add: document.getElementById(`add-${rid}`).value }; });
+            try { localStorage.setItem('urbanfold_draft', JSON.stringify(draft)); } catch (e) { console.warn("LocalStorage quota exceeded."); }
+        }
+
+        function loadDraft() {
+            const saved = localStorage.getItem('urbanfold_draft'); if (!saved) return false;
+            try { const draft = JSON.parse(saved); if (!draft) return false; currentPropertyId = draft.propertyId || null; appState = draft.appState || { photos: {}, roomPhotos: {} }; if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } if (draft.propType) { document.getElementById('prop-type').value = draft.propType; updateExteriorRequirements(); } if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width || ''; document.getElementById('ext-length').value = draft.extension.length || ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
+        }
+
+        document.addEventListener('input', debounce(saveDraft, 500)); document.addEventListener('change', debounce(saveDraft, 500));
+
+        async function saveDetails() {
+            const address = document.getElementById('detail-address').value; const postcode = document.getElementById('detail-postcode').value;
+            if (!address || !postcode) return alert("Address and Postcode are required.");
+            setLoading(true, "Saving property..."); let data, error;
+            const payload = { surveyor_name: document.getElementById('detail-name').value, client_email: document.getElementById('detail-client-email').value, address: address, postcode: postcode, notes: document.getElementById('detail-notes').value };
+            if (currentPropertyId) { const res = await sb.from('properties').update(payload).eq('id', currentPropertyId).select().single(); data = res.data; error = res.error; } else { payload.user_id = currentUser.id; const res = await sb.from('properties').insert([payload]).select().single(); data = res.data; error = res.error; if (!error) currentPropertyId = data.id; }
+            setLoading(false); if (error) alert("Error saving property: " + error.message); else { saveDraft(); showView('view-type'); }
+        }
+
+        const elevationsMap = { 'terraced': ['front', 'rear', 'roof'], 'end-terraced': ['front', 'rear', 'side', 'roof'], 'semi-detached': ['front', 'rear', 'side', 'roof'], 'detached': ['front', 'rear', 'left-side', 'right-side', 'roof'], 'bungalow': ['front', 'rear', 'left-side', 'right-side', 'roof'], 'flat': ['front', 'rear', 'side'] };
+        function formatElevationName(key) { return key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '); }
+        function updateExteriorRequirements() { const type = document.getElementById('prop-type').value; document.getElementById('btn-to-exterior').disabled = !type; if (type) renderExteriorGrid(type); }
+        function renderExteriorGrid(type) { const grid = document.getElementById('exterior-grid'); grid.innerHTML = ''; elevationsMap[type].forEach(elev => { if (!appState.photos[elev]) appState.photos[elev] = []; const card = document.createElement('div'); card.className = 'elevation-card'; card.id = `card-${elev}`; card.innerHTML = `<h3>${formatElevationName(elev)}</h3><div class="preview-gallery" id="preview-${elev}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${elev}')">Take Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${elev}" onchange="handlePhoto('${elev}', this)">`; grid.appendChild(card); renderGallery(elev); }); }
+        function triggerCamera(id) { document.getElementById(`input-${id}`).click(); }
+
+        async function compressImage(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = (event) => { const img = new Image(); img.src = event.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = 1200; const scaleSize = MAX_WIDTH / img.width; canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }; }); }
+
+        function handlePhoto(id, inputElement) { Array.from(inputElement.files).forEach(async (file) => { const compressedDataUrl = await compressImage(file); const isRoom = roomList.includes(id); if (isRoom) { if (!appState.roomPhotos[id]) appState.roomPhotos[id] = []; appState.roomPhotos[id].push(compressedDataUrl); } else { if (!appState.photos[id]) appState.photos[id] = []; appState.photos[id].push(compressedDataUrl); } renderGallery(id); saveDraft(); }); inputElement.value = ''; }
+        function renderGallery(id) { const gallery = document.getElementById(`preview-${id}`); if (!gallery) return; const isRoom = roomList.includes(id); const photos = isRoom ? (appState.roomPhotos[id] || []) : (appState.photos[id] || []); if (photos.length === 0) { gallery.innerHTML = '<div class="empty-state">No Photos</div>'; const c = document.getElementById(`card-${id}`); if(c) c.classList.remove('completed'); } else { gallery.innerHTML = ''; photos.forEach((src, index) => { const container = document.createElement('div'); container.className = 'thumb-container'; container.innerHTML = `<img src="${src}"><button class="thumb-delete" onclick="deletePhoto('${id}', ${index})">×</button>`; gallery.appendChild(container); }); const c = document.getElementById(`card-${id}`); if(c) c.classList.add('completed'); } }
+        function deletePhoto(id, index) { const isRoom = roomList.includes(id); if (isRoom) appState.roomPhotos[id].splice(index, 1); else appState.photos[id].splice(index, 1); renderGallery(id); saveDraft(); }
+        function finishExterior() { showView('view-extension'); }
+        function toggleCheck(element) { const cb = element.querySelector('input'); setTimeout(() => { element.classList.toggle('selected', cb.checked); saveDraft(); }, 10); }
+        function finishExtension() { showView('view-interior-sketch'); }
+        function finishSketches() { showView('view-interior-rooms'); }
+
+        const roomList = ['Porch', 'Living Room', 'Kitchen', 'Conservatory', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3', 'Bedroom 4', 'Bathroom 1', 'Bathroom 2', 'Ensuite', 'Loft Room', 'Other'];
+        function roomId(name) { return name.replace(/\s+/g, '-'); }
+        function toggleLShapedDimensions(selectElement) { const rid = selectElement.id.replace('shape-', ''); document.getElementById(`l-shaped-${rid}`).classList.toggle('active', selectElement.value === 'L-shaped room'); document.getElementById(`standard-${rid}`).style.display = selectElement.value === 'L-shaped room' ? 'none' : 'block'; }
+
+        function renderRoomsList() { const list = document.getElementById('rooms-list'); list.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); if (!appState.roomPhotos[room]) appState.roomPhotos[room] = []; const acc = document.createElement('div'); acc.className = 'room-accordion'; acc.innerHTML = `<div class="room-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');"><span>${room}</span><span class="arrow">▼</span></div><div class="room-body"><div class="form-group"><label>Room Shape</label><select id="shape-${rid}" onchange="toggleLShapedDimensions(this)"><option value="Square/Rectangular">Square/Rectangular</option><option value="L-shaped room">L-shaped room</option></select></div><div id="standard-${rid}" class="form-row"><div class="form-group"><label>Length (m)</label><input type="number" step="0.01" id="len-${rid}"></div><div class="form-group"><label>Width (m)</label><input type="number" step="0.01" id="wid-${rid}"></div><div class="form-group"><label>Height (m)</label><input type="number" step="0.01" id="hei-${rid}"></div></div><div id="l-shaped-${rid}" class="l-shaped-dimensions"><h4>L-Shaped Dimensions</h4><div class="form-row"><div class="form-group"><label>Length 1</label><input type="number" step="0.01" id="len1-${rid}"></div><div class="form-group"><label>Width 1</label><input type="number" step="0.01" id="wid1-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 2</label><input type="number" step="0.01" id="len2-${rid}"></div><div class="form-group"><label>Width 2</label><input type="number" step="0.01" id="wid2-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 3</label><input type="number" step="0.01" id="len3-${rid}"></div><div class="form-group"><label>Width 3</label><input type="number" step="0.01" id="wid3-${rid}"></div></div><div class="form-group"><label>Height</label><input type="number" step="0.01" id="hei-${rid}"></div></div><div class="form-group"><label>Additional Measurements</label><textarea id="add-${rid}"></textarea></div><hr class="room-divider"><label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Room Photos</label><div class="preview-gallery" id="preview-${room}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${room}')">Take Room Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${room}" onchange="handlePhoto('${room}', this)"></div>`; list.appendChild(acc); }); }
+
+        async function connectBluetooth() { if (!navigator.bluetooth) return alert("Web Bluetooth not supported in this browser."); try { const device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'DISTO' }] }); document.getElementById('bt-status-bar').classList.add('connected'); document.getElementById('bt-status-text').innerText = "Leica DISTO Connected"; alert("Connected! Ensure device is in Data Transfer mode."); } catch (e) { alert("Connection failed: " + e.message); } }
+
+        function generatePDF() { document.getElementById('pdf-date').innerText = new Date().toLocaleDateString(); document.getElementById('pdf-address').innerText = document.getElementById('detail-address').value; document.getElementById('pdf-postcode').innerText = document.getElementById('detail-postcode').value; document.getElementById('pdf-name').innerText = document.getElementById('detail-name').value; document.getElementById('pdf-type').innerText = document.getElementById('prop-type').value; const extTypes = Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value).join(', '); document.getElementById('pdf-ext-type').innerText = extTypes || 'None'; document.getElementById('pdf-ext-dims').innerText = `${document.getElementById('ext-width').value}m x ${document.getElementById('ext-length').value}m`; document.getElementById('pdf-ext-desc').innerText = document.getElementById('ext-description').value; const roomsContainer = document.getElementById('pdf-rooms-list'); roomsContainer.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); const shape = document.getElementById(`shape-${rid}`).value; let dimsText = ''; if (shape === 'L-shaped room') { dimsText = `L-Shape: (${document.getElementById(`len1-${rid}`).value}x${document.getElementById(`wid1-${rid}`).value}), (${document.getElementById(`len2-${rid}`).value}x${document.getElementById(`wid2-${rid}`).value}), (${document.getElementById(`len3-${rid}`).value}x${document.getElementById(`wid3-${rid}`).value}), H: ${document.getElementById(`hei-${rid}`).value}m`; } else { dimsText = `L: ${document.getElementById(`len-${rid}`).value}m, W: ${document.getElementById(`wid-${rid}`).value}m, H: ${document.getElementById(`hei-${rid}`).value}m`; } if (document.getElementById(`len-${rid}`).value || document.getElementById(`len1-${rid}`).value) { roomsContainer.innerHTML += `<div class="room-item"><strong>${room}</strong> (${shape})<br>${dimsText}</div>`; } }); const element = document.getElementById('pdf-content'); element.style.display = 'block'; const opt = { margin: 1, filename: `Urbanfold_Survey_${document.getElementById('detail-postcode').value}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; }); }
+
+        async function finishSurvey() {
+            if (!currentPropertyId) return alert("Property not saved. Please go back to details.");
+            setLoading(true, "Uploading photos and saving data... This may take a minute.");
+            try {
+                await sb.from('properties').update({ property_type: document.getElementById('prop-type').value }).eq('id', currentPropertyId);
+                for (const [elev, photos] of Object.entries(appState.photos)) { for (let i = 0; i < photos.length; i++) { const fileName = `${currentPropertyId}/${elev}_${Date.now()}_${i}.jpg`; const { error } = await sb.storage.from('exterior-photos').upload(fileName, dataURLtoFile(photos[i], fileName), { contentType: 'image/jpeg' }); if (!error) { const { data: urlData } = sb.storage.from('exterior-photos').getPublicUrl(fileName); await sb.from('exterior_photos').insert({ property_id: currentPropertyId, elevation_type: elev, photo_url: urlData.publicUrl }); } } }
+                const extTypes = Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value); await sb.from('extensions').insert([{ property_id: currentPropertyId, extension_types: extTypes, description: document.getElementById('ext-description').value, width: document.getElementById('ext-width').value, length: document.getElementById('ext-length').value }]);
+                const extPhotos = appState.photos['extension-location'] || []; for (let i = 0; i < extPhotos.length; i++) { const fileName = `${currentPropertyId}/ext_loc_${Date.now()}_${i}.jpg`; await sb.storage.from('exterior-photos').upload(fileName, dataURLtoFile(extPhotos[i], fileName), { contentType: 'image/jpeg' }); const { data: urlData } = sb.storage.from('exterior-photos').getPublicUrl(fileName); await sb.from('extension_photos').insert({ property_id: currentPropertyId, photo_url: urlData.publicUrl }); }
+                const sketchPhotos = appState.photos['sketch'] || []; for (let i = 0; i < sketchPhotos.length; i++) { const fileName = `${currentPropertyId}/sketch_${Date.now()}_${i}.jpg`; await sb.storage.from('sketch-photos').upload(fileName, dataURLtoFile(sketchPhotos[i], fileName), { contentType: 'image/jpeg' }); const { data: urlData } = sb.storage.from('sketch-photos').getPublicUrl(fileName); await sb.from('sketch_photos').insert({ property_id: currentPropertyId, photo_url: urlData.publicUrl }); }
+                for (const room of roomList) { const rid = roomId(room); const shape = document.getElementById(`shape-${rid}`).value; let dims = {}; if (shape === 'L-shaped room') { dims = { l1: document.getElementById(`len1-${rid}`).value, w1: document.getElementById(`wid1-${rid}`).value, l2: document.getElementById(`len2-${rid}`).value, w2: document.getElementById(`wid2-${rid}`).value, l3: document.getElementById(`len3-${rid}`).value, w3: document.getElementById(`wid3-${rid}`).value, h: document.getElementById(`hei-${rid}`).value }; } else { dims = { l: document.getElementById(`len-${rid}`).value, w: document.getElementById(`wid-${rid}`).value, h: document.getElementById(`hei-${rid}`).value }; } const { data: roomData, error: roomError } = await sb.from('rooms').insert([{ property_id: currentPropertyId, room_name: room, shape: shape, dimensions: dims, additional_measurements: document.getElementById(`add-${rid}`).value }]).select().single(); if (!roomError && roomData) { const roomPhotos = appState.roomPhotos[room] || []; for (let i = 0; i < roomPhotos.length; i++) { const fileName = `${currentPropertyId}/${rid}_${Date.now()}_${i}.jpg`; await sb.storage.from('room-photos').upload(fileName, dataURLtoFile(roomPhotos[i], fileName), { contentType: 'image/jpeg' }); const { data: urlData } = sb.storage.from('room-photos').getPublicUrl(fileName); await sb.from('room_photos').insert({ room_id: roomData.id, photo_url: urlData.publicUrl }); } } }
+                setLoading(false); localStorage.removeItem('urbanfold_draft'); 
+                const zapierUrl = 'https://hooks.zapier.com/hooks/catch/29202657/410hu8q/'; const clientEmail = document.getElementById('detail-client-email').value; const address = document.getElementById('detail-address').value; const name = document.getElementById('detail-name').value;
+                fetch(zapierUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_email: clientEmail, address: address, surveyor_name: name, property_id: currentPropertyId }) }).catch(err => console.error('Zapier error:', err));
+                showView('view-success');
+                if (currentUser && currentUser.email === ADMIN_EMAIL) { document.getElementById('admin-pdf-section').style.display = 'block'; } else { document.getElementById('admin-pdf-section').style.display = 'none'; }
+            } catch (err) { setLoading(false); alert("Error submitting survey: " + err.message); }
+        }
+
+        function dataURLtoFile(dataurl, filename) { let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n); while(n--){ u8arr[n] = bstr.charCodeAt(n); } return new File([u8arr], filename, {type:mime}); }
+        document.addEventListener('DOMContentLoaded', () => { renderRoomsList(); });
+    </script>
+</body>
+</html>
