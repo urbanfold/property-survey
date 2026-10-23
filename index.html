@@ -131,6 +131,8 @@
                     </div>
                 </div>
                 <button class="btn" onclick="handleLogin()">Log In</button>
+                <button type="button" onclick="openForgotPassword()" style="display:block; margin:16px auto 0; border:0; background:none; color:var(--primary); text-decoration:underline; font-size:14px; cursor:pointer;">Forgot password?</button>
+                <p id="login-notice" role="status" aria-live="polite" style="margin-top:12px; line-height:1.5;"></p>
             </div>
             <div id="form-signup" class="card" style="display:none;">
                 <div class="form-group"><label>Full Name</label><input type="text" id="signup-name"></div>
@@ -149,6 +151,41 @@
                 </label>
                 <button class="btn" onclick="handleSignup()">Create Account</button>
             </div>
+        </div>
+
+        <div id="view-forgot-password" class="view">
+            <h1>Reset your password</h1>
+            <p class="subtitle">Enter your account email address and we’ll send you a reset link.</p>
+            <form class="card" onsubmit="event.preventDefault(); requestPasswordReset();">
+                <div class="form-group"><label for="reset-email">Email Address</label><input type="email" id="reset-email" autocomplete="email" required></div>
+                <button type="submit" class="btn" id="send-reset-email">Send reset email</button>
+                <p id="reset-email-status" role="status" aria-live="polite" style="margin-top:15px; line-height:1.5;"></p>
+                <button type="button" class="btn btn-secondary" onclick="returnToLogin()">Back to Log In</button>
+            </form>
+        </div>
+
+        <div id="view-reset-password" class="view">
+            <h1>Choose a new password</h1>
+            <p class="subtitle">Use at least 8 characters. Your account’s password rules also apply.</p>
+            <form class="card" onsubmit="event.preventDefault(); updateRecoveredPassword();">
+                <div class="form-group">
+                    <label for="reset-password">New Password</label>
+                    <div class="password-field">
+                        <input type="password" id="reset-password" autocomplete="new-password" minlength="8" required>
+                        <button type="button" class="password-toggle" id="reset-password-toggle" aria-controls="reset-password" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('reset-password')">Show</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="reset-confirm-password">Confirm New Password</label>
+                    <div class="password-field">
+                        <input type="password" id="reset-confirm-password" autocomplete="new-password" minlength="8" required>
+                        <button type="button" class="password-toggle" id="reset-confirm-password-toggle" aria-controls="reset-confirm-password" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('reset-confirm-password')">Show</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn" id="update-password">Save new password</button>
+                <p id="reset-password-status" role="status" aria-live="polite" style="margin-top:15px; line-height:1.5;"></p>
+                <button type="button" class="btn btn-secondary" onclick="returnToLogin()">Back to Log In</button>
+            </form>
         </div>
 
         <div id="view-dashboard" class="view">

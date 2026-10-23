@@ -93,6 +93,16 @@ After SQL and Pages setup, verify with one clearly labelled test survey:
 Only call the migration complete after those live checks. The automated fixtures
 never contact real accounts, send email, or establish live Supabase readiness.
 
+## Password recovery
+
+The login screen's **Forgot password?** action requests a Supabase recovery email.
+It redirects to the same registered website root, opens a new-password form, checks
+confirmation, and honours backend password policies. Recovery links must be valid;
+expired links offer a fresh email request. Refreshing a valid recovery tab retains
+its reset screen. After updating, password fields are cleared and the user returns
+to login. Reset emails use Supabase Auth, not the survey Zapier webhook. Actual
+email delivery requires the project's existing Supabase email sender configuration.
+
 ## Development and checks
 
 Use the existing checkout; cloud tasks are already isolated. Do not create a Git

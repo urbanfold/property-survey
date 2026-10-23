@@ -1,3 +1,14 @@
+        // Capture recovery intent before the auth client consumes and clears the URL fragment.
+        const authReturn = new URLSearchParams(location.hash.slice(1));
+        const recoveryLinkRequested = authReturn.get('type') === 'recovery';
+        const recoveryLinkError = authReturn.has('error') || authReturn.has('error_code');
+        // A reset email may return to a tab that already has the app open.
+        window.addEventListener('hashchange', () => {
+            const params = new URLSearchParams(location.hash.slice(1));
+            if (params.get('type') === 'recovery' || params.has('error') || params.has('error_code')) location.reload();
+        });
+        let passwordRecoveryActive = false;
+        let recoveryUserId = null;
         const sb = window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
         const ADMIN_EMAIL = 'urbanfolduk@gmail.com';
         let currentUser = null;
@@ -6,7 +17,7 @@
         let activeCloudVersion = null;
         let appState = { photos: {}, roomPhotos: {} };
 
-        function showView(viewId) { if (viewId !== 'view-success') saveDraft(); document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); const tools = document.getElementById('survey-tools'); if (tools) tools.hidden = !currentPropertyId || ['view-auth', 'view-dashboard', 'view-success'].includes(viewId); const source = document.getElementById('survey-source'); if (source) source.hidden = ['view-auth', 'view-dashboard', 'view-success'].includes(viewId); }
+        function showView(viewId) { if (viewId !== 'view-success') saveDraft(); document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); const tools = document.getElementById('survey-tools'); if (tools) tools.hidden = !currentPropertyId || ['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(viewId); const source = document.getElementById('survey-source'); if (source) source.hidden = ['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(viewId); }
         function setLoading(show, text = "Processing...") { document.getElementById('loading').style.display = show ? 'flex' : 'none'; document.getElementById('loading-text').innerText = text; }
 
         function setPasswordVisibility(id, visible) {
@@ -22,7 +33,7 @@
         }
 
         function hidePasswords() {
-            for (const id of ['login-password', 'signup-password']) setPasswordVisibility(id, false);
+            for (const id of ['login-password', 'signup-password', 'reset-password', 'reset-confirm-password']) setPasswordVisibility(id, false);
         }
 
         function switchAuthTab(tab, element) {
@@ -67,6 +78,7 @@
             try {
                 const data = await requireResult(sb.auth.signInWithPassword({ email, password }), 'Log in');
                 currentUser = data.user;
+                clearRecoveryState();
                 document.getElementById('login-password').value = '';
                 await loadDashboard();
             } catch (error) { alert(error.message); }
@@ -84,12 +96,125 @@
             } catch (error) { alert(error.message); }
         }
 
+        function activatePasswordRecovery(session) {
+            if (!session?.user) return;
+            passwordRecoveryActive = true;
+            recoveryUserId = session.user.id;
+            currentUser = session.user;
+            currentPropertyId = null;
+            try { sessionStorage.setItem('urbanfold_recovery_user', recoveryUserId); } catch (_) {}
+            hidePasswords();
+            document.getElementById('reset-password-status').textContent = '';
+            showView('view-reset-password');
+        }
+
+        function clearRecoveryState() {
+            passwordRecoveryActive = false;
+            recoveryUserId = null;
+            try { sessionStorage.removeItem('urbanfold_recovery_user'); } catch (_) {}
+            document.getElementById('reset-password').value = '';
+            document.getElementById('reset-confirm-password').value = '';
+            hidePasswords();
+        }
+
+        function openForgotPassword() {
+            hidePasswords();
+            document.getElementById('reset-email').value = document.getElementById('login-email').value.trim();
+            document.getElementById('reset-email-status').textContent = '';
+            showView('view-forgot-password');
+        }
+
+        async function returnToLogin() {
+            if (passwordRecoveryActive) {
+                try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
+                currentUser = null;
+                currentPropertyId = null;
+            }
+            clearRecoveryState();
+            showView('view-auth');
+            switchAuthTab('login', document.querySelector('.auth-tab'));
+        }
+
+        let sendingResetEmail = false;
+        async function requestPasswordReset() {
+            if (sendingResetEmail) return;
+            const input = document.getElementById('reset-email');
+            if (!input.value.trim() || !input.checkValidity()) return input.reportValidity();
+            sendingResetEmail = true;
+            const button = document.getElementById('send-reset-email');
+            const status = document.getElementById('reset-email-status');
+            button.disabled = true;
+            status.textContent = 'Requesting your reset email...';
+            try {
+                await requireResult(sb.auth.resetPasswordForEmail(input.value.trim(), {
+                    redirectTo: new URL('.', location.href).href
+                }), 'Request password reset');
+                status.textContent = 'If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.';
+            } catch (error) { status.textContent = 'Unable to request the reset email: ' + error.message; }
+            finally { sendingResetEmail = false; button.disabled = false; }
+        }
+
+        let updatingPassword = false;
+        async function updateRecoveredPassword() {
+            if (updatingPassword) return;
+            const status = document.getElementById('reset-password-status');
+            if (!passwordRecoveryActive || !recoveryUserId) {
+                status.textContent = 'Open a valid reset link from your email first. If it expired, request a new one.';
+                return;
+            }
+            const password = document.getElementById('reset-password').value;
+            const confirmation = document.getElementById('reset-confirm-password').value;
+            if (password.length < 8) { status.textContent = 'Use at least 8 characters.'; return; }
+            if (password !== confirmation) { status.textContent = 'The two passwords do not match.'; return; }
+            updatingPassword = true;
+            const button = document.getElementById('update-password');
+            button.disabled = true;
+            hidePasswords();
+            status.textContent = 'Updating your password...';
+            try {
+                await requireResult(sb.auth.updateUser({ password }), 'Update password');
+                // Password update succeeded independently of a subsequent sign-out request.
+                try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
+                currentUser = null;
+                currentPropertyId = null;
+                clearRecoveryState();
+                showView('view-auth');
+                switchAuthTab('login', document.querySelector('.auth-tab'));
+                document.getElementById('login-password').value = '';
+                document.getElementById('login-notice').textContent = 'Your password has been updated. Log in using your new password.';
+            } catch (error) { status.textContent = 'Unable to update your password: ' + error.message + ' If the link expired, request another reset email.'; }
+            finally { updatingPassword = false; button.disabled = false; }
+        }
+
         async function initializeApp() {
             renderRoomsList();
             try {
                 const data = await requireResult(sb.auth.getSession(), 'Restore session');
+                if (recoveryLinkError) {
+                    clearRecoveryState();
+                    openForgotPassword();
+                    document.getElementById('reset-email-status').textContent = 'This email link is invalid or has expired. Request a new reset email.';
+                    return;
+                }
+                let rememberedUser = null;
+                try { rememberedUser = sessionStorage.getItem('urbanfold_recovery_user'); } catch (_) {}
+                if (rememberedUser && rememberedUser !== data.session?.user?.id) clearRecoveryState();
+                if (data.session && (passwordRecoveryActive || recoveryLinkRequested || rememberedUser === data.session.user.id)) {
+                    activatePasswordRecovery(data.session);
+                    return;
+                }
+                if (recoveryLinkRequested && !data.session) {
+                    openForgotPassword();
+                    document.getElementById('reset-email-status').textContent = 'This reset link could not be verified. Request a new reset email.';
+                    return;
+                }
                 if (data.session) { currentUser = data.session.user; await loadDashboard(); }
-            } catch (error) { alert('Unable to restore your login: ' + error.message); }
+            } catch (error) {
+                if (recoveryLinkRequested || recoveryLinkError) {
+                    openForgotPassword();
+                    document.getElementById('reset-email-status').textContent = 'This reset link could not be verified. Request a new reset email.';
+                } else alert('Unable to restore your login: ' + error.message);
+            }
         }
 
         async function loadDashboard() {
@@ -401,7 +526,7 @@
         function saveDraft() {
             // Login fields and an empty dashboard must not overwrite a recoverable draft.
             const activeView = document.querySelector('.view.active')?.id;
-            if (!draftWritesEnabled || !currentPropertyId || !currentUser || ['view-auth', 'view-dashboard', 'view-success'].includes(activeView)) return;
+            if (!draftWritesEnabled || !currentPropertyId || !currentUser || ['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(activeView)) return;
             const draft = captureSurvey();
             try {
                 draft.userId = currentUser.id;
@@ -420,7 +545,7 @@
 
         const enableDraftWrites = () => {
             const active = document.querySelector('.view.active')?.id;
-            if (currentPropertyId && !['view-auth', 'view-dashboard', 'view-success'].includes(active)) draftWritesEnabled = true;
+            if (currentPropertyId && !['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(active)) draftWritesEnabled = true;
         };
         document.addEventListener('input', enableDraftWrites);
         document.addEventListener('change', enableDraftWrites);
@@ -823,4 +948,10 @@
         }
 
         function dataURLtoFile(dataurl, filename) { let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n); while(n--){ u8arr[n] = bstr.charCodeAt(n); } return new File([u8arr], filename, {type:mime}); }
+        // The callback does not await auth operations, avoiding the auth client's lock.
+        if (typeof sb.auth.onAuthStateChange === 'function') {
+            sb.auth.onAuthStateChange((event, session) => {
+                if (event === 'PASSWORD_RECOVERY') activatePasswordRecovery(session);
+            });
+        }
         initializeApp();

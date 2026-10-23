@@ -34,6 +34,9 @@ class Fixture:
         self.objects = {}
         self.emails = 0
         self.signups = []
+        self.recoveries = []
+        self.password_updates = []
+        self.password_update_error = False
         self.public_reads = 0
         self.signatures = 0
         self.unexpected = []
@@ -64,6 +67,9 @@ class Fixture:
             self.unexpected.append(req.url)
             return route.abort()
         if u.path.startswith('/auth/v1/'):
+            if u.path.endswith('/recover'):
+                self.recoveries.append({'body':req.post_data_json,'query':parse_qs(u.query)})
+                return reply({})
             if u.path.endswith('/signup'):
                 self.signups.append(req.post_data_json)
                 return reply({'user':{**self.user,'email':req.post_data_json['email'],'user_metadata':req.post_data_json.get('data',{})},'session':None})
@@ -71,6 +77,10 @@ class Fixture:
                 return reply({'access_token':self.token,'token_type':'bearer','expires_in':3600,'expires_at':int(time.time())+3600,
                               'refresh_token':'fixture-refresh-token','user':self.user})
             if u.path.endswith('/user'):
+                if req.method == 'PUT':
+                    if self.password_update_error:
+                        return reply({'message':'Password does not meet account policy','code':'weak_password'},400)
+                    self.password_updates.append(req.post_data_json)
                 return reply(self.user)
             if u.path.endswith('/logout'):
                 return reply({})
@@ -355,6 +365,50 @@ def main():
         assert not errors,errors
         assert not fixture.unexpected,fixture.unexpected
         print('PASS verified submission, one intercepted email, real PDF and ZIP containing all four photo categories')
+        # Password recovery uses the real Supabase client's recovery event and token handling.
+        recovery_context=browser.new_context()
+        recovery_context.route('**/*',fixture.route)
+        recovery=recovery_context.new_page()
+        recovery.on('pageerror',lambda error:errors.append(str(error)))
+        recovery.goto(ORIGIN)
+        recovery.get_by_role('button',name='Forgot password?',exact=True).click()
+        recovery.locator('#reset-email').fill('person@example.test')
+        recovery.get_by_role('button',name='Send reset email',exact=True).click()
+        expect(recovery.locator('#reset-email-status')).to_contain_text('If an account exists')
+        assert fixture.recoveries[-1]['body']['email']=='person@example.test'
+        assert fixture.recoveries[-1]['query']['redirect_to']==[ORIGIN]
+        assert fixture.emails==1  # Recovery uses Supabase email, never the survey webhook.
+        recovery.goto(ORIGIN+'#error=access_denied&error_code=otp_expired&error_description=Expired')
+        expect(recovery.locator('#view-forgot-password')).to_be_visible()
+        expect(recovery.locator('#reset-email-status')).to_contain_text('expired')
+        assert not fixture.password_updates
+        fragment='#access_token='+fixture.token+'&refresh_token=fixture-refresh-token&expires_in=3600&token_type=bearer&type=recovery'
+        recovery.goto(ORIGIN+fragment)
+        expect(recovery.locator('#view-reset-password')).to_be_visible(timeout=15000)
+        assert not recovery.locator('#view-dashboard').is_visible()
+        recovery.reload()
+        expect(recovery.locator('#view-reset-password')).to_be_visible(timeout=15000)
+        recovery.locator('#reset-password').fill('new-fixture-password')
+        recovery.locator('#reset-confirm-password').fill('different-fixture-password')
+        recovery.get_by_role('button',name='Save new password',exact=True).click()
+        expect(recovery.locator('#reset-password-status')).to_contain_text('do not match')
+        assert not fixture.password_updates
+        recovery.locator('#reset-confirm-password').fill('new-fixture-password')
+        fixture.password_update_error=True
+        recovery.get_by_role('button',name='Save new password',exact=True).click()
+        expect(recovery.locator('#reset-password-status')).to_contain_text('account policy')
+        expect(recovery.locator('#view-reset-password')).to_be_visible()
+        fixture.password_update_error=False
+        recovery.get_by_role('button',name='Save new password',exact=True).click()
+        expect(recovery.locator('#view-auth')).to_be_visible(timeout=15000)
+        expect(recovery.locator('#login-notice')).to_contain_text('password has been updated')
+        assert fixture.password_updates[-1]['password']=='new-fixture-password'
+        assert recovery.locator('#reset-password').input_value()==''
+        recovery.reload()
+        expect(recovery.locator('#view-auth')).to_be_visible()
+        assert not errors, errors
+        assert not fixture.unexpected,fixture.unexpected
+        print('PASS reset email redirect, expired link, recovery-session refresh, mismatch and backend policy checks, password update, and return to login')
         browser.close()
 
 if __name__=='__main__':main()
