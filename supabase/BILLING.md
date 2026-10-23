@@ -96,6 +96,11 @@ In Stripe's sandbox, add a webhook/event destination for this URL:
 https://arnzqizcycesukplmvuc.supabase.co/functions/v1/stripe-survey-webhook
 ```
 
+Payment methods are managed in Stripe’s Dashboard settings. The Checkout request
+does not send the removed `payment_method_types` parameter. Keep cards enabled
+in the sandbox and live account as appropriate. Delayed payment methods grant
+credit only after Stripe confirms payment; pending sessions grant nothing.
+
 Send these events for your account (not connected-account events):
 
 - `checkout.session.completed`

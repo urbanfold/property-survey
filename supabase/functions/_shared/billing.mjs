@@ -53,7 +53,8 @@ export async function createCheckout(request, { env, fetcher = fetch }) {
     const success = config.app.href + '?payment=success&checkout_session_id={CHECKOUT_SESSION_ID}';
     const params = new URLSearchParams({ mode: 'payment', client_reference_id: user.id,
       success_url: success, cancel_url: config.app.href + '?payment=cancelled',
-      'payment_method_types[0]': 'card', 'line_items[0][quantity]': '1',
+      // Payment methods are managed in Stripe Dashboard (current Checkout API).
+      'line_items[0][quantity]': '1',
       'line_items[0][price_data][currency]': 'gbp', 'line_items[0][price_data][unit_amount]': '600',
       'line_items[0][price_data][product_data][name]': 'One additional Urbanfold property survey',
       'metadata[product]': PRODUCT, 'metadata[user_id]': user.id,
@@ -61,7 +62,8 @@ export async function createCheckout(request, { env, fetcher = fetch }) {
     if (user.email) params.set('customer_email', user.email);
     const stripeResponse = await fetcher('https://api.stripe.com/v1/checkout/sessions', { method: 'POST', headers: {
       Authorization: 'Bearer ' + config.key, 'Content-Type': 'application/x-www-form-urlencoded',
-      'Idempotency-Key': 'urbanfold-survey-' + user.id + '-' + body.attempt_id }, body: params.toString() });
+      // Version the changed request to avoid replaying the previous rejected payload.
+      'Idempotency-Key': 'urbanfold-survey-v2-' + user.id + '-' + body.attempt_id }, body: params.toString() });
     const session = await parsed(stripeResponse);
     if (!stripeResponse.ok || !SESSION.test(session?.id || '')) return json({ error: 'Checkout could not be opened. Please return to My Surveys and try again.' }, 502, cors);
     const destination = new URL(session.url);

@@ -42,11 +42,12 @@ test('checkout authenticates the buyer, checks allowance, and fixes price/curren
       assert.equal(body.get('line_items[0][price_data][unit_amount]'), '600');
       assert.equal(body.get('line_items[0][price_data][currency]'), 'gbp');
       assert.equal(body.get('mode'), 'payment');
+      assert(![...body.keys()].some(key => key.startsWith('payment_method_types')));
       assert.equal(body.get('line_items[0][quantity]'), '1');
       assert.equal(body.get('client_reference_id'), USER);
       assert.equal(body.get('metadata[user_id]'), USER);
       assert.match(body.get('success_url'), /^https:\/\/urbanfold.github.io\/property-survey\//);
-      assert.equal(options.headers['Idempotency-Key'], `urbanfold-survey-${USER}-${ATTEMPT}`);
+      assert.equal(options.headers['Idempotency-Key'], `urbanfold-survey-v2-${USER}-${ATTEMPT}`);
       return response({ id: 'cs_test_Fixture', url: 'https://checkout.stripe.com/c/pay/cs_test_Fixture' });
     } });
   assert.equal(result.status, 200);
@@ -128,4 +129,29 @@ test('self-contained dashboard deployments register their handlers and default t
     if (previous === undefined) delete globalThis.Deno;
     else globalThis.Deno = previous;
   }
+});
+
+
+test('updated Checkout request avoids a cached legacy rejection while repeated retries reuse one session', async () => {
+  const oldKey = `urbanfold-survey-${USER}-${ATTEMPT}`;
+  const cache = new Map([[oldKey, { error: { param: 'payment_method_types' } }]]);
+  let creations = 0;
+  const fetcher = async (url, options) => {
+    if (url.endsWith('/auth/v1/user')) return response({ id: USER });
+    if (url.includes('get_survey_allowance')) return response({ can_create: false });
+    const key = options.headers['Idempotency-Key'];
+    const params = new URLSearchParams(options.body);
+    if ([...params.keys()].some(name => name.startsWith('payment_method_types'))) return response({ error: 'Unsupported parameter' }, 400);
+    if (cache.has(key)) return response(cache.get(key), key === oldKey ? 400 : 200);
+    creations++;
+    const session = { id: 'cs_test_Updated', url: 'https://checkout.stripe.com/c/pay/cs_test_Updated' };
+    cache.set(key, session);
+    return response(session);
+  };
+  const first = await createCheckout(checkout(), { env, fetcher });
+  const retry = await createCheckout(checkout(), { env, fetcher });
+  assert.equal(first.status, 200);
+  assert.equal(retry.status, 200);
+  assert.deepEqual(await first.json(), await retry.json());
+  assert.equal(creations, 1);
 });
