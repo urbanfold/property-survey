@@ -110,3 +110,22 @@ test('refunds and disputes revoke the payment intent without deleting survey dat
     assert.equal(calls.length, 1);
   }
 });
+
+test('self-contained dashboard deployments register their handlers and default to disabled payments', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const previous = globalThis.Deno;
+  try {
+    for (const name of ['create-survey-checkout', 'stripe-survey-webhook']) {
+      let registered;
+      globalThis.Deno = { env: { get: () => undefined }, serve: handler => { registered = handler; } };
+      const source = await readFile(new URL('../supabase/dashboard/' + name + '.ts', import.meta.url), 'utf8');
+      await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
+      assert.equal(typeof registered, 'function');
+      const result = await registered(new Request('https://backend.test/functions/v1/' + name, { method: 'POST', body: '{}' }));
+      assert.equal(result.status, 503);
+    }
+  } finally {
+    if (previous === undefined) delete globalThis.Deno;
+    else globalThis.Deno = previous;
+  }
+});

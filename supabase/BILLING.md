@@ -43,7 +43,22 @@ survey buyers will need to wait for Stripe activation.
 
 ## 2. Deploy both Supabase functions
 
-Use the Supabase CLI from a checkout of this repository. These commands deploy
+For dashboard-only setup, use **Edge Functions → Deploy a new function → Via
+Editor**. Name the first function `create-survey-checkout`, replace the entire
+`index.ts` template with [dashboard/create-survey-checkout.ts](dashboard/create-survey-checkout.ts),
+and deploy. Repeat for `stripe-survey-webhook` using
+[dashboard/stripe-survey-webhook.ts](dashboard/stripe-survey-webhook.ts).
+Both files are self-contained and contain no secret keys. In each function's
+settings, disable **Verify JWT with legacy secret** (wording may vary) and save.
+The application handlers perform their own authentication checks as described
+below; Stripe cannot send a Supabase JWT.
+
+The dashboard files are generated copies of the same tested shared handler.
+After changing that source, run `python scripts/build_dashboard_functions.py`
+and redeploy both functions. CI checks that these copies stay current. GitHub
+Pages never publishes these files. Dashboard deployments must be updated manually.
+
+Alternatively, use the Supabase CLI from a checkout of this repository. These commands deploy
 server code, including its shared module; they do not publish private keys in
 GitHub Pages:
 

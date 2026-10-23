@@ -29,6 +29,8 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Check application JavaScript
         run: node --input-type=module --check < app.js
+      - name: Check dashboard payment deployment files
+        run: python scripts/build_dashboard_functions.py --check
       - name: Test payment validation and Stripe signatures
         run: node --test tests/test_billing_handlers.mjs
       - name: Test recovery and failure handling
