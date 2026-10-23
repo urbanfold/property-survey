@@ -2,6 +2,7 @@
 -- Never run this fixture against the live Supabase project.
 create role anon nologin;
 create role authenticated nologin;
+create role service_role nologin bypassrls;
 create schema auth;
 create schema storage;
 create function auth.jwt() returns jsonb language sql stable as $$

@@ -29,12 +29,18 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Check application JavaScript
         run: node --input-type=module --check < app.js
+      - name: Test payment validation and Stripe signatures
+        run: node --test tests/test_billing_handlers.mjs
       - name: Test recovery and failure handling
         run: python tests/test_survey_flow.py
       - name: Test real browser client, private photos, and exports
         run: python tests/test_browser_integration.py
+      - name: Test client allowance and review on mobile
+        run: python tests/test_client_allowance.py
       - name: Test database policies with isolated PostgreSQL
         run: python tests/test_database_policies.py
+      - name: Test survey purchase enforcement with isolated PostgreSQL
+        run: python tests/test_survey_purchases.py
 
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

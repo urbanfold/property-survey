@@ -134,7 +134,7 @@ class Fixture:
         params=parse_qs(u.query)
         def matches(row):
             for key,values in params.items():
-                if key in ['select','order','limit','offset']:continue
+                if key in ['select','order','limit','offset','on_conflict']:continue
                 value=values[0]
                 if value.startswith('eq.') and str(row.get(key)) != value[3:]:return False
                 if value.startswith('in.(') and str(row.get(key)) not in value[4:-1].split(','):return False
@@ -150,7 +150,10 @@ class Fixture:
                     for field in ['width','length']:
                         if row.get(field) is not None:row[field]=float(row[field])
                 if table=='properties' and row.get('user_id')!=USER_ID:return reply({'code':'42501','message':'owner mismatch'},403)
-                self.tables[table].append(row)
+                existing=next((item for item in self.tables[table] if item['id']==row['id']),None)
+                if existing is not None and 'merge-duplicates' in req.headers.get('prefer',''):
+                    existing.update(row)
+                else:self.tables[table].append(row)
         elif req.method == 'PATCH':
             for row in rows:row.update(req.post_data_json)
         elif req.method == 'DELETE':
@@ -318,29 +321,43 @@ def main():
         assert len(fixture.tables['exterior_photos'])==1
         print('PASS deleting and replacing a saved photo updates cloud records')
 
+        page.evaluate("showView('view-interior-rooms')")
+        page.get_by_role('button',name='Review survey',exact=True).click()
+        expect(page.locator('#view-review')).to_be_visible()
+        expect(page.locator('#survey-review-content')).to_contain_text('TEST - automated fixture')
+        expect(page.locator('#survey-review-content')).to_contain_text('measurements recorded')
+        assert fixture.emails==0
+        page.get_by_role('button',name='Back to Room Details',exact=True).click()
+        expect(page.locator('#view-interior-rooms')).to_be_visible()
+        print('PASS review shows saved sections and completeness, supports corrections, and sends no email before confirmation')
+
         # Invalid responses and denied writes must never generate success/email.
         fixture.fail=('rooms','PATCH')
         page.evaluate("showView('view-interior-rooms')")
-        page.get_by_role('button',name='Finish Survey & Submit to Cloud',exact=True).click()
+        page.evaluate('openSurveyReview()')
+        page.get_by_role('button',name='Confirm & submit survey',exact=True).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
         assert not page.locator('#view-success').is_visible()
         assert fixture.emails==0
         assert page.evaluate("!!localStorage.getItem('urbanfold_draft')")
         fixture.fail=('properties','FINALIZE')
-        page.get_by_role('button',name='Finish Survey & Submit to Cloud',exact=True).click()
+        page.evaluate('openSurveyReview()')
+        page.get_by_role('button',name='Confirm & submit survey',exact=True).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
         assert not page.locator('#view-success').is_visible()
         assert fixture.emails==0
         assert page.evaluate("!!localStorage.getItem('urbanfold_draft')")
         fixture.fail=None
         fixture.corrupt_reads=True
-        page.get_by_role('button',name='Finish Survey & Submit to Cloud',exact=True).click()
+        page.evaluate('openSurveyReview()')
+        page.get_by_role('button',name='Confirm & submit survey',exact=True).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
         assert not page.locator('#view-success').is_visible()
         assert fixture.emails==0
         fixture.corrupt_reads=False
         print('PASS actual-client permission errors and mismatching readback suppress success and email')
-        page.get_by_role('button',name='Finish Survey & Submit to Cloud',exact=True).click()
+        page.evaluate('openSurveyReview()')
+        page.get_by_role('button',name='Confirm & submit survey',exact=True).click()
         expect(page.locator('#view-success')).to_be_visible(timeout=15000)
         expect(page.locator('#notification-status')).to_contain_text('accepted')
         assert fixture.emails==1

@@ -13,6 +13,7 @@
         const ADMIN_EMAIL = 'urbanfolduk@gmail.com';
         let currentUser = null;
         let currentPropertyId = null;
+        let newPropertyId = null;
         let draftWritesEnabled = true;
         let activeCloudVersion = null;
         let appState = { photos: {}, roomPhotos: {} };
@@ -258,6 +259,7 @@
             if (!currentUser) { showView('view-auth'); return; }
             saveDraft();
             showView('view-dashboard');
+            handlePaymentReturn();
             const list = document.getElementById('dashboard-list');
             list.textContent = 'Loading surveys...';
             try {
@@ -344,11 +346,101 @@
             finally { setLoading(false); }
         }
 
-        function startNewSurvey() {
+        async function readSurveyAllowance() {
+            const result = await sb.rpc('get_survey_allowance');
+            if (!result.error) return result.data;
+            if (result.error.code === 'PGRST202') {
+                // Keep first-time clients working during the one-time SQL rollout.
+                // The database migration is still required for enforceable limits.
+                const rows = await requireResult(sb.from('properties').select('id').eq('user_id', currentUser.id).limit(1), 'Check existing survey');
+                return { can_create: !rows?.length, paid_credits: 0, setup_pending: true };
+            }
+            throw new Error('Your survey allowance could not be checked.');
+        }
+
+        function showAdditionalSurveyDialog() {
+            document.getElementById('checkout-status').textContent = '';
+            const dialog = document.getElementById('additional-survey-dialog');
+            if (!dialog.open) dialog.showModal();
+        }
+        function closeAdditionalSurveyDialog() { document.getElementById('additional-survey-dialog').close(); }
+
+        let openingCheckout = false;
+        async function buyAdditionalSurvey() {
+            if (openingCheckout || !currentUser) return;
+            openingCheckout = true;
+            const button = document.getElementById('buy-additional-survey');
+            const status = document.getElementById('checkout-status');
+            button.disabled = true;
+            status.textContent = 'Opening secure Stripe Checkout...';
+            try {
+                const key = `urbanfold_checkout_attempt_${currentUser.id}`;
+                let attempt;
+                try { attempt = sessionStorage.getItem(key); } catch (_) {}
+                attempt ||= crypto.randomUUID();
+                try { sessionStorage.setItem(key, attempt); } catch (_) {}
+                const { data, error } = await sb.functions.invoke('create-survey-checkout', { body: { attempt_id: attempt } });
+                if (error) {
+                    let message = 'Payments are not available yet. Please contact survey@urbanfold.uk.';
+                    try { message = (await error.context.json()).error || message; } catch (_) {}
+                    throw new Error(message);
+                }
+                const destination = new URL(data?.url);
+                if (destination.protocol !== 'https:' || destination.hostname !== 'checkout.stripe.com') throw new Error('The secure checkout link could not be verified.');
+                location.assign(destination.href);
+            } catch (error) { status.textContent = error.message; }
+            finally { openingCheckout = false; button.disabled = false; }
+        }
+
+        let checkingPurchasedCredit = false;
+        async function checkPurchasedCredit() {
+            if (!currentUser || checkingPurchasedCredit) return;
+            checkingPurchasedCredit = true;
+            const notice = document.getElementById('payment-notice');
+            const button = document.getElementById('refresh-survey-credit');
+            notice.hidden = false;
+            button.hidden = false;
+            button.disabled = true;
+            notice.textContent = 'Checking verified payment confirmation...';
+            try {
+                const allowance = await requireResult(sb.rpc('get_survey_allowance'), 'Check payment confirmation');
+                if (allowance.paid_credits > 0) {
+                    notice.textContent = 'Payment confirmed. Your additional survey credit is ready—choose Start New Survey.';
+                    button.hidden = true;
+                } else notice.textContent = 'No additional survey credit has been confirmed yet. Payment confirmation can take a short time. Check again before paying again; contact survey@urbanfold.uk if needed.';
+            } catch (_) { notice.textContent = 'Payment confirmation could not be checked. Your existing surveys remain available. Please try again or contact survey@urbanfold.uk.'; }
+            finally { checkingPurchasedCredit = false; button.disabled = false; }
+        }
+
+        function handlePaymentReturn() {
+            const params = new URLSearchParams(location.search);
+            const state = params.get('payment');
+            if (!['success','cancelled'].includes(state)) return;
+            const notice = document.getElementById('payment-notice');
+            notice.hidden = false;
+            try { sessionStorage.removeItem(`urbanfold_checkout_attempt_${currentUser.id}`); } catch (_) {}
+            if (state === 'cancelled') notice.textContent = 'Checkout was cancelled. Your existing surveys are still available.';
+            else if ((params.get('checkout_session_id') || '').startsWith('cs_test_')) {
+                notice.textContent = 'Stripe test checkout returned. Test payments do not unlock live survey credits.';
+            } else void checkPurchasedCredit();
+            // Query parameters are navigation messages only, never proof of payment.
+            params.delete('payment'); params.delete('checkout_session_id');
+            history.replaceState(null, '', location.pathname + (params.size ? '?' + params : '') + location.hash);
+        }
+
+        async function startNewSurvey() {
             if (photoJobs.size || savingProgress || submittingSurvey || savingDetails) return alert('Please wait for the current operation to finish.');
-            if (confirm("This will clear your current draft. Are you sure?")) {
+            if (!currentUser) return alert('Please sign in first.');
+            if (currentUser.email !== ADMIN_EMAIL) {
+                try {
+                    const allowance = await readSurveyAllowance();
+                    if (!allowance?.can_create) { showAdditionalSurveyDialog(); return; }
+                } catch (error) { alert('Your survey allowance could not be checked. Please try again or contact survey@urbanfold.uk.'); return; }
+            }
+            {
                 localStorage.removeItem('urbanfold_draft');
                 currentPropertyId = null;
+                newPropertyId = crypto.randomUUID();
                 draftWritesEnabled = true;
                 activeCloudVersion = null;
                 document.getElementById('survey-source')?.remove();
@@ -606,12 +698,16 @@
                     notes: document.getElementById('detail-notes').value };
                 const data = await requireResult(currentPropertyId
                     ? sb.from('properties').update(payload).eq('id', currentPropertyId).select().single()
-                    : sb.from('properties').insert({ ...payload, user_id: currentUser.id }).select().single(), 'Save property details');
+                    : sb.from('properties').upsert({ ...payload, id: newPropertyId ||= crypto.randomUUID(), user_id: currentUser.id }, { onConflict: 'id' }).select().single(), 'Save property details');
                 if (!data?.id) throw new Error('The saved property could not be verified.');
                 currentPropertyId = data.id;
                 saveDraft();
                 showView('view-type');
-            } catch (error) { alert(error.message); }
+            } catch (error) {
+                if (error.message.includes('URBANFOLD_SURVEY_LIMIT')) showAdditionalSurveyDialog();
+                else if (error.message.includes('URBANFOLD_ADDRESS_LOCKED')) alert('This submitted property address is locked. Contact survey@urbanfold.uk for a correction, or start an additional survey for a different property.');
+                else alert(error.message);
+            }
             finally { savingDetails = false; setLoading(false); }
         }
 
@@ -943,6 +1039,42 @@
             } catch (error) {
                 status.textContent = 'Your survey is saved, but the email request could not be confirmed. Do not resubmit just to retry email; check the inbox and automation history.';
             } finally { clearTimeout(timeout); }
+        }
+
+        async function openSurveyReview() {
+            try { await Promise.all(Array.from(photoJobs)); } catch (_) { return alert('Please add the photo again before reviewing.'); }
+            const survey = captureSurvey();
+            const container = document.getElementById('survey-review-content');
+            container.replaceChildren();
+            const card = (title, lines, editView) => {
+                const section = document.createElement('div');
+                section.className = 'card review-card';
+                const heading = document.createElement('h2'); heading.textContent = title; section.appendChild(heading);
+                for (const text of lines) { const line = document.createElement('p'); line.textContent = text; section.appendChild(line); }
+                const edit = document.createElement('button'); edit.className = 'btn btn-secondary'; edit.textContent = 'Edit ' + title.toLowerCase(); edit.onclick = () => showView(editView); section.appendChild(edit);
+                container.appendChild(section);
+            };
+            card('Property', [survey.details.address || 'Address not entered', survey.details.postcode || 'Postcode not entered',
+                `Name: ${survey.details.name || 'Not entered'}`, `Email: ${survey.details.clientEmail || 'Not entered'}`,
+                `Type: ${survey.propType.replace(/-/g,' ') || 'Not selected'}`], 'view-details');
+            card('Exterior photos', (elevationsMap[survey.propType] || []).map(id =>
+                `${formatElevationName(id)}: ${(survey.appState.photos[id] || []).length} photo(s)`), 'view-exterior');
+            card('Extension', [survey.extension.types.join(', ') || 'No extension types selected',
+                survey.extension.description || 'No description entered',
+                `Width: ${survey.extension.width ? 'Recorded' : 'Not entered'}; length: ${survey.extension.length ? 'Recorded' : 'Not entered'}`,
+                `Location photos: ${(survey.appState.photos['extension-location'] || []).length}`], 'view-extension');
+            card('Floor plans', [`Sketch photos: ${(survey.appState.photos.sketch || []).length}`], 'view-interior-sketch');
+            const rooms = readableRooms(survey.rooms, survey.appState.roomPhotos);
+            const lines = rooms.map(room => {
+                const id = roomId(room.name);
+                const values = survey.rooms[id];
+                const keys = values.shape === 'L-shaped room' ? ['len1','wid1','len2','wid2','len3','wid3','hei'] : ['len','wid','hei'];
+                const count = keys.filter(key => values[key] !== '' && values[key] != null).length;
+                const summary = `${room.name}: ${count} of ${keys.length} measurements recorded; ${(survey.appState.roomPhotos[room.name] || []).length} photo(s)`;
+                return currentUser?.email === ADMIN_EMAIL ? summary + '\n' + room.measurements.join(' · ') : summary;
+            });
+            card('Rooms', lines.length ? lines : ['No room measurements, notes or photos entered. Go back if you intended to include rooms.'], 'view-interior-rooms');
+            showView('view-review');
         }
 
         async function finishSurvey() {

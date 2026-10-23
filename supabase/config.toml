@@ -1,0 +1,7 @@
+# Checkout validates the user's bearer token through Supabase Auth itself.
+# Stripe cannot supply a Supabase JWT: its endpoint verifies Stripe's signature.
+[functions.create-survey-checkout]
+verify_jwt = false
+
+[functions.stripe-survey-webhook]
+verify_jwt = false

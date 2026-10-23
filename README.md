@@ -122,9 +122,12 @@ and Docker for the PostgreSQL policy tests. Do not run test SQL fixtures in Supa
 python3 -m pip install -r requirements-dev.txt
 python3 -m playwright install chromium
 node --input-type=module --check < app.js
+node --test tests/test_billing_handlers.mjs
 python3 tests/test_survey_flow.py
 python3 tests/test_browser_integration.py
+python3 tests/test_client_allowance.py
 python3 tests/test_database_policies.py
+python3 tests/test_survey_purchases.py
 ```
 
 `CHROMIUM_PATH` may select a local browser. Otherwise the tests use system Chromium
@@ -151,3 +154,17 @@ PostgreSQL 17 container with no network or persistent volume, then remove it.
 - Leica measurement transfer was never implemented: selecting a Bluetooth device
   did not read measurements. The UI now says manual entry instead of claiming a
   working laser connection. Hardware integration is a separate feature.
+
+## Additional surveys and final review
+
+Clients receive one free survey per account; additional properties cost £6 each
+as one-off purchases. Existing surveys are preserved and the existing admin
+identity remains unrestricted. The final review shows clients completion counts
+and photo counts before confirmation; detailed measurements remain in their
+entry forms and admin reports. This discourages casual reuse, but cannot stop
+new email accounts or copying information a client can already enter/read.
+
+The website alone does not enforce the allowance or accept payments. Apply the
+second SQL migration and configure/deploy the payment functions following
+[supabase/BILLING.md](supabase/BILLING.md). Payments default to disabled; no live
+Stripe account, secrets, webhook or Supabase deployment is created by a Git push.
