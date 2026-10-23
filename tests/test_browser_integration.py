@@ -372,12 +372,19 @@ def main():
         recovery.on('pageerror',lambda error:errors.append(str(error)))
         recovery.goto(ORIGIN)
         recovery.get_by_role('button',name='Forgot password?',exact=True).click()
-        recovery.locator('#reset-email').fill('person@example.test')
+        recovery.locator('#reset-email').fill(fixture.user['email'])
         recovery.get_by_role('button',name='Send reset email',exact=True).click()
         expect(recovery.locator('#reset-email-status')).to_contain_text('If an account exists')
-        assert fixture.recoveries[-1]['body']['email']=='person@example.test'
+        assert fixture.recoveries[-1]['body']['email']==fixture.user['email']
         assert fixture.recoveries[-1]['query']['redirect_to']==[ORIGIN]
         assert fixture.emails==1  # Recovery uses Supabase email, never the survey webhook.
+        expect(recovery.locator('#reset-request-title')).to_have_text('Check your email')
+        expect(recovery.locator('#reset-email-form')).to_be_hidden()
+        expect(recovery.locator('#reset-tab-guidance')).to_contain_text('You can close this tab')
+        waiting_for_email=recovery
+        recovery=recovery_context.new_page()
+        recovery.on('pageerror',lambda error:errors.append(str(error)))
+
         recovery.goto(ORIGIN+'#error=access_denied&error_code=otp_expired&error_description=Expired')
         expect(recovery.locator('#view-forgot-password')).to_be_visible()
         expect(recovery.locator('#reset-email-status')).to_contain_text('expired')
@@ -403,6 +410,11 @@ def main():
         expect(recovery.locator('#view-auth')).to_be_visible(timeout=15000)
         expect(recovery.locator('#login-notice')).to_contain_text('password has been updated')
         assert fixture.password_updates[-1]['password']=='new-fixture-password'
+        expect(waiting_for_email.locator('#reset-request-title')).to_have_text('Password updated')
+        expect(waiting_for_email.locator('#reset-email-form')).to_be_hidden()
+        expect(waiting_for_email.locator('#request-another-reset')).to_be_hidden()
+        print('PASS original tab becomes an email confirmation and acknowledges completion in the recovery tab')
+
         assert recovery.locator('#reset-password').input_value()==''
         recovery.reload()
         expect(recovery.locator('#view-auth')).to_be_visible()

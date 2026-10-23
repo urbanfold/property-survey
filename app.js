@@ -117,10 +117,40 @@
             hidePasswords();
         }
 
+        let requestedResetEmail = null;
+        let recoveryMessages = null;
+        try {
+            recoveryMessages = new BroadcastChannel('urbanfold-password-recovery');
+            recoveryMessages.onmessage = event => {
+                if (event.data?.type !== 'password-updated' || !requestedResetEmail ||
+                    event.data.email !== requestedResetEmail ||
+                    !document.getElementById('view-forgot-password').classList.contains('active')) return;
+                document.getElementById('reset-request-title').textContent = 'Password updated';
+                document.getElementById('reset-request-description').textContent = 'Your password was updated in the other tab.';
+                document.getElementById('reset-email-form').hidden = true;
+                document.getElementById('reset-email-sent').hidden = false;
+                document.getElementById('request-another-reset').hidden = true;
+                document.getElementById('reset-tab-guidance').textContent = 'You can close this tab and continue on the login page opened from your email.';
+                document.getElementById('reset-email-status').textContent = 'Your password has been updated. No further reset is needed here.';
+            };
+        } catch (_) { /* Confirmation instructions still work in browsers without cross-tab messaging. */ }
+
+        function showResetEmailRequest() {
+            requestedResetEmail = null;
+            document.getElementById('reset-tab-guidance').textContent = 'Open the link in your email and choose your new password on the page it opens. You can close this tab—it’s only the email-request confirmation.';
+            document.getElementById('reset-email-form').hidden = false;
+            document.getElementById('reset-email-sent').hidden = true;
+            document.getElementById('request-another-reset').hidden = false;
+            document.getElementById('reset-request-title').textContent = 'Forgot your password?';
+            document.getElementById('reset-request-description').textContent = 'Enter your account email address and we’ll send you a reset link.';
+            document.getElementById('reset-email-status').textContent = '';
+        }
+
         function openForgotPassword() {
             hidePasswords();
             document.getElementById('reset-email').value = document.getElementById('login-email').value.trim();
-            document.getElementById('reset-email-status').textContent = '';
+            requestedResetEmail = null;
+            showResetEmailRequest();
             showView('view-forgot-password');
         }
 
@@ -140,16 +170,22 @@
             if (sendingResetEmail) return;
             const input = document.getElementById('reset-email');
             if (!input.value.trim() || !input.checkValidity()) return input.reportValidity();
+            const requestedEmail = input.value.trim();
             sendingResetEmail = true;
             const button = document.getElementById('send-reset-email');
             const status = document.getElementById('reset-email-status');
             button.disabled = true;
             status.textContent = 'Requesting your reset email...';
             try {
-                await requireResult(sb.auth.resetPasswordForEmail(input.value.trim(), {
+                await requireResult(sb.auth.resetPasswordForEmail(requestedEmail, {
                     redirectTo: new URL('.', location.href).href
                 }), 'Request password reset');
                 status.textContent = 'If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.';
+                requestedResetEmail = requestedEmail.toLowerCase();
+                document.getElementById('reset-email-form').hidden = true;
+                document.getElementById('reset-email-sent').hidden = false;
+                document.getElementById('reset-request-title').textContent = 'Check your email';
+                document.getElementById('reset-request-description').textContent = 'Continue using the link in your email, not on this page.';
             } catch (error) { status.textContent = 'Unable to request the reset email: ' + error.message; }
             finally { sendingResetEmail = false; button.disabled = false; }
         }
@@ -172,7 +208,8 @@
             hidePasswords();
             status.textContent = 'Updating your password...';
             try {
-                await requireResult(sb.auth.updateUser({ password }), 'Update password');
+                const updated = await requireResult(sb.auth.updateUser({ password }), 'Update password');
+                try { recoveryMessages?.postMessage({ type: 'password-updated', email: (updated.user?.email || currentUser?.email || '').toLowerCase() }); } catch (_) {}
                 // Password update succeeded independently of a subsequent sign-out request.
                 try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
                 currentUser = null;
@@ -951,7 +988,7 @@
         // The callback does not await auth operations, avoiding the auth client's lock.
         if (typeof sb.auth.onAuthStateChange === 'function') {
             sb.auth.onAuthStateChange((event, session) => {
-                if (event === 'PASSWORD_RECOVERY') activatePasswordRecovery(session);
+                if (event === 'PASSWORD_RECOVERY' && (recoveryLinkRequested || passwordRecoveryActive)) activatePasswordRecovery(session);
             });
         }
         initializeApp();

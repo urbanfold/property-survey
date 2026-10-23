@@ -9,6 +9,7 @@
     <script src="vendor/jszip.min.js"></script>
     <script src="vendor/supabase.js"></script>
     <style>
+        [hidden] { display: none !important; }
         :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; --text-light: #6b7280; --success: #10b981; --danger: #ef4444; --leica-red: #e30613; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; padding-bottom: 40px; }
@@ -154,19 +155,25 @@
         </div>
 
         <div id="view-forgot-password" class="view">
-            <h1>Reset your password</h1>
-            <p class="subtitle">Enter your account email address and we’ll send you a reset link.</p>
-            <form class="card" onsubmit="event.preventDefault(); requestPasswordReset();">
-                <div class="form-group"><label for="reset-email">Email Address</label><input type="email" id="reset-email" autocomplete="email" required></div>
-                <button type="submit" class="btn" id="send-reset-email">Send reset email</button>
+            <h1 id="reset-request-title">Forgot your password?</h1>
+            <p class="subtitle" id="reset-request-description">Enter your account email address and we’ll send you a reset link.</p>
+            <div class="card">
+                <form id="reset-email-form" onsubmit="event.preventDefault(); requestPasswordReset();">
+                    <div class="form-group"><label for="reset-email">Email Address</label><input type="email" id="reset-email" autocomplete="email" required></div>
+                    <button type="submit" class="btn" id="send-reset-email">Send reset email</button>
+                </form>
+                <div id="reset-email-sent" hidden>
+                    <p id="reset-tab-guidance" style="line-height:1.6;">Open the link in your email and choose your new password on the page it opens. You can close this tab—it’s only the email-request confirmation.</p>
+                    <button type="button" class="btn btn-secondary" id="request-another-reset" onclick="showResetEmailRequest()">Use another email or request a new link</button>
+                </div>
                 <p id="reset-email-status" role="status" aria-live="polite" style="margin-top:15px; line-height:1.5;"></p>
                 <button type="button" class="btn btn-secondary" onclick="returnToLogin()">Back to Log In</button>
-            </form>
+            </div>
         </div>
 
         <div id="view-reset-password" class="view">
             <h1>Choose a new password</h1>
-            <p class="subtitle">Use at least 8 characters. Your account’s password rules also apply.</p>
+            <p class="subtitle">Set your new password here. You can close the original email-request tab. Use at least 8 characters; your account’s password rules also apply.</p>
             <form class="card" onsubmit="event.preventDefault(); updateRecoveredPassword();">
                 <div class="form-group">
                     <label for="reset-password">New Password</label>

@@ -97,7 +97,9 @@ never contact real accounts, send email, or establish live Supabase readiness.
 
 The login screen's **Forgot password?** action requests a Supabase recovery email.
 It redirects to the same registered website root, opens a new-password form, checks
-confirmation, and honours backend password policies. Recovery links must be valid;
+confirmation, and honours backend password policies. The request page becomes an
+email confirmation; only the tab opened from the recovery link shows password
+fields. In the same browser, the original tab acknowledges a completed reset. Recovery links must be valid;
 expired links offer a fresh email request. Refreshing a valid recovery tab retains
 its reset screen. After updating, password fields are cleared and the user returns
 to login. Reset emails use Supabase Auth, not the survey Zapier webhook. Actual
