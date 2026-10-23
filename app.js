@@ -21,11 +21,14 @@
             const password = document.getElementById('signup-password').value;
             const name = document.getElementById('signup-name').value.trim();
             const telephone = document.getElementById('signup-telephone').value.trim();
+            const newsletterSubscribed = document.getElementById('signup-newsletter').checked;
             if (!email || !password) return alert('Please enter email and password.');
             setLoading(true, 'Creating account...');
             try {
                 const data = await requireResult(sb.auth.signUp({ email, password,
-                    options: { data: { full_name: name, telephone }, emailRedirectTo: new URL('.', location.href).href }
+                    options: { data: { full_name: name, telephone, newsletter_subscribed: newsletterSubscribed,
+                        newsletter_consent_at: newsletterSubscribed ? new Date().toISOString() : null,
+                        newsletter_consent_version: newsletterSubscribed ? '2026-10-23' : null }, emailRedirectTo: new URL('.', location.href).href }
                 }), 'Create account');
                 if (data.session) { currentUser = data.user; await loadDashboard(); }
                 else {

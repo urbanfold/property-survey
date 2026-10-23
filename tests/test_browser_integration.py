@@ -173,11 +173,24 @@ def main():
         page.locator('#signup-name').fill('Test signup')
         page.locator('#signup-email').fill('signup@example.test')
         page.locator('#signup-telephone').fill('  +44 7700 900123  ')
+        expect(page.locator('#signup-newsletter')).not_to_be_checked()
         page.locator('#signup-password').fill('fixture-password-not-a-real-account')
         page.get_by_role('button',name='Create Account',exact=True).click()
         expect(page.locator('#form-login')).to_be_visible()
         assert fixture.signups[0]['data']['telephone']=='+44 7700 900123'
         assert fixture.signups[0]['data']['full_name']=='Test signup'
+        assert fixture.signups[0]['data']['newsletter_subscribed'] is False
+        assert fixture.signups[0]['data']['newsletter_consent_at'] is None
+        page.get_by_text('Sign Up',exact=True).click()
+        page.locator('#signup-newsletter').check()
+        page.get_by_role('button',name='Create Account',exact=True).click()
+        expect(page.locator('#form-login')).to_be_visible()
+        assert fixture.signups[1]['data']['newsletter_subscribed'] is True
+        assert fixture.signups[1]['data']['newsletter_consent_at']
+        assert fixture.signups[1]['data']['newsletter_consent_version']=='2026-10-23'
+        assert fixture.emails==0
+        print('PASS newsletter opt-in is optional, unchecked by default, and recorded separately from survey emails')
+
         print('PASS sign-up sends telephone number as profile metadata using the real client')
         page.locator('#login-email').fill('urbanfolduk@gmail.com')
         page.locator('#login-password').fill('fixture-password-not-a-real-account')
