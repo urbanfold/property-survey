@@ -26,6 +26,12 @@
         .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; background: white; }
         .form-group textarea { min-height: 80px; resize: vertical; }
+        .password-field { position: relative; }
+        .password-field input { padding-right: 80px; }
+        .password-toggle { position: absolute; top: 2px; right: 2px; bottom: 2px; min-width: 70px; min-height: 44px; border: 0; border-radius: 5px; background: white; color: var(--primary); font-size: 14px; font-weight: 600; cursor: pointer; }
+        .password-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: -3px; }
+        .password-field input::-ms-reveal { display: none; }
+
         .form-row { display: flex; gap: 10px; }
         .form-row .form-group { flex: 1; }
         .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; }
@@ -117,14 +123,26 @@
             </div>
             <div id="form-login" class="card">
                 <div class="form-group"><label>Email Address</label><input type="email" id="login-email"></div>
-                <div class="form-group"><label>Password</label><input type="password" id="login-password"></div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="password-field">
+                        <input type="password" id="login-password" autocomplete="current-password">
+                        <button type="button" class="password-toggle" id="login-password-toggle" aria-controls="login-password" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('login-password')">Show</button>
+                    </div>
+                </div>
                 <button class="btn" onclick="handleLogin()">Log In</button>
             </div>
             <div id="form-signup" class="card" style="display:none;">
                 <div class="form-group"><label>Full Name</label><input type="text" id="signup-name"></div>
                 <div class="form-group"><label>Email Address</label><input type="email" id="signup-email"></div>
                 <div class="form-group"><label for="signup-telephone">Telephone Number (optional)</label><input type="tel" id="signup-telephone" autocomplete="tel"></div>
-                <div class="form-group"><label>Password</label><input type="password" id="signup-password"></div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <div class="password-field">
+                        <input type="password" id="signup-password" autocomplete="new-password">
+                        <button type="button" class="password-toggle" id="signup-password-toggle" aria-controls="signup-password" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('signup-password')">Show</button>
+                    </div>
+                </div>
                 <label for="signup-newsletter" style="display:flex; align-items:flex-start; gap:10px; margin:15px 0; font-size:14px; line-height:1.5; cursor:pointer;">
                     <input type="checkbox" id="signup-newsletter" style="margin-top:4px; flex-shrink:0;">
                     <span>Email me Urbanfold newsletters and updates (optional)</span>

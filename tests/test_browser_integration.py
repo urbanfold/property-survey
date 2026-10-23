@@ -169,7 +169,25 @@ def main():
         page.goto(ORIGIN)
         assert page.title()=='Urbanfold Property Survey'
         assert page.evaluate('!!window.supabase && !!window.JSZip && !!window.html2pdf')
+        for kind in ['login','signup']:
+            if kind=='signup':page.get_by_text('Sign Up',exact=True).click()
+            field=page.locator('#'+kind+'-password')
+            button=page.locator('#'+kind+'-password-toggle')
+            field.fill('visibility-check')
+            expect(field).to_have_attribute('type','password')
+            button.click()
+            expect(field).to_have_attribute('type','text')
+            expect(button).to_have_attribute('aria-pressed','true')
+            assert field.input_value()=='visibility-check'
+            button.click()
+            expect(field).to_have_attribute('type','password')
+            expect(button).to_have_attribute('aria-pressed','false')
+            assert field.input_value()=='visibility-check'
+        page.locator('#signup-password-toggle').click()
+        page.locator('.auth-tab').filter(has_text='Log In').click()
         page.get_by_text('Sign Up',exact=True).click()
+        expect(page.locator('#signup-password')).to_have_attribute('type','password')
+        print('PASS show/hide controls preserve both passwords and reset when switching tabs')
         page.locator('#signup-name').fill('Test signup')
         page.locator('#signup-email').fill('signup@example.test')
         page.locator('#signup-telephone').fill('  +44 7700 900123  ')

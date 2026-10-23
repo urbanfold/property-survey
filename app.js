@@ -9,7 +9,24 @@
         function showView(viewId) { if (viewId !== 'view-success') saveDraft(); document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); const tools = document.getElementById('survey-tools'); if (tools) tools.hidden = !currentPropertyId || ['view-auth', 'view-dashboard', 'view-success'].includes(viewId); const source = document.getElementById('survey-source'); if (source) source.hidden = ['view-auth', 'view-dashboard', 'view-success'].includes(viewId); }
         function setLoading(show, text = "Processing...") { document.getElementById('loading').style.display = show ? 'flex' : 'none'; document.getElementById('loading-text').innerText = text; }
 
+        function setPasswordVisibility(id, visible) {
+            document.getElementById(id).type = visible ? 'text' : 'password';
+            const button = document.getElementById(`${id}-toggle`);
+            button.textContent = visible ? 'Hide' : 'Show';
+            button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+            button.setAttribute('aria-pressed', String(visible));
+        }
+
+        function togglePasswordVisibility(id) {
+            setPasswordVisibility(id, document.getElementById(id).type === 'password');
+        }
+
+        function hidePasswords() {
+            for (const id of ['login-password', 'signup-password']) setPasswordVisibility(id, false);
+        }
+
         function switchAuthTab(tab, element) {
+            hidePasswords();
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
             element.classList.add('active');
             document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
@@ -23,6 +40,7 @@
             const telephone = document.getElementById('signup-telephone').value.trim();
             const newsletterSubscribed = document.getElementById('signup-newsletter').checked;
             if (!email || !password) return alert('Please enter email and password.');
+            hidePasswords();
             setLoading(true, 'Creating account...');
             try {
                 const data = await requireResult(sb.auth.signUp({ email, password,
@@ -44,6 +62,7 @@
             const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
             if (!email || !password) return alert('Please enter email and password.');
+            hidePasswords();
             setLoading(true, 'Logging in...');
             try {
                 const data = await requireResult(sb.auth.signInWithPassword({ email, password }), 'Log in');
