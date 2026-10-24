@@ -73,12 +73,14 @@ class FloorPlan(Flowable):
             else:
                 for d in [-2,2]:c.line(a[0]+d,a[1],b[0]+d,b[1])
                 c.line(a[0]-3,a[1],a[0]+3,a[1]);c.line(b[0]-3,b[1],b[0]+3,b[1])
-        window((x+25,y),(x+85,y));window((x+25,y+hh),(x+85,y+hh));window((x+ww,y+105),(x+ww,y+143))
+        window((x+25,y),(x+85,y));window((x+25,y+hh),(x+85,y+hh));window((mid+15,y+hh),(mid+65,y+hh))
         # Doors: leave a wall opening and draw an angled leaf into the room.
         gap((mid,y+22),(mid,y+50));c.setStrokeColor(INK);c.setLineWidth(1.1);c.line(mid,y+22,mid-24,y+39)
         gap((x+48,hy),(x+76,hy));c.setStrokeColor(INK);c.setLineWidth(1.1);c.line(x+48,hy,x+65,hy-24)
         gap((mid+55,hy),(mid+83,hy));c.setStrokeColor(INK);c.setLineWidth(1.1);c.line(mid+55,hy,mid+72,hy+24)
         gap((mid+55,y),(mid+83,y));c.setStrokeColor(INK);c.setLineWidth(1.1);c.line(mid+55,y,mid+72,y+24)
+        # Rear kitchen access: an external door opens inward beside its rear window.
+        gap((mid+90,y+hh),(mid+118,y+hh));c.setStrokeColor(INK);c.setLineWidth(1.1);c.line(mid+90,y+hh,mid+107,y+hh-24)
         # A small chimney breast and stairs make useful position references.
         c.setStrokeColor(INK);c.setFillColor(LINE);c.rect(x,y+25,10,29,fill=1,stroke=1)
         c.setLineWidth(.5)
