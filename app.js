@@ -829,7 +829,7 @@
         function finishExtension() { return saveCloudProgress('view-interior-sketch'); }
         function finishSketches() { return saveCloudProgress('view-interior-rooms'); }
 
-        const roomList = ['Porch', 'Living Room', 'Kitchen', 'Conservatory', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3', 'Bedroom 4', 'Bathroom 1', 'Bathroom 2', 'Ensuite', 'Loft Room', 'Other'];
+        const roomList = ['Porch', 'Hallway', 'Living Room', 'Kitchen', 'Conservatory', 'Landing', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3', 'Bedroom 4', 'Bathroom 1', 'Bathroom 2', 'Ensuite', 'Loft Room', 'Other'];
         function roomId(name) { return name.replace(/\s+/g, '-'); }
         function toggleLShapedDimensions(selectElement) { const rid = selectElement.id.replace('shape-', ''); document.getElementById(`l-shaped-${rid}`).classList.toggle('active', selectElement.value === 'L-shaped room'); document.getElementById(`standard-${rid}`).style.display = selectElement.value === 'L-shaped room' ? 'none' : 'block'; }
 

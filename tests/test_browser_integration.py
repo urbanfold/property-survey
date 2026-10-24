@@ -261,10 +261,24 @@ def main():
         page.locator('#hei-Porch').fill('2.4')
         page.locator('#input-Porch').set_input_files(photo)
         expect(page.locator('#preview-Porch img')).to_have_count(1)
+        page.locator('.room-header').filter(has_text='Hallway').click()
+        page.locator('#len-Hallway').fill('5.1')
+        page.locator('#wid-Hallway').fill('1.2')
+        page.locator('#hei-Hallway').fill('2.4')
+        page.locator('#input-Hallway').set_input_files(photo)
+        expect(page.locator('#preview-Hallway img')).to_have_count(1)
+        page.locator('.room-header').filter(has_text='Landing').click()
+        page.locator('#shape-Landing').select_option('L-shaped room')
+        for field in ['len1','wid1','len2','wid2','len3','wid3']:
+            page.locator('#'+field+'-Landing').fill('1.5')
+        page.locator('#hei-Landing').fill('2.3')
+        page.locator('#add-Landing').fill('Stair opening beside the landing')
+        page.locator('#input-Landing').set_input_files(photo)
+        expect(page.locator('#preview-Landing img')).to_have_count(1)
         page.get_by_role('button',name='Save progress',exact=True).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
         assert fixture.emails==0
-        assert len(fixture.objects)==4
+        assert len(fixture.objects)==6
         assert len(fixture.tables['exterior_photos'])==1
         page.locator('#len-Porch').fill('4.5')
         page.reload()
@@ -292,7 +306,13 @@ def main():
         assert page.locator('#ext-description').input_value()=='Test extension'
         assert page.locator('#ext-width').input_value()=='3'
         assert page.locator('#len-Porch').input_value()=='4'
-        for section in ['front','extension-location','sketch','Porch']:
+        assert page.locator('#len-Hallway').input_value()=='5.1'
+        assert page.locator('#wid-Hallway').input_value()=='1.2'
+        assert page.locator('#shape-Landing').input_value()=='L-shaped room'
+        assert page.locator('#len3-Landing').input_value()=='1.5'
+        assert page.locator('#hei-Landing').input_value()=='2.3'
+        assert page.locator('#add-Landing').input_value()=='Stair opening beside the landing'
+        for section in ['front','extension-location','sketch','Porch','Hallway','Landing']:
             assert page.locator('#preview-'+section+' img').count()==1
             page.wait_for_function('(id)=>document.querySelector("#preview-"+id+" img").complete && document.querySelector("#preview-"+id+" img").naturalWidth>0',arg=section)
         assert fixture.public_reads==0
@@ -367,18 +387,25 @@ def main():
             page.get_by_role('button',name='Download Measurements PDF',exact=True).click()
         pdf=Path(download.value.path()).read_bytes()
         assert pdf.startswith(b'%PDF-')
+        assert 'Hallway' in page.locator('#pdf-rooms-list').inner_text()
+        assert 'Landing' in page.locator('#pdf-rooms-list').inner_text()
+        assert 'Length: 5.1 m' in page.locator('#pdf-rooms-list').inner_text()
+        assert 'Stair opening beside the landing' in page.locator('#pdf-rooms-list').inner_text()
         page.get_by_role('button',name='Return to Dashboard',exact=True).click()
         with page.expect_download(timeout=15000) as download:
             page.get_by_role('button',name='Download Survey Pack (ZIP)',exact=True).first.click()
         with ZipFile(BytesIO(Path(download.value.path()).read_bytes())) as archive:
-            assert len([name for name in archive.namelist() if name.endswith('.jpg')])==4
+            assert len([name for name in archive.namelist() if name.endswith('.jpg')])==6
             report=next(name for name in archive.namelist() if name.endswith('survey_data.txt'))
             text = archive.read(report).decode()
             assert 'Test extension' in text
             assert 'PORCH' in text and 'Length: 4 m' in text and 'Height: 2.4 m' in text
+            assert 'HALLWAY' in text and 'Length: 5.1 m' in text
+            assert 'LANDING' in text and 'Length 3: 1.5 m' in text
+            assert 'Stair opening beside the landing' in text
             assert 'Bedroom-1' not in text and 'BEDROOM 1' not in text
             assert '{"shape"' not in text and '"len"' not in text
-        assert len(fixture.objects)==5  # Removed photo bytes retained; its survey reference is deleted.
+        assert len(fixture.objects)==7  # Removed photo bytes retained; its survey reference is deleted.
         assert not errors,errors
         assert not fixture.unexpected,fixture.unexpected
         print('PASS verified submission, one intercepted email, real PDF and ZIP containing all four photo categories')
