@@ -126,6 +126,7 @@ node --test tests/test_billing_handlers.mjs
 python3 tests/test_survey_flow.py
 python3 tests/test_browser_integration.py
 python3 tests/test_client_allowance.py
+python3 tests/test_leica_connection.py
 python3 tests/test_database_policies.py
 python3 tests/test_survey_purchases.py
 ```
@@ -151,9 +152,16 @@ PostgreSQL 17 container with no network or persistent volume, then remove it.
   server-side notification delivery, replace it with an authenticated Supabase Edge
   Function and outbox before relying on automated retries. The existing webhook URL
   was already public in the original source; this release does not make it secret.
-- Leica measurement transfer was never implemented: selecting a Bluetooth device
-  did not read measurements. The UI now says manual entry instead of claiming a
-  working laser connection. Hardware integration is a separate feature.
+- Automatic Leica measurement transfer is not implemented. **Test Leica connection**
+  in Room Details is an experimental, user-initiated Chrome/Web Bluetooth test.
+  It requests the provisional DISTO GATT service, subscribes to available notify/
+  indicate characteristics, and displays the last ten raw packets. It neither
+  interprets units nor writes measurement fields. Keep Bluetooth Smart enabled
+  on the S910 and close competing laser apps. Share the test details alongside
+  the exact readings and units on the physical device to establish the protocol
+  before enabling automatic entry. Closing the dialog or disconnecting removes
+  listeners and disconnects GATT. Browser tests simulate the Bluetooth API; a
+  real S910/Android tablet connection has not yet been verified.
 
 ## Additional surveys and final review
 

@@ -39,6 +39,8 @@ jobs:
         run: python tests/test_browser_integration.py
       - name: Test client allowance and review on mobile
         run: python tests/test_client_allowance.py
+      - name: Test experimental Leica connection and safe cleanup
+        run: python tests/test_leica_connection.py
       - name: Test database policies with isolated PostgreSQL
         run: python tests/test_database_policies.py
       - name: Test survey purchase enforcement with isolated PostgreSQL

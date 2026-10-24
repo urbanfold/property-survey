@@ -835,9 +835,131 @@
 
         function renderRoomsList() { const list = document.getElementById('rooms-list'); list.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); if (!appState.roomPhotos[room]) appState.roomPhotos[room] = []; const acc = document.createElement('div'); acc.className = 'room-accordion'; acc.innerHTML = `<div class="room-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');"><span>${room}</span><span class="arrow">▼</span></div><div class="room-body"><div class="form-group"><label>Room Shape</label><select id="shape-${rid}" onchange="toggleLShapedDimensions(this)"><option value="Square/Rectangular">Square/Rectangular</option><option value="L-shaped room">L-shaped room</option></select></div><div id="standard-${rid}" class="form-row"><div class="form-group"><label>Length (m)</label><input type="number" step="0.01" id="len-${rid}"></div><div class="form-group"><label>Width (m)</label><input type="number" step="0.01" id="wid-${rid}"></div></div><div id="l-shaped-${rid}" class="l-shaped-dimensions"><h4>L-Shaped Dimensions</h4><div class="form-row"><div class="form-group"><label>Length 1</label><input type="number" step="0.01" id="len1-${rid}"></div><div class="form-group"><label>Width 1</label><input type="number" step="0.01" id="wid1-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 2</label><input type="number" step="0.01" id="len2-${rid}"></div><div class="form-group"><label>Width 2</label><input type="number" step="0.01" id="wid2-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 3</label><input type="number" step="0.01" id="len3-${rid}"></div><div class="form-group"><label>Width 3</label><input type="number" step="0.01" id="wid3-${rid}"></div></div></div><div class="form-group"><label>Height (m)</label><input type="number" step="0.01" id="hei-${rid}"></div><div class="form-group"><label>Additional Measurements</label><textarea id="add-${rid}"></textarea></div><hr class="room-divider"><label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Room Photos</label><div class="preview-gallery" id="preview-${room}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${room}')">Take Room Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${room}" onchange="handlePhoto('${room}', this)"></div>`; list.appendChild(acc); }); }
 
-        function connectBluetooth() {
-            alert('Automatic Leica measurement transfer is not implemented in this app. Please enter measurements manually. Selecting a Bluetooth device alone does not transfer measurements.');
+        // Provisional DISTO GATT service: confirm notifications on the user's S910
+        // before implementing its reading format or writing any survey fields.
+        const DISTO_TEST_SERVICE = '3ab10100-f831-4395-b29d-570977d5bf94';
+        let leicaTestGeneration = 0;
+        let leicaTestDevice = null;
+        let leicaTestSubscriptions = [];
+        let leicaTestDisconnectHandler = null;
+        let leicaTestPackets = [];
+        let leicaTestPacketCount = 0;
+
+        function leicaTestSupported() { return window.isSecureContext && typeof navigator.bluetooth?.requestDevice === 'function'; }
+        function setLeicaTestStatus(message) { document.getElementById('leica-test-status').textContent = message; }
+        function updateLeicaTestDetails(note = '') {
+            const details = ['DISTO connection test — automatic entry disabled',
+                `Subscribed channels: ${leicaTestSubscriptions.length}`, `Packets received: ${leicaTestPacketCount}`];
+            if (note) details.push(note);
+            details.push(...leicaTestPackets);
+            document.getElementById('leica-test-details').value = details.join('\n');
         }
+        function disconnectLeicaTest(message = 'Disconnected. Survey measurements have not been changed.') {
+            leicaTestGeneration++;
+            for (const { characteristic, listener } of leicaTestSubscriptions) {
+                characteristic.removeEventListener('characteristicvaluechanged', listener);
+                try { Promise.resolve(characteristic.stopNotifications()).catch(() => {}); } catch (_) {}
+            }
+            leicaTestSubscriptions = [];
+            const device = leicaTestDevice;
+            leicaTestDevice = null;
+            if (device) {
+                if (leicaTestDisconnectHandler) device.removeEventListener('gattserverdisconnected', leicaTestDisconnectHandler);
+                try { if (device.gatt?.connected) device.gatt.disconnect(); } catch (_) {}
+            }
+            leicaTestDisconnectHandler = null;
+            document.getElementById('leica-test-connect').disabled = !leicaTestSupported();
+            document.getElementById('leica-test-disconnect').hidden = true;
+            document.getElementById('bt-status-text').textContent = 'Manual measurement entry';
+            setLeicaTestStatus(message);
+        }
+        function connectBluetooth() {
+            const dialog = document.getElementById('leica-test-dialog');
+            if (dialog.open) return;
+            disconnectLeicaTest('Ready. Choose your DISTO, then take a measurement when prompted.');
+            leicaTestPackets = [];
+            leicaTestPacketCount = 0;
+            updateLeicaTestDetails();
+            if (!leicaTestSupported()) setLeicaTestStatus('This browser cannot access Bluetooth. Use Chrome on your Android tablet and open the app using its HTTPS address. Manual entry remains available.');
+            dialog.showModal();
+        }
+        async function startLeicaConnectionTest() {
+            if (!leicaTestSupported() || document.getElementById('leica-test-connect').disabled) return;
+            const generation = ++leicaTestGeneration;
+            document.getElementById('leica-test-connect').disabled = true;
+            leicaTestPackets = [];
+            leicaTestPacketCount = 0;
+            updateLeicaTestDetails();
+            setLeicaTestStatus('Select your DISTO in Chrome’s device chooser.');
+            const active = () => generation === leicaTestGeneration && document.getElementById('leica-test-dialog').open;
+            let selectedDevice = null;
+            try {
+                // Must run directly from the user's click, not on page load.
+                selectedDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'DISTO' }, { namePrefix: 'Disto' }, { namePrefix: 'Leica' },
+                        { namePrefix: 'LEICA' }, { services: [DISTO_TEST_SERVICE] }],
+                    optionalServices: [DISTO_TEST_SERVICE]
+                });
+                if (!active()) return;
+                if (!selectedDevice.gatt) throw new Error('NoGATT');
+                leicaTestDevice = selectedDevice;
+                leicaTestDisconnectHandler = () => {
+                    if (active()) disconnectLeicaTest('The laser disconnected. Keep it awake and nearby, then choose it again.');
+                };
+                selectedDevice.addEventListener('gattserverdisconnected', leicaTestDisconnectHandler);
+                document.getElementById('leica-test-disconnect').hidden = false;
+                setLeicaTestStatus('Connecting to the DISTO. Keep the laser awake and nearby.');
+                const server = await selectedDevice.gatt.connect();
+                if (!active()) { if (server.connected && selectedDevice !== leicaTestDevice) server.disconnect(); return; }
+                const service = await server.getPrimaryService(DISTO_TEST_SERVICE);
+                if (!active()) return;
+                const characteristics = await service.getCharacteristics();
+                if (!active()) return;
+                const channels = characteristics.filter(item => item.properties.notify || item.properties.indicate);
+                for (const characteristic of channels) {
+                    const listener = event => {
+                        if (!active() || !selectedDevice.gatt.connected) return;
+                        const value = event.target.value;
+                        if (!value?.byteLength) return;
+                        // Raw bytes only: units/encoding have not been verified on this hardware.
+                        const bytes = new Uint8Array(value.buffer, value.byteOffset, Math.min(value.byteLength, 64));
+                        const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join(' ');
+                        leicaTestPackets.push(`${characteristic.uuid}: ${hex}${value.byteLength > 64 ? ' …' : ''}`);
+                        leicaTestPackets = leicaTestPackets.slice(-10);
+                        leicaTestPacketCount++;
+                        updateLeicaTestDetails();
+                        setLeicaTestStatus(`Data received (${leicaTestPacketCount} packet(s)). Note the measurement and units on the laser, then share these connection details so we can verify the reading format. Survey measurements have not been changed.`);
+                    };
+                    characteristic.addEventListener('characteristicvaluechanged', listener);
+                    try {
+                        await characteristic.startNotifications();
+                    } catch (_) {
+                        characteristic.removeEventListener('characteristicvaluechanged', listener);
+                        continue;
+                    }
+                    if (!active()) {
+                        characteristic.removeEventListener('characteristicvaluechanged', listener);
+                        try { await characteristic.stopNotifications(); } catch (_) {}
+                        return;
+                    }
+                    leicaTestSubscriptions.push({ characteristic, listener });
+                }
+                if (!leicaTestSubscriptions.length) throw new Error('NoNotifications');
+                document.getElementById('bt-status-text').textContent = 'Leica test connected · manual entry';
+                updateLeicaTestDetails();
+                if (!leicaTestPacketCount) setLeicaTestStatus('Connected and listening. Take one measurement on the DISTO. If nothing arrives, try its Bluetooth/send function if available. Note the displayed reading and units.');
+            } catch (error) {
+                if (!active()) return;
+                const code = error?.name || 'Error';
+                let message = 'Could not read the DISTO Bluetooth service. Close other laser apps, keep the S910 awake with Bluetooth Smart enabled, then retry. This model may need a different connection method.';
+                if (code === 'NotFoundError' && !selectedDevice) message = 'No device selected. Enable Bluetooth Smart on the DISTO and try again. If it is missing from the chooser, tell us what the laser displays.';
+                else if (['SecurityError', 'NotAllowedError'].includes(code)) message = 'Bluetooth permission was blocked. Allow Bluetooth for this site in Chrome, then retry.';
+                else if (error.message === 'NoNotifications') message = 'Connected, but no readable notification channel was available. Manual entry remains available; share the connection details.';
+                updateLeicaTestDetails(`Connection result: ${code}${error.message === 'NoNotifications' ? ' / no notification channel' : ''}`);
+                disconnectLeicaTest(message);
+            }
+        }
+        document.getElementById('leica-test-dialog').addEventListener('close', () => disconnectLeicaTest());
 
         async function generatePDF() {
             const survey = captureSurvey();
