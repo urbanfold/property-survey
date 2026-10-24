@@ -91,6 +91,20 @@ class FloorPlan(Flowable):
         c.drawCentredString(mid+62,y+58,'Hall / stairs')
         c.setFont('OpenSans',7.7);c.setFillColor(MUTED);c.drawCentredString(x+ww/2,y-14,'FRONT OF HOUSE / ENTRANCE')
         c.drawString(17,198,'REAR');c.drawString(17,187,'OF HOUSE')
+        # Common house-based axes prevent room dimensions being swapped.
+        def double_arrow(x1,y1,x2,y2):
+            c.setStrokeColor(BLUE);c.setLineWidth(.8);c.line(x1,y1,x2,y2)
+            angle=math.atan2(y2-y1,x2-x1)
+            for xx,yy,aa in [(x1,y1,angle),(x2,y2,angle+math.pi)]:
+                for side in [-.45,.45]:
+                    c.line(xx,yy,xx+5*math.cos(aa+side),yy+5*math.sin(aa+side))
+        double_arrow(x,y+hh+10,x+ww,y+hh+10)
+        c.setFont('OpenSans-Bold',7.5);c.setFillColor(INK)
+        c.drawCentredString(x+ww/2,y+hh+17,'WIDTH: parallel to the front of the house')
+        double_arrow(x+ww+20,y,x+ww+20,y+hh)
+        c.saveState();c.translate(x+ww+34,y+12);c.rotate(90)
+        c.drawString(0,0,'LENGTH: front to back, at 90° to the front')
+        c.restoreState()
         c.setStrokeColor(BLUE);c.setLineWidth(1.2);c.line(17,17,42,17);c.line(17,21,42,21)
         c.setFillColor(MUTED);c.setFont('OpenSans',7.5);c.drawString(48,16,'Window')
         c.setStrokeColor(INK);c.line(128,15,151,28);c.drawString(159,16,'Angled line shows how a door opens')
@@ -106,7 +120,7 @@ add(P('Prepare a sketch of every floor','h2'),P('Using pen or pencil, draw a sim
 for text in [
  'Label each floor and every room, including hallways, landings and stairs.',
  'Mark windows and door openings. Add an angled line from each door hinge to show which way the door opens.',
- 'Show the front and rear of the house and mark where you would like the extension or other proposed work.',
+ 'Label the front and rear of the house. Mark the width and length directions, and where you would like the extension or other proposed work.',
  'You do not need a detailed or perfectly scaled drawing. Photograph each finished sketch clearly.'
 ]:add(bullet(text))
 add(Spacer(1,9),FloorPlan(),Spacer(1,12),box('Have these ready','Your floor sketches, a tape or laser measure, and a phone or tablet with a camera and internet access. Enter measurement fields in <b>metres</b>. Label any other units clearly in notes.'),Spacer(1,10),P(f'<b>Open the survey app:</b> <link href="{APP}" color="#2563eb">urbanfold.github.io/property-survey</link>','small'))
@@ -135,6 +149,10 @@ add(P('RECORD THE INSIDE','tag'),P('Floor plans &amp; room details','h1'))
 heading('06','Interior Floor Plans')
 add(P('Photograph the floor-plan sketches you prepared earlier. Include a separate, clearly labelled sketch for every floor level. Check that room names, windows, doors and the proposed work are readable. Select <b>Continue to Room Details</b>.'))
 heading('07','Measure and photograph each room')
+add(box('Use the same measurement directions in every room',
+    '<b>Width:</b> measure parallel to the front of the house.<br/>'
+    '<b>Length:</b> measure at 90° to the front of the house, in the front-to-back direction.<br/>'
+    'Keep these directions consistent in every room and label them on your floor sketches.'),Spacer(1,8))
 for text in [
  'Open each relevant room and choose its shape. Include hallways and landings. If a room is not listed, use <b>Other</b> and identify it in Additional Measurements.',
  'Enter <b>length, width and height in metres</b>. Measure height from the finished floor to the ceiling. For an L-shaped room, complete the requested dimension fields and label the matching measurements on your sketch.',
