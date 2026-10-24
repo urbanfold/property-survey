@@ -152,16 +152,27 @@ PostgreSQL 17 container with no network or persistent volume, then remove it.
   server-side notification delivery, replace it with an authenticated Supabase Edge
   Function and outbox before relying on automated retries. The existing webhook URL
   was already public in the original source; this release does not make it secret.
-- Automatic Leica measurement transfer is not implemented. **Test Leica connection**
-  in Room Details is an experimental, user-initiated Chrome/Web Bluetooth test.
-  It requests the provisional DISTO GATT service, subscribes to available notify/
-  indicate characteristics, and displays the last ten raw packets. It neither
-  interprets units nor writes measurement fields. Keep Bluetooth Smart enabled
-  on the S910 and close competing laser apps. Share the test details alongside
-  the exact readings and units on the physical device to establish the protocol
-  before enabling automatic entry. Closing the dialog or disconnecting removes
-  listeners and disconnects GATT. Browser tests simulate the Bluetooth API; a
-  real S910/Android tablet connection has not yet been verified.
+- Leica S910 Bluetooth room entry is available in Chrome on Android using
+  **Connect Leica** in Room Details. The user's S910 successfully connected and
+  supplied distance `16 6a 51 40` (3.2721 metres) and format `00 00` notifications.
+  The user confirmed the laser's display was in metres. Only the distance
+  characteristic `3ab10101-f831-4395-b29d-570977d5bf94` is interpreted: exactly
+  four bytes, little-endian IEEE 754 float, finite, positive and at most 300 m.
+  Values retain four decimal places in metres; other notifications are diagnostic
+  only. Each connection starts paused. Take a reading, check it against the
+  laser, and choose **Reading matches — enable room entry**. Select a visible
+  room dimension field before each new reading; it is highlighted and receives
+  one value, then pauses. No previous reading is replayed into a newly selected
+  field. Manual edits, changing property/user, hidden or replaced fields, leaving
+  Room Details and backgrounding the page disarm the target. Leaving Room Details
+  or explicitly disconnecting ends the connection. Bluetooth input saves the
+  device draft immediately; **Save progress** still verifies cloud persistence.
+  Closing a paused connection dialog disconnects; closing it after room entry
+  was enabled keeps the connection for measurements. Bounded raw diagnostics
+  remain available. Browser tests simulate Bluetooth using the captured S910
+  payloads and verify cloud readback. User testing of the new automatic field
+  entry on the physical device remains necessary; other Leica models, firmware
+  or display-unit settings have not been verified. Keep this S910 set to metres.
 
 ## Additional surveys and final review
 

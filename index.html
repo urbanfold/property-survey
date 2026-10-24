@@ -12,6 +12,7 @@
         [hidden] { display: none !important; }
         #additional-survey-dialog, #leica-test-dialog { width: calc(100% - 32px); max-width: 440px; max-height: 90vh; overflow-y: auto; margin: auto; padding: 24px; border: 0; border-radius: 12px; color: var(--text); box-shadow: 0 12px 40px #0004; }
         #additional-survey-dialog::backdrop, #leica-test-dialog::backdrop { background: #0008; }
+        input.leica-target { outline: 3px solid #2563eb; background: #eff6ff; }
         .review-card { margin-bottom: 16px; }
         .review-card h2 { font-size: 18px; margin-bottom: 10px; }
         .review-card p { margin: 6px 0; line-height: 1.5; white-space: pre-wrap; }
@@ -72,7 +73,7 @@
         .room-divider { border: 0; border-top: 1px dashed #d1d5db; margin: 15px 0; }
         .l-shaped-dimensions { display: none; background: #f9fafb; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid #e5e7eb; }
         .l-shaped-dimensions.active { display: block; }
-        .bt-status { display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .bt-status { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
         .bt-status.connected { background: #dcfce7; border-color: #86efac; }
         .bt-indicator { width: 10px; height: 10px; border-radius: 50%; background: #ccc; margin-right: 10px; }
         .bt-status.connected .bt-indicator { background: var(--success); box-shadow: 0 0 5px var(--success); }
@@ -300,9 +301,10 @@
         <div id="view-interior-rooms" class="view">
             <h1>Room Details</h1>
             <div class="bt-status" id="bt-status-bar">
-                <div style="display:flex; align-items:center;"><div class="bt-indicator"></div><span id="bt-status-text">Manual measurement entry</span></div>
-                <button class="btn btn-leica" style="width:auto; padding:8px 15px; margin:0; font-size:12px;" onclick="connectBluetooth()">Test Leica connection</button>
+                <div style="display:flex; align-items:center;"><div class="bt-indicator"></div><span id="bt-status-text" role="status" aria-live="polite">Manual measurement entry</span></div>
+                <button class="btn btn-leica" style="width:auto; padding:8px 15px; margin:0; font-size:12px;" onclick="connectBluetooth()">Connect Leica</button>
             </div>
+            <button type="button" class="btn btn-secondary" id="leica-room-disconnect" onclick="disconnectLeicaTest()" hidden>Disconnect Leica</button>
             <div class="info-box"><strong>Please note:</strong> Enter information in the required fields only.</div>
             <div id="rooms-list"></div>
             <button class="btn btn-secondary" onclick="saveCloudProgress()">Save progress</button>
@@ -339,15 +341,16 @@
     </div>
 
     <dialog id="leica-test-dialog" aria-labelledby="leica-test-title">
-        <h2 id="leica-test-title">Leica connection test</h2>
+        <h2 id="leica-test-title">Connect Leica DISTO</h2>
         <p style="margin:16px 0; line-height:1.6;">Use Chrome on your Android tablet. Enable Bluetooth on the tablet and Bluetooth Smart on the DISTO. Close any other app connected to the laser.</p>
-        <p class="info-box">This checks whether your laser sends readings. It will not change survey measurements. Automatic entry is not enabled yet.</p>
+        <p class="info-box">Keep the DISTO set to metres. Take a reading and check it matches below, then enable room entry. Select a room measurement field before each new reading.</p>
         <p id="leica-test-status" role="status" aria-live="polite" style="line-height:1.6;">Ready to test.</p>
         <button type="button" class="btn" id="leica-test-connect" onclick="startLeicaConnectionTest()">Choose Leica device</button>
         <button type="button" class="btn btn-secondary" id="leica-test-disconnect" onclick="disconnectLeicaTest()" hidden>Disconnect</button>
+        <button type="button" class="btn" id="leica-enable-entry" onclick="enableLeicaRoomEntry()" hidden disabled>Reading matches — enable room entry</button>
         <label for="leica-test-details" style="display:block; margin-top:16px;">Connection details to share after taking a measurement</label>
-        <textarea id="leica-test-details" readonly rows="7" spellcheck="false" style="margin-top:8px; font-family:monospace; font-size:12px;"></textarea>
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('leica-test-dialog').close()">Close test</button>
+        <textarea id="leica-test-details" readonly rows="7" spellcheck="false" style="width:100%; margin-top:8px; font-family:monospace; font-size:12px;"></textarea>
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('leica-test-dialog').close()">Close</button>
     </dialog>
 
     <dialog id="additional-survey-dialog" aria-labelledby="additional-survey-title">

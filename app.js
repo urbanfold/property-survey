@@ -18,7 +18,7 @@
         let activeCloudVersion = null;
         let appState = { photos: {}, roomPhotos: {} };
 
-        function showView(viewId) { if (viewId !== 'view-success') saveDraft(); document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); const tools = document.getElementById('survey-tools'); if (tools) tools.hidden = !currentPropertyId || ['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(viewId); const source = document.getElementById('survey-source'); if (source) source.hidden = ['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(viewId); }
+        function showView(viewId) { if (viewId !== 'view-interior-rooms') { clearLeicaMeasurementTarget(); if (leicaRoomEntryEnabled) disconnectLeicaTest('Leica disconnected when leaving Room Details.'); } if (viewId !== 'view-success') saveDraft(); document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); window.scrollTo(0, 0); const tools = document.getElementById('survey-tools'); if (tools) tools.hidden = !currentPropertyId || ['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(viewId); const source = document.getElementById('survey-source'); if (source) source.hidden = ['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(viewId); }
         function setLoading(show, text = "Processing...") { document.getElementById('loading').style.display = show ? 'flex' : 'none'; document.getElementById('loading-text').innerText = text; }
 
         function setPasswordVisibility(id, visible) {
@@ -833,11 +833,15 @@
         function roomId(name) { return name.replace(/\s+/g, '-'); }
         function toggleLShapedDimensions(selectElement) { const rid = selectElement.id.replace('shape-', ''); document.getElementById(`l-shaped-${rid}`).classList.toggle('active', selectElement.value === 'L-shaped room'); document.getElementById(`standard-${rid}`).style.display = selectElement.value === 'L-shaped room' ? 'none' : 'block'; }
 
-        function renderRoomsList() { const list = document.getElementById('rooms-list'); list.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); if (!appState.roomPhotos[room]) appState.roomPhotos[room] = []; const acc = document.createElement('div'); acc.className = 'room-accordion'; acc.innerHTML = `<div class="room-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');"><span>${room}</span><span class="arrow">▼</span></div><div class="room-body"><div class="form-group"><label>Room Shape</label><select id="shape-${rid}" onchange="toggleLShapedDimensions(this)"><option value="Square/Rectangular">Square/Rectangular</option><option value="L-shaped room">L-shaped room</option></select></div><div id="standard-${rid}" class="form-row"><div class="form-group"><label>Length (m)</label><input type="number" step="0.01" id="len-${rid}"></div><div class="form-group"><label>Width (m)</label><input type="number" step="0.01" id="wid-${rid}"></div></div><div id="l-shaped-${rid}" class="l-shaped-dimensions"><h4>L-Shaped Dimensions</h4><div class="form-row"><div class="form-group"><label>Length 1</label><input type="number" step="0.01" id="len1-${rid}"></div><div class="form-group"><label>Width 1</label><input type="number" step="0.01" id="wid1-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 2</label><input type="number" step="0.01" id="len2-${rid}"></div><div class="form-group"><label>Width 2</label><input type="number" step="0.01" id="wid2-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 3</label><input type="number" step="0.01" id="len3-${rid}"></div><div class="form-group"><label>Width 3</label><input type="number" step="0.01" id="wid3-${rid}"></div></div></div><div class="form-group"><label>Height (m)</label><input type="number" step="0.01" id="hei-${rid}"></div><div class="form-group"><label>Additional Measurements</label><textarea id="add-${rid}"></textarea></div><hr class="room-divider"><label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Room Photos</label><div class="preview-gallery" id="preview-${room}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${room}')">Take Room Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${room}" onchange="handlePhoto('${room}', this)"></div>`; list.appendChild(acc); }); }
+        function renderRoomsList() { const list = document.getElementById('rooms-list'); list.innerHTML = ''; roomList.forEach(room => { const rid = roomId(room); if (!appState.roomPhotos[room]) appState.roomPhotos[room] = []; const acc = document.createElement('div'); acc.className = 'room-accordion'; acc.innerHTML = `<div class="room-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');"><span>${room}</span><span class="arrow">▼</span></div><div class="room-body"><div class="form-group"><label>Room Shape</label><select id="shape-${rid}" onchange="toggleLShapedDimensions(this)"><option value="Square/Rectangular">Square/Rectangular</option><option value="L-shaped room">L-shaped room</option></select></div><div id="standard-${rid}" class="form-row"><div class="form-group"><label>Length (m)</label><input type="number" step="0.0001" id="len-${rid}"></div><div class="form-group"><label>Width (m)</label><input type="number" step="0.0001" id="wid-${rid}"></div></div><div id="l-shaped-${rid}" class="l-shaped-dimensions"><h4>L-Shaped Dimensions</h4><div class="form-row"><div class="form-group"><label>Length 1</label><input type="number" step="0.0001" id="len1-${rid}"></div><div class="form-group"><label>Width 1</label><input type="number" step="0.0001" id="wid1-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 2</label><input type="number" step="0.0001" id="len2-${rid}"></div><div class="form-group"><label>Width 2</label><input type="number" step="0.0001" id="wid2-${rid}"></div></div><div class="form-row"><div class="form-group"><label>Length 3</label><input type="number" step="0.0001" id="len3-${rid}"></div><div class="form-group"><label>Width 3</label><input type="number" step="0.0001" id="wid3-${rid}"></div></div></div><div class="form-group"><label>Height (m)</label><input type="number" step="0.0001" id="hei-${rid}"></div><div class="form-group"><label>Additional Measurements</label><textarea id="add-${rid}"></textarea></div><hr class="room-divider"><label style="font-weight: 500; font-size: 14px; display: block; margin-bottom: 8px;">Room Photos</label><div class="preview-gallery" id="preview-${room}"><div class="empty-state">No Photos</div></div><button class="camera-btn" onclick="triggerCamera('${room}')">Take Room Photo</button><input type="file" accept="image/*" capture="environment" class="hidden-input" id="input-${room}" onchange="handlePhoto('${room}', this)"></div>`; list.appendChild(acc); }); }
 
-        // Provisional DISTO GATT service: confirm notifications on the user's S910
-        // before implementing its reading format or writing any survey fields.
+        // S910 service/float32 distance notifications verified against the user's
+        // packets 16 6a 51 40 = 3.2721 m and their metres display (2026-10-24).
         const DISTO_TEST_SERVICE = '3ab10100-f831-4395-b29d-570977d5bf94';
+        const DISTO_DISTANCE_CHANNEL = '3ab10101-f831-4395-b29d-570977d5bf94';
+        let leicaRoomEntryEnabled = false;
+        let leicaMeasurementTarget = null;
+        let leicaLastDistance = null;
         let leicaTestGeneration = 0;
         let leicaTestDevice = null;
         let leicaTestSubscriptions = [];
@@ -848,13 +852,16 @@
         function leicaTestSupported() { return window.isSecureContext && typeof navigator.bluetooth?.requestDevice === 'function'; }
         function setLeicaTestStatus(message) { document.getElementById('leica-test-status').textContent = message; }
         function updateLeicaTestDetails(note = '') {
-            const details = ['DISTO connection test — automatic entry disabled',
+            const details = [leicaRoomEntryEnabled ? 'DISTO room entry enabled — metres' : 'DISTO connection — room entry paused',
                 `Subscribed channels: ${leicaTestSubscriptions.length}`, `Packets received: ${leicaTestPacketCount}`];
             if (note) details.push(note);
             details.push(...leicaTestPackets);
             document.getElementById('leica-test-details').value = details.join('\n');
         }
-        function disconnectLeicaTest(message = 'Disconnected. Survey measurements have not been changed.') {
+        function disconnectLeicaTest(message = 'Leica disconnected. Saved measurements are kept; manual entry remains available.') {
+            leicaRoomEntryEnabled = false;
+            clearLeicaMeasurementTarget();
+            leicaLastDistance = null;
             leicaTestGeneration++;
             for (const { characteristic, listener } of leicaTestSubscriptions) {
                 characteristic.removeEventListener('characteristicvaluechanged', listener);
@@ -870,12 +877,22 @@
             leicaTestDisconnectHandler = null;
             document.getElementById('leica-test-connect').disabled = !leicaTestSupported();
             document.getElementById('leica-test-disconnect').hidden = true;
+            document.getElementById('leica-room-disconnect').hidden = true;
+            document.getElementById('leica-enable-entry').hidden = true;
+            document.getElementById('leica-enable-entry').disabled = true;
+            document.getElementById('bt-status-bar').classList.remove('connected');
             document.getElementById('bt-status-text').textContent = 'Manual measurement entry';
             setLeicaTestStatus(message);
         }
         function connectBluetooth() {
             const dialog = document.getElementById('leica-test-dialog');
             if (dialog.open) return;
+            clearLeicaMeasurementTarget();
+            if (leicaRoomEntryEnabled && leicaTestDevice?.gatt?.connected) {
+                setLeicaTestStatus('Leica is connected. Close this window, select a measurement field, and take a new reading.');
+                dialog.showModal();
+                return;
+            }
             disconnectLeicaTest('Ready. Choose your DISTO, then take a measurement when prompted.');
             leicaTestPackets = [];
             leicaTestPacketCount = 0;
@@ -891,7 +908,7 @@
             leicaTestPacketCount = 0;
             updateLeicaTestDetails();
             setLeicaTestStatus('Select your DISTO in Chrome’s device chooser.');
-            const active = () => generation === leicaTestGeneration && document.getElementById('leica-test-dialog').open;
+            const active = () => generation === leicaTestGeneration && (document.getElementById('leica-test-dialog').open || leicaRoomEntryEnabled);
             let selectedDevice = null;
             try {
                 // Must run directly from the user's click, not on page load.
@@ -921,14 +938,18 @@
                         if (!active() || !selectedDevice.gatt.connected) return;
                         const value = event.target.value;
                         if (!value?.byteLength) return;
-                        // Raw bytes only: units/encoding have not been verified on this hardware.
+                        // Keep bounded raw diagnostics alongside the verified distance decoder.
                         const bytes = new Uint8Array(value.buffer, value.byteOffset, Math.min(value.byteLength, 64));
                         const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join(' ');
                         leicaTestPackets.push(`${characteristic.uuid}: ${hex}${value.byteLength > 64 ? ' …' : ''}`);
                         leicaTestPackets = leicaTestPackets.slice(-10);
                         leicaTestPacketCount++;
                         updateLeicaTestDetails();
-                        setLeicaTestStatus(`Data received (${leicaTestPacketCount} packet(s)). Note the measurement and units on the laser, then share these connection details so we can verify the reading format. Survey measurements have not been changed.`);
+                        if (characteristic.uuid.toLowerCase() === DISTO_DISTANCE_CHANNEL) {
+                            receiveLeicaDistance(value);
+                        } else if (leicaLastDistance === null) {
+                            setLeicaTestStatus(`Data received (${leicaTestPacketCount} packet(s)). Take a distance measurement on the DISTO; room entry is paused.`);
+                        }
                     };
                     characteristic.addEventListener('characteristicvaluechanged', listener);
                     try {
@@ -945,9 +966,12 @@
                     leicaTestSubscriptions.push({ characteristic, listener });
                 }
                 if (!leicaTestSubscriptions.length) throw new Error('NoNotifications');
-                document.getElementById('bt-status-text').textContent = 'Leica test connected · manual entry';
+                document.getElementById('bt-status-bar').classList.add('connected');
+                document.getElementById('bt-status-text').textContent = 'Leica connected · room entry paused';
+                document.getElementById('leica-enable-entry').hidden = !leicaTestSubscriptions.some(item => item.characteristic.uuid.toLowerCase() === DISTO_DISTANCE_CHANNEL);
+                document.getElementById('leica-enable-entry').disabled = leicaLastDistance === null;
                 updateLeicaTestDetails();
-                if (!leicaTestPacketCount) setLeicaTestStatus('Connected and listening. Take one measurement on the DISTO. If nothing arrives, try its Bluetooth/send function if available. Note the displayed reading and units.');
+                if (leicaLastDistance === null) setLeicaTestStatus('Connected and listening. Keep the DISTO set to metres and take one measurement. Check the received value against the laser, then enable room entry.');
             } catch (error) {
                 if (!active()) return;
                 const code = error?.name || 'Error';
@@ -959,7 +983,82 @@
                 disconnectLeicaTest(message);
             }
         }
-        document.getElementById('leica-test-dialog').addEventListener('close', () => disconnectLeicaTest());
+        document.getElementById('leica-test-dialog').addEventListener('close', () => {
+            if (!leicaRoomEntryEnabled) disconnectLeicaTest();
+        });
+
+        function clearLeicaMeasurementTarget() {
+            leicaMeasurementTarget?.element.classList.remove('leica-target');
+            leicaMeasurementTarget = null;
+        }
+        function leicaMeasurementField(element) {
+            if (!(element instanceof HTMLInputElement) || element.type !== 'number') return null;
+            const match = /^(len[123]?|wid[123]?|hei)-(.+)$/.exec(element.id);
+            if (!match || !roomList.some(room => roomId(room) === match[2])) return null;
+            if (!element.isConnected || element.disabled || element.readOnly || !element.getClientRects().length) return null;
+            if (!document.getElementById('view-interior-rooms').classList.contains('active')) return null;
+            const label = { len: 'Length', wid: 'Width', hei: 'Height', len1: 'Length 1', wid1: 'Width 1', len2: 'Length 2', wid2: 'Width 2', len3: 'Length 3', wid3: 'Width 3' }[match[1]];
+            return `${match[2].replace(/-/g, ' ')} — ${label}`;
+        }
+        function selectLeicaMeasurementField(element) {
+            if (!leicaRoomEntryEnabled || !leicaTestDevice?.gatt?.connected || !currentUser || !currentPropertyId) return;
+            const label = leicaMeasurementField(element);
+            clearLeicaMeasurementTarget();
+            if (!label || document.getElementById('leica-test-dialog').open) return;
+            leicaMeasurementTarget = { element, label, propertyId: currentPropertyId, userId: currentUser.id, previousValue: element.value };
+            element.classList.add('leica-target');
+            document.getElementById('bt-status-text').textContent = `Ready: ${label}. Take one measurement.`;
+        }
+        function enableLeicaRoomEntry() {
+            if (!currentUser || !currentPropertyId) { setLeicaTestStatus('Save the property details before enabling Leica room entry.'); return; }
+            if (!leicaTestDevice?.gatt?.connected || leicaLastDistance === null ||
+                !leicaTestSubscriptions.some(item => item.characteristic.uuid.toLowerCase() === DISTO_DISTANCE_CHANNEL)) return;
+            leicaRoomEntryEnabled = true;
+            clearLeicaMeasurementTarget();
+            document.getElementById('leica-room-disconnect').hidden = false;
+            document.getElementById('bt-status-text').textContent = 'Leica ready. Select Length, Width or Height, then take a new measurement.';
+            updateLeicaTestDetails();
+            document.getElementById('leica-test-dialog').close();
+        }
+        function receiveLeicaDistance(value) {
+            // The observed distance channel is a 4-byte IEEE 754 little-endian float
+            // in metres. Ignore units, angles and other characteristic notifications.
+            if (value.byteLength !== 4) return;
+            const metres = value.getFloat32(0, true);
+            if (!Number.isFinite(metres) || metres <= 0 || metres > 300) return;
+            const rounded = Number(metres.toFixed(4));
+            if (rounded <= 0) return;
+            const reading = rounded.toString();
+            leicaLastDistance = reading;
+            document.getElementById('leica-enable-entry').disabled = false;
+            setLeicaTestStatus(`Received ${reading} m. Check this against the DISTO's metres display, then enable room entry. Each selected field receives one new reading.`);
+            if (!leicaRoomEntryEnabled) return;
+            const target = leicaMeasurementTarget;
+            if (!target) { document.getElementById('bt-status-text').textContent = `Received ${reading} m. Select a field before taking the next measurement.`; return; }
+            clearLeicaMeasurementTarget();
+            if (document.visibilityState !== 'visible' || document.getElementById('leica-test-dialog').open ||
+                target.propertyId !== currentPropertyId || target.userId !== currentUser?.id ||
+                target.element.value !== target.previousValue || !leicaMeasurementField(target.element)) return;
+            target.element.value = reading;
+            target.element.dispatchEvent(new Event('input', { bubbles: true }));
+            target.element.dispatchEvent(new Event('change', { bubbles: true }));
+            saveDraft();
+            document.getElementById('bt-status-text').textContent = `${target.label}: ${reading} m entered. Select the next field to continue.`;
+        }
+        document.addEventListener('focusin', event => selectLeicaMeasurementField(event.target));
+        document.addEventListener('pointerdown', event => {
+            if (leicaMeasurementField(event.target)) selectLeicaMeasurementField(event.target);
+            else clearLeicaMeasurementTarget();
+        });
+        document.addEventListener('input', event => {
+            if (event.isTrusted && leicaMeasurementTarget?.element === event.target) {
+                clearLeicaMeasurementTarget();
+                if (leicaRoomEntryEnabled) document.getElementById('bt-status-text').textContent = 'Manual edit kept. Select a field again to receive a Leica reading.';
+            }
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible') clearLeicaMeasurementTarget();
+        });
 
         async function generatePDF() {
             const survey = captureSurvey();
