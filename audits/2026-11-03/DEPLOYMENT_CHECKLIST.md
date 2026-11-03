@@ -77,3 +77,7 @@ Do not overwrite injected credentials with another project's values. No Stripe s
 5. Separate approval and provider-side configuration for later old-webhook retirement/rotation and residual Netlify handling.
 
 Explicit logout warning/cancel/save-first preference is approved. This does not authorise production execution or resolve the outstanding live security checks.
+
+## Fresh staging reconstruction prepared locally
+
+The owner created `Urbanfold-Survey-Staging`. The complete source-compatible setup package is under [supabase/staging/README.md](/workspace/property-survey/supabase/staging/README.md), with exact inventory, 000 baseline, unmodified 001–003 bundle, dummy seeds and verification queries. It has not been pushed or executed. This does not establish production parity; see the package preparation status and metadata comparison gates before authorising any database connection or execution.
