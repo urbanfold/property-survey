@@ -1,0 +1,16 @@
+✔ checkout authenticates the buyer, checks allowance, and fixes price/currency/return URL on the server (36.937643ms)
+✔ checkout blocks disabled payments, missing authentication, hostile origins, unused allowances, and unsafe Stripe responses (3.689919ms)
+✔ Stripe signature checks reject tampering, stale/future requests and missing signatures, and allow secret rotation headers (12.184017ms)
+✔ only a signed, paid £6 GBP purchase grants credit to the verified session owner (8.502861ms)
+✔ forged browser callbacks cannot grant credit; ledger failures request webhook retry (2.149021ms)
+✔ refunds and disputes revoke the payment intent without deleting survey data (2.218496ms)
+✔ self-contained dashboard deployments register their handlers and default to disabled payments (8.829006ms)
+✔ updated Checkout request avoids a cached legacy rejection while repeated retries reuse one session (2.523048ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 152.34647

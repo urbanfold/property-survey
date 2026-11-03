@@ -192,3 +192,9 @@ The website alone does not enforce the allowance or accept payments. Apply the
 second SQL migration and configure/deploy the payment functions following
 [supabase/BILLING.md](supabase/BILLING.md). Payments default to disabled; no live
 Stripe account, secrets, webhook or Supabase deployment is created by a Git push.
+
+### Development-only session-expiry recovery
+
+The F01 candidate now keeps unexpected-expiry recovery in the current tab's memory only, hides private content, and restores only after same-user reauthentication and a fresh caller-token property-access check. Deliberate logout still warns and clears; a different account cannot restore the snapshot. Closing/refreshing the locked tab can lose it. No persistent offline recovery system is added.
+
+Run `python tests/test_session_recovery.py` for network/refresh, quota/status, expiry, access-denial/race and cross-tab regression checks. See `audits/2026-11-03/SESSION_RECOVERY_UPDATE.md` for evidence and limitations. No production rollout is authorised.

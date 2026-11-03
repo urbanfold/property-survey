@@ -4,7 +4,7 @@
 
 Candidates are preserved on `plan/security-remediation-2026-11-03` in `urbanfold/property-survey`. No remote push, PR, merge, deployment, secret rotation, live SQL or customer-data change has been performed by this checklist.
 
-The owner approves the F01 approach of clearing unsaved local drafts on explicit logout with a clear warning and an opportunity to cancel and save first. The current confirmation provides that opportunity; it does not automatically save to the cloud. Cloud-saved surveys and their recovery remain intact. Involuntary session loss/account switching also clears device drafts in this candidate; confirm that separate behaviour before release because it cannot offer a pre-expiry save guarantee.
+The owner approves the F01 approach of clearing unsaved local drafts on explicit logout with a clear warning and an opportunity to cancel and save first. The current confirmation provides that opportunity; it does not automatically save to the cloud. Cloud-saved surveys and their recovery remain intact. The owner subsequently approved development/testing of current-tab memory recovery for unexpected expiry. Persistent drafts and private DOM are cleared while locked; only the same user after fresh Auth/property-access checks may recover the active-property snapshot. Different-account sign-in or deliberate logout discards it. Closing/refreshing the tab can lose it. Review this tested behaviour before production approval.
 
 The £6 additional-survey credit system, first free survey and original billing implementation remain unchanged. £179 Essential Feasibility is separate and is not introduced by this release. Existing customer notifications must remain functional during cutover.
 
@@ -15,7 +15,7 @@ The £6 additional-survey credit system, first free survey and original billing 
 - [ ] Push **only** `plan/security-remediation-2026-11-03` once the preceding check passes, then open a draft PR against `main` using `PULL_REQUEST.md`.
 - [ ] Keep the PR unmerged. The checked-in Pages workflow publishes on a main push (and manual main run), so merging is a production-deployment action requiring separate approval.
 
-Read-only GitHub API inspection returned `Forbidden` on 3 November 2026. Git remote inspection succeeded and showed main at `6874d8a`, but cannot reveal external integrations. The branch was therefore not pushed and no PR link exists yet. This is a verification/access limitation, not evidence of an unsafe integration.
+Historical access check: read-only GitHub API inspection returned `Forbidden` on 3 November 2026. Git remote inspection succeeded and showed main at `6874d8a`, but cannot reveal external integrations. The branch was initially left unpushed. After the owner checked integrations, it was pushed; API creation of a draft PR failed with `Post "https://api.github.com/graphql": Forbidden`. The owner subsequently created draft PR #1 and confirmed Verify passed and Publish was skipped. The latest tab-memory changes remain local and must not be pushed until results/risks are reported. This is a verification/access limitation, not evidence of an unsafe integration.
 
 ## 2. Isolated staging preparation
 
@@ -41,7 +41,7 @@ Do not overwrite injected credentials with another project's values. No Stripe s
 ## 3. Test sequence before production approval
 
 - [ ] Run CI/local checks and preserve logs: syntax, dashboard parity, existing billing, notification handler, session privacy, survey recovery, browser flows/photos/exports/reset-password, allowance/mobile review, Leica, isolated RLS, isolated credit and new notification SQL suites.
-- [ ] With real staging Auth: signup/confirmation/login/reset; same-user refresh recovery; explicit logout cancellation leaves work intact; save then logout clears device/private state; login restores cloud data. Verify expired-session/account-switch behaviour separately.
+- [ ] With real staging Auth: signup/confirmation/login/reset; same-user refresh and retryable-refresh failure preservation; same-ID email updates; temporary expiry recovery only after fresh same-user/property verification; denied/racing recovery, storage failure and tab-close warnings; explicit logout cancellation leaves work intact; save then logout clears device/private state; login restores cloud data. Verify expired-session/account-switch behaviour separately.
 - [ ] With real staging RLS/Storage: A cannot read/write B's properties, child rows or photographs, list/download/sign another owner's objects, or invoke privileged notification helpers. Verify intended admin access independently.
 - [ ] Create/edit/save/reopen every survey section and photos; compare saved cloud values after refresh and a fresh login. Verify Leica entry and PDF/photo exports remain usable.
 - [ ] Submit to dummy receiver with saved client email both equal to and different from the professional's email. Verify actual payload/template compatibility and intended recipients. No marketing subscriptions should be added.
@@ -72,7 +72,7 @@ Do not overwrite injected credentials with another project's values. No Stripe s
 
 1. GitHub access and confirmation of external deployment integrations before push/PR creation.
 2. An authorised isolated Supabase project, test accounts and test automation receiver; deployed schema/function parity.
-3. Approval of involuntary-session draft clearing, notification recipient rules/caps, retention and reconciliation responsibilities.
+3. Production approval of the development-tested tab-memory recovery behaviour, notification recipient rules/caps, retention and reconciliation responsibilities.
 4. Review/approval of concrete production migration, function deployment, server secret setup, client release and any rollback.
 5. Separate approval and provider-side configuration for later old-webhook retirement/rotation and residual Netlify handling.
 

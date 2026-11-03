@@ -1,3 +1,5 @@
+> Update: the owner has approved a revised development-only expiry policy. Deliberate logout still warns and clears; unexpected expiry keeps the active property's snapshot in current-tab memory while hiding private content and clearing persistent drafts. Recovery requires the same user ID and fresh property access. Different users cannot recover it. See [SESSION_RECOVERY_UPDATE.md](../SESSION_RECOVERY_UPDATE.md); earlier policy alternatives below are historical design context, not a production approval.
+
 # F01 — targeted fix specification (candidate implemented locally; not deployed)
 
 **Goal:** prevent private information from surviving in the UI/in-memory caches or being restored by old requests after logout/account change. Preserve cloud data and the normal same-user draft workflow.

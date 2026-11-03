@@ -1,5 +1,5 @@
 """F01 regressions using real client with intercepted Auth/REST; no live requests.
-Default draft policy proposed for approval: logout/session loss clears device drafts.
+Explicit logout clears drafts; unexpected expiry clears persistent drafts/UI but permits owner-verified current-tab memory recovery (covered separately).
 """
 from pathlib import Path
 import json,os,shutil,sys,uuid

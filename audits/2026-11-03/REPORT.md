@@ -7,6 +7,8 @@
 
 ## Remediation update — development only
 
+The subsequent owner-approved development update separates unexpected expiry from deliberate logout. Active-property pending work can be held in current-tab memory while locked, with same-user Auth/property checks required before recovery. See [SESSION_RECOVERY_UPDATE.md](SESSION_RECOVERY_UPDATE.md) for the newer policy, tests and limitations; it supersedes the initial candidate’s destructive unexpected-expiry policy. This update has not been pushed or deployed.
+
 The owner subsequently supplied a GitHub Code-page screenshot confirming **property-survey**, main **6874d8a**, marked **Public**. This resolves the earlier repository-name ambiguity: the reviewed source matches the intended repository. The live Pages URL is user-confirmed; direct deployed-artifact/API checks remain unavailable.
 
 F01/F02 candidates are implemented and tested locally on `plan/security-remediation-2026-11-03`; see [CANDIDATE_CHANGES.md](CANDIDATE_CHANGES.md). **No fix has been deployed, no live SQL/Stripe/automation setting was changed, and the exposed old webhook has not been rotated.** The original baseline findings below remain the audit record for commit 6874d8a; the candidate evidence is separate.

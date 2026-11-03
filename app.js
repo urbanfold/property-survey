@@ -11,6 +11,59 @@
         let recoveryUserId = null;
         const sb = window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
         const ADMIN_EMAIL = 'urbanfolduk@gmail.com';
+        // Recovery is deliberately tab-memory only: never serialize it while signed out.
+        let lockedSurveyRecovery = null;
+        let recoveringLockedSurvey = false;
+        let deliberateLogoutPending = false;
+        const logoutMessages = typeof BroadcastChannel === 'function' ? new BroadcastChannel('urbanfold-deliberate-logout') : null;
+        logoutMessages?.addEventListener('message', event => {
+            if (event.data?.type !== 'logout') return;
+            if (currentUser?.id === event.data.userId || lockedSurveyRecovery?.userId === event.data.userId) clearPrivateSession();
+        });
+        function lockExpiredSession() {
+            if (currentUser && currentPropertyId) {
+                const snapshot = captureSurvey();
+                lockedSurveyRecovery = { userId: currentUser.id, snapshot: structuredClone(snapshot), baseCloudVersion: activeCloudVersion };
+            }
+            clearPrivateSession({ preserveRecovery: true });
+            if (lockedSurveyRecovery) document.getElementById('login-notice').textContent =
+                'Your session ended. Sign back into the same account to recover this tab’s pending work. It has not been saved to Supabase. Do not close or refresh this tab: temporary recovery will be lost.';
+        }
+        async function recoverLockedSurvey() {
+            if (!lockedSurveyRecovery || !currentUser) return false;
+            if (lockedSurveyRecovery.userId !== currentUser.id) { lockedSurveyRecovery = null; return false; }
+            if (recoveringLockedSurvey) return true;
+            const recovery = lockedSurveyRecovery, context = sessionContext();
+            recoveringLockedSurvey = true;
+            try {
+                const verified = await requireResult(sb.auth.getUser(), 'Verify recovery identity', context);
+                if (verified.user?.id !== recovery.userId) throw new Error('Recovery requires the original account.');
+                // This fresh caller-token/RLS read must succeed before displaying any snapshot.
+                await requireResult(sb.from('properties').select('id').eq('id', recovery.snapshot.propertyId).single(), 'Verify survey recovery access', context);
+                await preparePhotoLinks(recovery.snapshot, context);
+                checkSession(context);
+                if (lockedSurveyRecovery !== recovery) return true;
+                draftWritesEnabled = false;
+                renderRoomsList();
+                const snapshot = { ...recovery.snapshot, userId: recovery.userId };
+                if (!loadDraft(JSON.stringify(snapshot))) throw new Error('Unable to restore pending work.');
+                activeCloudVersion = recovery.baseCloudVersion;
+                lockedSurveyRecovery = null;
+                draftWritesEnabled = true;
+                saveDraft();
+                showSurveySource('Pending work recovered after sign-in. Review it and Save progress to verify it in Supabase.');
+                return true;
+            } catch (_) {
+                if (sessionIsCurrent(context)) {
+                    showView('view-dashboard');
+                    const list = document.getElementById('dashboard-list');
+                    list.textContent = 'Pending work remains locked in this tab. Recovery needs a connection and confirmed access to the original survey. Do not close or refresh this tab.';
+                    const retry = document.createElement('button'); retry.className = 'btn'; retry.textContent = 'Retry pending-work recovery';
+                    retry.onclick = () => loadDashboard(); list.appendChild(retry);
+                }
+                return true;
+            } finally { recoveringLockedSurvey = false; }
+        }
         let privateSessionGeneration = 0;
         let privateRequests = new AbortController();
         function sessionContext() { return { generation: privateSessionGeneration, userId: currentUser?.id, signal: privateRequests.signal }; }
@@ -27,7 +80,8 @@
         function hasDeviceDrafts() {
             try { return Object.keys(localStorage).some(key => key === 'urbanfold_draft' || key.startsWith('urbanfold_draft_')); } catch (_) { return false; }
         }
-        function clearPrivateSession() {
+        function clearPrivateSession({ preserveRecovery = false } = {}) {
+            if (!preserveRecovery) lockedSurveyRecovery = null;
             privateRequests.abort();
             privateRequests = new AbortController();
             privateSessionGeneration++;
@@ -55,6 +109,7 @@
             document.getElementById('survey-source')?.remove();
             renderRoomsList();
             const cleared = discardDeviceDrafts();
+            setSaveStatus('No survey open. Sign in to access saved surveys.', 'locked');
             setLoading(false);
             showView('view-auth');
             document.getElementById('login-notice').textContent = cleared ? 'Signed out. Private device drafts were cleared; saved cloud surveys remain available.' : 'Signed out. This browser could not clear saved device drafts; use a private browser profile on shared devices.';
@@ -137,11 +192,15 @@
 
         async function handleLogout() {
             saveDraft();
-            if (hasDeviceDrafts() && !confirm('Signing out removes device drafts from this browser. Cancel and use Save progress first if you need to keep unsaved edits. Sign out now?')) return;
+            if ((hasDeviceDrafts() || lockedSurveyRecovery) && !confirm('Signing out removes device drafts and temporary recovery work from this browser. Cancel and use Save progress first if you need to keep unsaved edits. Sign out now?')) return;
+            const logoutUserId = currentUser?.id || lockedSurveyRecovery?.userId;
+            deliberateLogoutPending = true;
             try {
                 await requireResult(sb.auth.signOut(), 'Sign out');
                 clearPrivateSession();
+                logoutMessages?.postMessage({ type: 'logout', userId: logoutUserId });
             } catch (error) { alert(error.message); }
+            finally { deliberateLogoutPending = false; }
         }
 
         function activatePasswordRecovery(session) {
@@ -308,6 +367,8 @@
         async function loadDashboard() {
             const context = sessionContext();
             if (!currentUser) { showView('view-auth'); return; }
+            if (await recoverLockedSurvey()) return;
+            checkSession(context);
             saveDraft();
             showView('view-dashboard');
             handlePaymentReturn();
@@ -736,8 +797,9 @@
                 draft.savedOnDeviceAt = new Date().toISOString();
                 localStorage.setItem(`urbanfold_draft_${currentPropertyId}`, JSON.stringify(draft));
                 localStorage.setItem('urbanfold_draft', JSON.stringify(draft));
-                setSaveStatus('Draft saved on this device. Continue or save progress to store it in the cloud.');
-            } catch (e) { setSaveStatus('Device storage is full or unavailable. Keep this page open and save progress to the cloud now.', 'error'); }
+                setSaveStatus('Draft saved on this device only. Use Save progress to save and verify it in Supabase.');
+                return true;
+            } catch (e) { setSaveStatus('Unsaved changes: device storage is full or unavailable. Keep this tab open and save progress to Supabase when connected.', 'unsaved'); return false; }
         }
 
         function loadDraft(saved = localStorage.getItem('urbanfold_draft'), authorisedPropertyId = null) { if (!saved) return false;
@@ -746,13 +808,16 @@
 
         const enableDraftWrites = () => {
             const active = document.querySelector('.view.active')?.id;
-            if (currentPropertyId && !['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(active)) draftWritesEnabled = true;
+            if (currentUser && currentPropertyId && !['view-auth', 'view-dashboard', 'view-success', 'view-forgot-password', 'view-reset-password'].includes(active)) { draftWritesEnabled = true; setSaveStatus('Unsaved changes. Saving a draft on this device…', 'unsaved'); }
         };
         document.addEventListener('input', enableDraftWrites);
         document.addEventListener('change', enableDraftWrites);
         document.addEventListener('input', debounce(saveDraft, 500)); document.addEventListener('change', debounce(saveDraft, 500));
         window.addEventListener('pagehide', saveDraft);
-        window.addEventListener('beforeunload', saveDraft);
+        window.addEventListener('beforeunload', event => {
+            saveDraft();
+            if (lockedSurveyRecovery) { event.preventDefault(); event.returnValue = ''; }
+        });
 
         let savingDetails = false;
         async function saveDetails() {
@@ -1331,8 +1396,10 @@
             } catch (error) {
                 if (!sessionIsCurrent(context)) return;
                 draftWritesEnabled = true;
-                saveDraft();
-                setSaveStatus('Cloud save failed. Keep this page open and retry.', 'error');
+                const savedOnDevice = saveDraft();
+                setSaveStatus(savedOnDevice
+                    ? 'Supabase save failed. Draft saved on this device only; keep this tab open and retry when connected.'
+                    : 'Supabase save failed. Changes are unsaved; keep this tab open and retry when connected.', savedOnDevice ? 'device' : 'unsaved');
                 alert('Progress was not fully saved to the cloud: ' + error.message);
             } finally { if (sessionIsCurrent(context)) { savingProgress = false; setLoading(false); } }
         }
@@ -1435,11 +1502,15 @@
         // The callback does not await auth operations, avoiding the auth client's lock.
         if (typeof sb.auth.onAuthStateChange === 'function') {
             sb.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_OUT') { if (currentUser) clearPrivateSession(); else privateSessionGeneration++; }
-                if (['SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event) && session?.user && currentUser && (currentUser.id !== session.user.id || currentUser.email !== session.user.email)) {
+                if (event === 'SIGNED_OUT') { if (currentUser) { if (deliberateLogoutPending) clearPrivateSession(); else lockExpiredSession(); } else privateSessionGeneration++; }
+                if (['SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event) && session?.user && currentUser && currentUser.id !== session.user.id) {
                     clearPrivateSession();
                     currentUser = session.user;
                     queueMicrotask(() => { if (currentUser?.id === session.user.id && !passwordRecoveryActive) void loadDashboard(); });
+                }
+                if (['SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event) && session?.user) {
+                    if (lockedSurveyRecovery && lockedSurveyRecovery.userId !== session.user.id) lockedSurveyRecovery = null;
+                    if (currentUser?.id === session.user.id) currentUser = session.user;
                 }
                 if (event === 'PASSWORD_RECOVERY' && (recoveryLinkRequested || passwordRecoveryActive)) activatePasswordRecovery(session);
             });

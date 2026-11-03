@@ -37,6 +37,8 @@ jobs:
         run: node --test tests/test_notification_handlers.mjs
       - name: Test private-session teardown
         run: python tests/test_session_security.py
+      - name: Test same-account temporary session recovery
+        run: python tests/test_session_recovery.py
       - name: Test notification idempotency and permissions
         run: python tests/test_survey_notifications.py
       - name: Test recovery and failure handling

@@ -28,9 +28,11 @@ Teardown clears prior fields, photos, review/PDF data, passwords, dashboard and 
 
 ### Behaviour change requiring approval
 
-**The candidate clears local survey drafts on explicit logout, account switch or session loss.** The owner has approved explicit logout clearing with a clear warning and an opportunity to cancel and save first. Involuntary-session behaviour remains a separate release decision. Cloud-saved surveys remain available. Before explicit logout, a warning allows cancellation to save unsaved work first. The Room Details page explains the policy.
+The owner approved explicit logout clearing with a clear warning and an opportunity to cancel and save first, and subsequently approved tab-memory recovery for unexpected session expiry **for development/testing only**.
 
-This closes the plaintext-device-retention part of F01, but ending a session with unsaved local-only changes can discard those changes. The policy is a review decision, not an unnoticed production change. If retaining drafts across logout is required, revise the policy/design before deployment; owner namespacing alone does not protect plaintext local storage on a shared browser profile.
+Deliberate logout clears private state, persistent device drafts and temporary recovery; an app-specific BroadcastChannel tells other open app tabs to clear the same user's recovery too. Unexpected session loss captures the active property's latest state synchronously in the current tab's memory, clears private DOM/caches and persistent drafts, and shows sign-in with a tab-close/reload warning. There is no new persistent recovery store. Same-account recovery needs a fresh Auth user check and property read through the caller's RLS; failed access/network checks leave the snapshot hidden with a retry button. A different user ID discards it. Same-ID email updates and normal/retryable Auth refreshes preserve measurements.
+
+See [SESSION_RECOVERY_UPDATE.md](SESSION_RECOVERY_UPDATE.md) for new regression evidence and residual limitations. Cloud records remain unchanged until the user explicitly saves recovered work; recovery does not promise a successful cloud save or resolve concurrent edits.
 
 ### Tests
 
@@ -63,7 +65,7 @@ The backend must be installed/tested before any client cutover. Retire/rotate th
 
 ## Local verification
 
-Thirteen validation targets passed across the development checks:
+The original thirteen validation targets passed across the initial development checks; the later tab-memory recovery update adds a fourteenth target with separate evidence under `session-recovery-evidence/`:
 
 | Target | Result |
 | --- | --- |
@@ -86,7 +88,7 @@ The candidate's CI workflow adds these new checks, but it does not deploy Supaba
 
 ## Required approval sequence
 
-1. Review the concrete development diff and the F01 draft/session-loss policy.
+1. Review the concrete development diff and the approved development-only F01 tab-memory recovery implementation before any production approval.
 2. Review F02 recipients, rolling limits, retention and reconciliation semantics; inspect the actual automation/template behaviour.
 3. Exercise the candidates in an authorised isolated Supabase environment with owner/professional A, B and admin, plus a dummy notification receiver.
 4. Resolve the exact deployed `get_survey_allowance()` warning using read-only metadata; its existing source definition was not changed.
@@ -96,3 +98,5 @@ The candidate's CI workflow adds these new checks, but it does not deploy Supaba
 ## PR preparation update
 
 The owner requested a PR without deployment. Explicit logout warning/cancel/save-first preference is approved. See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) and [PULL_REQUEST.md](PULL_REQUEST.md). The checked-in workflow only publishes main, but GitHub API inspection was blocked and residual external deployment integrations could not be checked. No branch push or remote PR was attempted; remote main remains at `6874d8a` on the latest read-only check.
+
+The owner subsequently confirmed draft PR #1 exists and its Verify job passed while Publish was skipped. The new tab-memory update is local only and has not been pushed to that PR.

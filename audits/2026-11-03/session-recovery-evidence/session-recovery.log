@@ -1,0 +1,15 @@
+{
+  "live_requests": 0,
+  "results": [
+    "PASS real-client normal token refresh preserves pending measurements",
+    "PASS temporary Auth refresh failure preserves identity, private view and draft",
+    "PASS failed network save retains measurements and distinguishes cloud failure",
+    "PASS same-ID email update preserves pending edits",
+    "PASS expiry hides private DOM, clears persistent drafts, captures immediate edit in memory only",
+    "PASS same-user recovery requires fresh property access; denied attempt remains hidden and retryable",
+    "PASS recovered work saves and verifies in Supabase fixture",
+    "PASS different-user login cannot recover former user measurements",
+    "PASS deliberate logout broadcasts destructive cleanup across tabs",
+    "PASS recovery is tab-memory-only, not a persistent/new-tab offline store"
+  ]
+}
