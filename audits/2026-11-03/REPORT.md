@@ -3,7 +3,17 @@
 **Date:** 3 November 2026 (UK)  
 **Audit branch:** `audit/security-2026-11-03`  
 **Reviewed source:** commit `6874d8ab034df341bb6c32f21f1b94f3279f224b`  
-**Status:** source review and isolated tests completed for the attached checkout; requested private-repository identity and live deployment remain unverified.
+**Status:** source review and isolated tests completed for the attached checkout; live Pages URL availability is user-confirmed, but intended private-repository identity and deployed commit remain unverified.
+
+## Business and hosting update — 3 November 2026
+
+The owner has explicitly confirmed that **£6 additional-survey credits are intentional** for both Urbanfold's own work and independent designers/surveyors. The first ordinary-account survey is free; later property surveys cost £6 each. Preserve this pricing, free allocation, purchased credits and Stripe integration unless a separate change is approved.
+
+**Urbanfold Essential Feasibility** is a separate homeowner service with a proposed £179 introductory price, including the owner's professional assessment/report. It must not be conflated with app credits.
+
+The owner also confirmed that **https://urbanfold.github.io/property-survey/** currently opens the app. Together with the Pages domain and tracked deployment workflow, this supports GitHub Pages hosting. Direct live HTTP/Pages API checks remain blocked here; the deployed commit and old Netlify site's current state were not independently established. The configured source remote is verified as `urbanfold/property-survey`; confirmation of the intended private repository's full URL is still outstanding.
+
+See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for the traced £6 Stripe flow, hosting evidence, and prepared F01/F02 implementation specifications. Those specifications are **not applied fixes**. Application files, live Supabase, Stripe, automation settings and deployments remain unchanged.
 
 ## 1. Scope, authorisation and important limitations
 
