@@ -89,6 +89,13 @@ class Fixture:
         signed_read = req.method == 'GET' and u.path.startswith('/storage/v1/object/sign/') and parse_qs(u.query).get('token') == ['fixture-signed']
         if not signed_read and req.headers.get('authorization') != 'Bearer '+self.token:
             return reply({'message':'not authenticated','code':'PGRST301'},401)
+        if u.path.endswith('/functions/v1/request-survey-notification'):
+            prop=next((row for row in self.tables['properties'] if row['id']==req.post_data_json.get('property_id')),None)
+            if not prop or not prop.get('last_submitted_at'):return reply({'error':'not submitted'},409)
+            key=(prop['id'],prop['last_submitted_at'])
+            if not hasattr(self,'notification_events'):self.notification_events=set()
+            if key not in self.notification_events:self.emails+=1;self.notification_events.add(key)
+            return reply({'status':'accepted'})
         if u.path.startswith('/storage/v1/object/public/'):
             self.public_reads += 1
             return reply({'message':'Bucket is private'},403)
@@ -214,6 +221,8 @@ def main():
         assert fixture.signups[0]['data']['newsletter_consent_at'] is None
         page.get_by_text('Sign Up',exact=True).click()
         page.locator('#signup-newsletter').check()
+        expect(page.locator('#signup-password')).to_have_value('')
+        page.locator('#signup-password').fill('fixture-password-not-a-real-account')
         page.get_by_role('button',name='Create Account',exact=True).click()
         expect(page.locator('#form-login')).to_be_visible()
         assert fixture.signups[1]['data']['newsletter_subscribed'] is True

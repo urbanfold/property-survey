@@ -2,7 +2,7 @@
 
 **Updated:** 3 November 2026.  
 **Branch:** `plan/security-remediation-2026-11-03`.  
-**Scope:** documentation and targeted remediation specifications only. Application source, existing SQL, live Supabase, Stripe settings and deployed files remain untouched.
+**Scope:** local development candidates for F01/F02 and their tests, not a production release. Live Supabase, Stripe, notification automation and deployed files remain untouched. The original credit migrations and payment handlers are unchanged.
 
 ## 1. Confirmed business requirements
 
@@ -30,17 +30,17 @@ The existing ownership boundary is the authenticated account in `properties.user
 | Question | Current evidence | Status |
 | --- | --- | --- |
 | Attached source repository | Configured origin is `https://github.com/urbanfold/property-survey.git`; read-only `git ls-remote origin HEAD` returns `6874d8ab034df341bb6c32f21f1b94f3279f224b` | Remote identity and HEAD verified |
-| Is it the intended private repository? | Request originally named `urbanfold-property-survey`; full intended Code-page URL not yet supplied | Awaiting confirmation before application changes |
+| Is it the intended private repository? | User supplied a Code-page screenshot of `property-survey`, main `6874d8a`, matching this checkout | Intended repository confirmed by user evidence; screenshot marks it Public |
 | Alternate inferred repository | `git ls-remote https://github.com/urbanfold/urbanfold-property-survey.git HEAD` returned Repository not found | Unavailable; could be private/inaccessible or differently named, not proof of nonexistence |
 | Public application URL | User confirmed on 3 November that `https://urbanfold.github.io/property-survey/` opens the app | Current availability confirmed by user |
 | Hosting provider | The user-confirmed URL is a GitHub Pages domain and the tracked workflow uses `actions/configure-pages`, `upload-pages-artifact` and `deploy-pages` | Evidence supports GitHub Pages, not merely repository storage |
 | Direct live response / deployed commit | HTTP requests and authenticated GitHub Pages API attempts were blocked from this execution environment | Not independently measured; footer version or Pages deployment details still needed to bind source to deployed build |
-| Repository visibility | Git transport access does not disclose private/public visibility; repository API blocked | Not independently verified |
+| Repository visibility | User's Code-page screenshot explicitly shows Public | Public visibility confirmed from user screenshot; API remains inaccessible |
 | Old Netlify URL | Historical URL `https://urbanfold-survey.netlify.app/`; user reports intentional use ended | Current reachability/redirect/disable state unverified; do not assume retired |
 
 **Current live URL on available evidence:** https://urbanfold.github.io/property-survey/ . Availability is user-confirmed; direct HTTP inspection was not possible. The Pages URL and deployment workflow establish stronger hosting evidence than the presence of files in GitHub alone.
 
-**Before applying app changes:** obtain the intended repository's Code-page URL and compare its source to this checkout. Obtain the app footer's version or the latest Pages deployment commit. If they differ, audit the actual source/deployed artifact and rebase the proposals rather than applying them blindly.
+**Repository gate satisfied:** the user's screenshot confirms `property-survey` main `6874d8a` matches the available remote/source. Local branch implementation can proceed. Before production release, still inspect the app footer/Pages deployment commit; direct live artifact inspection remains unavailable here.
 
 No host migration, Netlify deletion, redirect change or deployment is proposed for immediate execution. If the old Netlify app remains accessible, plan its retirement/redirect separately with approval; otherwise it could continue serving an older vulnerable client after a Pages fix.
 
@@ -105,6 +105,12 @@ Do not make an uncoordinated client-only F02 change: it could break working noti
 
 ## 7. Next required input
 
-The app URL has been confirmed by the user. The remaining repository input is its **full GitHub Code-page URL**, plus ideally the app footer version or Pages deployment commit. No passwords, API keys or customer records are needed.
+The app URL and repository are now confirmed by user evidence. The source is `urbanfold/property-survey`, Public, main `6874d8a`. Before release, record the app footer version or Pages deployment commit and complete authorised isolated Supabase testing. No passwords, API keys or customer records are needed in chat.
 
 The exact Supabase `get_survey_allowance()` warning and read-only deployed metadata are still required to resolve that audit item. Do not remove `SECURITY DEFINER` or alter permissions solely to silence an unspecified warning.
+
+## 8. Prepared development candidates
+
+The local branch now contains implemented candidates and regression tests. See [CANDIDATE_CHANGES.md](CANDIDATE_CHANGES.md) for the exact behaviour changes, test evidence and outstanding approval gates. Earlier proposal documents describe design intent; they are not claims of production remediation.
+
+F01's candidate clears device drafts on logout/session loss, with a cancelable explicit-logout warning and an on-screen saving notice. This privacy choice requires approval before release. F02's candidate preserves the saved client contact, confirmed sender ownership, durable event deduplication and proposed caps (20/account, 5/property per rolling 24 hours). It does not introduce client-contact verification; that residual recipient-policy risk must be acknowledged/reviewed.

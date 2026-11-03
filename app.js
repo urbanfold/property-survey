@@ -11,6 +11,54 @@
         let recoveryUserId = null;
         const sb = window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
         const ADMIN_EMAIL = 'urbanfolduk@gmail.com';
+        let privateSessionGeneration = 0;
+        let privateRequests = new AbortController();
+        function sessionContext() { return { generation: privateSessionGeneration, userId: currentUser?.id, signal: privateRequests.signal }; }
+        function sessionIsCurrent(context) { return context.generation === privateSessionGeneration && context.userId === currentUser?.id && (context.propertyId === undefined || context.propertyId === currentPropertyId); }
+        function checkSession(context) {
+            if (!sessionIsCurrent(context)) { const error = new Error('The account changed. Open the survey again.'); error.name = 'SessionChangedError'; throw error; }
+        }
+        function discardDeviceDrafts() {
+            try {
+                for (const key of Object.keys(localStorage)) if (key === 'urbanfold_draft' || key.startsWith('urbanfold_draft_')) localStorage.removeItem(key);
+                return true;
+            } catch (_) { return false; }
+        }
+        function hasDeviceDrafts() {
+            try { return Object.keys(localStorage).some(key => key === 'urbanfold_draft' || key.startsWith('urbanfold_draft_')); } catch (_) { return false; }
+        }
+        function clearPrivateSession() {
+            privateRequests.abort();
+            privateRequests = new AbortController();
+            privateSessionGeneration++;
+            draftWritesEnabled = false;
+            currentUser = null; currentPropertyId = null; newPropertyId = null; activeCloudVersion = null;
+            appState = { photos: {}, roomPhotos: {} }; pendingPhotoDeletions = [];
+            signedPhotoUrls.clear(); photoJobs.clear();
+            savingDetails = false; savingProgress = false; submittingSurvey = false;
+            openingCheckout = false; checkingPurchasedCredit = false;
+            disconnectLeicaTest();
+            document.querySelectorAll('#view-details input, #view-details textarea, #view-type select, #view-extension input, #view-extension textarea, #view-auth input').forEach(input => {
+                if (input.type === 'checkbox') input.checked = false; else input.value = '';
+            });
+            clearRecoveryState();
+            requestedResetEmail = null;
+            document.getElementById('reset-email').value = '';
+            hidePasswords();
+            for (const id of ['login-password','signup-password','reset-password','reset-confirm-password']) document.getElementById(id).value = '';
+            document.querySelectorAll('.checkbox-item.selected').forEach(item => item.classList.remove('selected'));
+            document.querySelectorAll('.preview-gallery').forEach(item => item.replaceChildren());
+            for (const id of ['dashboard-list','survey-review-content','pdf-rooms-list','pdf-address','pdf-postcode','pdf-name','pdf-date','pdf-type','pdf-ext-type','pdf-ext-dims','pdf-ext-desc','notification-status']) document.getElementById(id)?.replaceChildren();
+            document.getElementById('exterior-grid').replaceChildren();
+            document.getElementById('pdf-content').style.display = 'none';
+            document.getElementById('admin-pdf-section').style.display = 'none';
+            document.getElementById('survey-source')?.remove();
+            renderRoomsList();
+            const cleared = discardDeviceDrafts();
+            setLoading(false);
+            showView('view-auth');
+            document.getElementById('login-notice').textContent = cleared ? 'Signed out. Private device drafts were cleared; saved cloud surveys remain available.' : 'Signed out. This browser could not clear saved device drafts; use a private browser profile on shared devices.';
+        }
         let currentUser = null;
         let currentPropertyId = null;
         let newPropertyId = null;
@@ -60,6 +108,7 @@
                         newsletter_consent_at: newsletterSubscribed ? new Date().toISOString() : null,
                         newsletter_consent_version: newsletterSubscribed ? '2026-10-23' : null }, emailRedirectTo: new URL('.', location.href).href }
                 }), 'Create account');
+                document.getElementById('signup-password').value = '';
                 if (data.session) { currentUser = data.user; await loadDashboard(); }
                 else {
                     alert('Account created. Check your email to confirm, then log in.');
@@ -88,12 +137,10 @@
 
         async function handleLogout() {
             saveDraft();
+            if (hasDeviceDrafts() && !confirm('Signing out removes device drafts from this browser. Cancel and use Save progress first if you need to keep unsaved edits. Sign out now?')) return;
             try {
                 await requireResult(sb.auth.signOut(), 'Sign out');
-                currentUser = null;
-                currentPropertyId = null;
-                signedPhotoUrls.clear();
-                showView('view-auth');
+                clearPrivateSession();
             } catch (error) { alert(error.message); }
         }
 
@@ -225,9 +272,11 @@
         }
 
         async function initializeApp() {
+            const context = sessionContext();
             renderRoomsList();
             try {
                 const data = await requireResult(sb.auth.getSession(), 'Restore session');
+                checkSession(context);
                 if (recoveryLinkError) {
                     clearRecoveryState();
                     openForgotPassword();
@@ -248,6 +297,7 @@
                 }
                 if (data.session) { currentUser = data.session.user; await loadDashboard(); }
             } catch (error) {
+                if (!sessionIsCurrent(context)) return;
                 if (recoveryLinkRequested || recoveryLinkError) {
                     openForgotPassword();
                     document.getElementById('reset-email-status').textContent = 'This reset link could not be verified. Request a new reset email.';
@@ -256,6 +306,7 @@
         }
 
         async function loadDashboard() {
+            const context = sessionContext();
             if (!currentUser) { showView('view-auth'); return; }
             saveDraft();
             showView('view-dashboard');
@@ -265,7 +316,8 @@
             try {
                 let query = sb.from('properties').select('*').order('created_at', { ascending: false });
                 if (currentUser.email !== ADMIN_EMAIL) query = query.eq('user_id', currentUser.id);
-                const data = await requireResult(query, 'Load surveys');
+                const data = await requireResult(query, 'Load surveys', context);
+                checkSession(context);
                 list.replaceChildren();
                 if (!data?.length) { list.textContent = 'No surveys yet. Start a new one above!'; return; }
                 for (const prop of data) {
@@ -292,7 +344,7 @@
                     }
                     list.appendChild(item);
                 }
-            } catch (error) { list.textContent = 'Unable to load surveys: ' + error.message; }
+            } catch (error) { if (sessionIsCurrent(context)) list.textContent = 'Unable to load surveys: ' + error.message; }
         }
 
         function readableRooms(rooms, photos = {}) {
@@ -310,9 +362,11 @@
         }
 
         async function downloadSurveyPack(propertyId, address) {
+            const context = sessionContext();
             setLoading(true, 'Gathering saved survey data and photos...');
             try {
-                const { snapshot } = await fetchSurveySnapshot(propertyId);
+                const { snapshot } = await fetchSurveySnapshot(propertyId, context);
+                checkSession(context);
                 const safeName = (address || snapshot.details.address || 'survey').replace(/[^a-z0-9]/gi, '_');
                 const zip = new JSZip();
                 const folder = zip.folder(safeName);
@@ -329,21 +383,23 @@
                     for (const [label, photos] of Object.entries(snapshot.appState[group])) {
                         const path = label.replace(/[^a-z0-9-]/gi, '_');
                         for (let i = 0; i < photos.length; i++) {
-                            const response = await fetch(await photoDisplayUrl(photos[i]));
+                            checkSession(context);
+                            const response = await fetch(await photoDisplayUrl(photos[i], context));
                             if (!response.ok) throw new Error(`${label} photo ${i + 1} could not be downloaded (HTTP ${response.status}).`);
                             folder.file(`${group}/${path}/${i + 1}.jpg`, await response.arrayBuffer());
                         }
                     }
                 }
                 const blob = await zip.generateAsync({ type: 'blob' });
+                checkSession(context);
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `Urbanfold_${safeName}.zip`;
                 document.body.appendChild(link);
                 link.click();
                 setTimeout(() => { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
-            } catch (error) { alert('Unable to download the complete survey pack: ' + error.message); }
-            finally { setLoading(false); }
+            } catch (error) { if (sessionIsCurrent(context)) alert('Unable to download the complete survey pack: ' + error.message); }
+            finally { if (sessionIsCurrent(context)) setLoading(false); }
         }
 
         async function readSurveyAllowance() {
@@ -367,6 +423,7 @@
 
         let openingCheckout = false;
         async function buyAdditionalSurvey() {
+            const context = sessionContext();
             if (openingCheckout || !currentUser) return;
             openingCheckout = true;
             const button = document.getElementById('buy-additional-survey');
@@ -380,6 +437,7 @@
                 attempt ||= crypto.randomUUID();
                 try { sessionStorage.setItem(key, attempt); } catch (_) {}
                 const { data, error } = await sb.functions.invoke('create-survey-checkout', { body: { attempt_id: attempt } });
+                checkSession(context);
                 if (error) {
                     let message = 'Payments are not available yet. Please contact survey@urbanfold.uk.';
                     try { message = (await error.context.json()).error || message; } catch (_) {}
@@ -388,12 +446,13 @@
                 const destination = new URL(data?.url);
                 if (destination.protocol !== 'https:' || destination.hostname !== 'checkout.stripe.com') throw new Error('The secure checkout link could not be verified.');
                 location.assign(destination.href);
-            } catch (error) { status.textContent = error.message; }
-            finally { openingCheckout = false; button.disabled = false; }
+            } catch (error) { if (sessionIsCurrent(context)) status.textContent = error.message; }
+            finally { if (sessionIsCurrent(context)) { openingCheckout = false; button.disabled = false; } }
         }
 
         let checkingPurchasedCredit = false;
         async function checkPurchasedCredit() {
+            const context = sessionContext();
             if (!currentUser || checkingPurchasedCredit) return;
             checkingPurchasedCredit = true;
             const notice = document.getElementById('payment-notice');
@@ -408,8 +467,8 @@
                     notice.textContent = 'Payment confirmed. Your additional survey credit is ready—choose Start New Survey.';
                     button.hidden = true;
                 } else notice.textContent = 'No additional survey credit has been confirmed yet. Payment confirmation can take a short time. Check again before paying again; contact survey@urbanfold.uk if needed.';
-            } catch (_) { notice.textContent = 'Payment confirmation could not be checked. Your existing surveys remain available. Please try again or contact survey@urbanfold.uk.'; }
-            finally { checkingPurchasedCredit = false; button.disabled = false; }
+            } catch (_) { if (sessionIsCurrent(context)) notice.textContent = 'Payment confirmation could not be checked. Your existing surveys remain available. Please try again or contact survey@urbanfold.uk.'; }
+            finally { if (sessionIsCurrent(context)) { checkingPurchasedCredit = false; button.disabled = false; } }
         }
 
         function handlePaymentReturn() {
@@ -504,7 +563,8 @@
             return { bucket: match[1], path: decodeURIComponent(match[2]) };
         }
 
-        async function preparePhotoLinks(snapshot) {
+        async function preparePhotoLinks(snapshot, context = sessionContext()) {
+            checkSession(context);
             const references = [...new Set(['photos', 'roomPhotos'].flatMap(group =>
                 Object.values(snapshot.appState[group]).flat()))].filter(reference => !reference.startsWith('data:'));
             const groups = new Map();
@@ -516,7 +576,8 @@
                 groups.set(location.bucket, group);
             }
             await Promise.all(Array.from(groups, async ([bucket, entries]) => {
-                const data = await requireResult(sb.storage.from(bucket).createSignedUrls(entries.map(entry => entry.path), 3600), `Open private ${bucket}`);
+                const data = await requireResult(sb.storage.from(bucket).createSignedUrls(entries.map(entry => entry.path), 3600), `Open private ${bucket}`, context);
+                checkSession(context);
                 for (const entry of entries) {
                     const result = data?.find(item => item.path === entry.path);
                     if (!result?.signedUrl || result.error) throw new Error(`A private photo in ${bucket} could not be opened. Check its storage permissions.`);
@@ -525,19 +586,24 @@
             }));
         }
 
-        async function photoDisplayUrl(reference) {
+        async function photoDisplayUrl(reference, context = sessionContext()) {
+            checkSession(context);
             if (reference.startsWith('data:')) return reference;
-            await preparePhotoLinks({ appState: { photos: { photo: [reference] }, roomPhotos: {} } });
+            await preparePhotoLinks({ appState: { photos: { photo: [reference] }, roomPhotos: {} } }, context);
+            checkSession(context);
             return signedPhotoUrls.get(reference).url;
         }
 
-        async function fetchSurveySnapshot(id) {
+        async function fetchSurveySnapshot(id, context = sessionContext()) {
+                checkSession(context);
                 const { data, error } = await sb.from('properties').select('*').eq('id', id).single();
+                checkSession(context);
                 if (error) throw error;
                 if (!data) throw new Error('Survey could not be found.');
                 const readRows = async (table) => {
                     const result = await sb.from(table).select('*').eq('property_id', id)
                         .order('created_at', { ascending: true, nullsFirst: true }).order('id', { ascending: true });
+                    checkSession(context);
                     if (result.error) throw new Error(`${table}: ${result.error.message}`);
                     return result.data || [];
                 };
@@ -548,6 +614,7 @@
                 let roomPhotos = [];
                 if (rooms.length) {
                     const result = await sb.from('room_photos').select('*').in('room_id', rooms.map(room => room.id));
+                    checkSession(context);
                     if (result.error) throw new Error(`room_photos: ${result.error.message}`);
                     roomPhotos = result.data || [];
                 }
@@ -582,7 +649,9 @@
                         if (!photos.includes(photo.photo_url)) photos.push(photo.photo_url);
                     }
                 }
-            await preparePhotoLinks(restored);
+            checkSession(context);
+            await preparePhotoLinks(restored, context);
+            checkSession(context);
             return { snapshot: restored, hasCloudProgress: Boolean(hasSubmittedData) };
         }
 
@@ -606,6 +675,7 @@
         }
 
         async function resumeSurvey(id) {
+            const context = sessionContext();
             if (photoJobs.size || savingProgress || submittingSurvey || savingDetails) return alert('Please wait for the current operation to finish.');
             setLoading(true, "Opening survey...");
             draftWritesEnabled = false;
@@ -617,15 +687,17 @@
                 const matchingDraft = draft && draft.propertyId === id &&
                     (!draft.userId || draft.userId === currentUser?.id);
                 const openDeviceDraft = () => {
+                    checkSession(context);
                     renderRoomsList();
-                    if (!loadDraft(saved)) throw new Error('Unable to display the draft.');
+                    if (!loadDraft(saved, id)) throw new Error('Unable to display the draft.');
                     // Reopening a survey always starts at property details.
                     showView('view-details');
                     draftWritesEnabled = true;
                     activeCloudVersion = draft.baseCloudVersion || activeCloudVersion;
                     showSurveySource('Draft from this device. Changes have not been submitted.');
                 };
-                const { snapshot: restored, hasCloudProgress } = await fetchSurveySnapshot(id);
+                const { snapshot: restored, hasCloudProgress } = await fetchSurveySnapshot(id, context);
+                checkSession(context);
                 activeCloudVersion = surveyVersion(restored);
                 const currentDeviceEdits = matchingDraft && draft.unsaved === true && draft.baseCloudVersion === activeCloudVersion;
                 if (matchingDraft && (!hasCloudProgress || currentDeviceEdits)) {
@@ -640,8 +712,8 @@
                     ? 'Saved survey loaded from the database. A separate draft on this device is also available.'
                     : 'Saved survey loaded from the database.', matchingDraft ? openDeviceDraft : null);
             } catch (error) {
-                alert('Unable to open survey: ' + error.message);
-            } finally { setLoading(false); }
+                if (sessionIsCurrent(context)) alert('Unable to open survey: ' + error.message);
+            } finally { if (sessionIsCurrent(context)) setLoading(false); }
         }
         function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
 
@@ -668,8 +740,8 @@
             } catch (e) { setSaveStatus('Device storage is full or unavailable. Keep this page open and save progress to the cloud now.', 'error'); }
         }
 
-        function loadDraft(saved = localStorage.getItem('urbanfold_draft')) { if (!saved) return false;
-            try { const draft = JSON.parse(saved); if (!draft) return false; currentPropertyId = draft.propertyId || null; pendingPhotoDeletions = draft.pendingPhotoDeletions || []; appState = draft.appState || { photos: {}, roomPhotos: {} }; document.querySelectorAll('.preview-gallery').forEach(gallery => { gallery.innerHTML = '<div class="empty-state">No Photos</div>'; }); if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } document.getElementById('prop-type').value = draft.propType || ''; document.getElementById('exterior-grid').innerHTML = ''; updateExteriorRequirements(); if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width ?? ''; document.getElementById('ext-length').value = draft.extension.length ?? ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
+        function loadDraft(saved = localStorage.getItem('urbanfold_draft'), authorisedPropertyId = null) { if (!saved) return false;
+            try { const draft = JSON.parse(saved); if (!draft || !currentUser || (draft.userId && draft.userId !== currentUser.id) || (!draft.userId && draft.propertyId !== authorisedPropertyId)) return false; currentPropertyId = draft.propertyId || null; pendingPhotoDeletions = draft.pendingPhotoDeletions || []; appState = draft.appState || { photos: {}, roomPhotos: {} }; document.querySelectorAll('.preview-gallery').forEach(gallery => { gallery.innerHTML = '<div class="empty-state">No Photos</div>'; }); if (draft.details) { document.getElementById('detail-name').value = draft.details.name || ''; document.getElementById('detail-client-email').value = draft.details.clientEmail || ''; document.getElementById('detail-address').value = draft.details.address || ''; document.getElementById('detail-postcode').value = draft.details.postcode || ''; document.getElementById('detail-notes').value = draft.details.notes || ''; } document.getElementById('prop-type').value = draft.propType || ''; document.getElementById('exterior-grid').innerHTML = ''; updateExteriorRequirements(); if (draft.extension) { document.getElementById('ext-description').value = draft.extension.description || ''; document.getElementById('ext-width').value = draft.extension.width ?? ''; document.getElementById('ext-length').value = draft.extension.length ?? ''; document.querySelectorAll('input[name="ext-type"]').forEach(cb => { cb.checked = draft.extension.types && draft.extension.types.includes(cb.value); if (cb.checked) cb.parentElement.classList.add('selected'); else cb.parentElement.classList.remove('selected'); }); } if (draft.rooms) { roomList.forEach(room => { const rid = roomId(room); const rData = draft.rooms[rid]; if (rData) { const shapeEl = document.getElementById(`shape-${rid}`); if (shapeEl) { shapeEl.value = rData.shape || 'Square/Rectangular'; toggleLShapedDimensions(shapeEl); } const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; }; setVal(`len-${rid}`, rData.len); setVal(`wid-${rid}`, rData.wid); setVal(`hei-${rid}`, rData.hei); setVal(`len1-${rid}`, rData.len1); setVal(`wid1-${rid}`, rData.wid1); setVal(`len2-${rid}`, rData.len2); setVal(`wid2-${rid}`, rData.wid2); setVal(`len3-${rid}`, rData.len3); setVal(`wid3-${rid}`, rData.wid3); setVal(`add-${rid}`, rData.add); } }); } Object.keys(appState.photos).forEach(id => renderGallery(id)); Object.keys(appState.roomPhotos).forEach(id => renderGallery(id)); if (draft.view && document.getElementById(draft.view)) showView(draft.view); else if (currentPropertyId) showView('view-details'); return true; } catch (e) { return false; }
         }
 
         const enableDraftWrites = () => {
@@ -684,6 +756,7 @@
 
         let savingDetails = false;
         async function saveDetails() {
+            const context = sessionContext();
             if (savingDetails) return;
             if (!currentUser) return alert('Please log in before saving.');
             const address = document.getElementById('detail-address').value.trim();
@@ -699,16 +772,18 @@
                 const data = await requireResult(currentPropertyId
                     ? sb.from('properties').update(payload).eq('id', currentPropertyId).select().single()
                     : sb.from('properties').upsert({ ...payload, id: newPropertyId ||= crypto.randomUUID(), user_id: currentUser.id }, { onConflict: 'id' }).select().single(), 'Save property details');
+                checkSession(context);
                 if (!data?.id) throw new Error('The saved property could not be verified.');
                 currentPropertyId = data.id;
                 saveDraft();
                 showView('view-type');
             } catch (error) {
+                if (!sessionIsCurrent(context)) return;
                 if (error.message.includes('URBANFOLD_SURVEY_LIMIT')) showAdditionalSurveyDialog();
                 else if (error.message.includes('URBANFOLD_ADDRESS_LOCKED')) alert('This submitted property address is locked. Contact survey@urbanfold.uk for a correction, or start an additional survey for a different property.');
                 else alert(error.message);
             }
-            finally { savingDetails = false; setLoading(false); }
+            finally { if (sessionIsCurrent(context)) { savingDetails = false; setLoading(false); } }
         }
 
         const elevationsMap = { 'terraced': ['front', 'rear', 'roof'], 'end-terraced': ['front', 'rear', 'side', 'roof'], 'semi-detached': ['front', 'rear', 'side', 'roof'], 'detached': ['front', 'rear', 'left-side', 'right-side', 'roof'], 'bungalow': ['front', 'rear', 'left-side', 'right-side', 'roof'], 'flat': ['front', 'rear', 'side'] };
@@ -743,6 +818,7 @@
         }
 
         async function handlePhoto(id, inputElement) {
+            const context = sessionContext();
             draftWritesEnabled = true;
             const state = appState;
             const propertyId = currentPropertyId;
@@ -760,7 +836,7 @@
             })();
             photoJobs.add(job);
             try { await job; }
-            catch (error) { alert('Photo could not be added: ' + error.message); }
+            catch (error) { if (sessionIsCurrent(context)) alert('Photo could not be added: ' + error.message); }
             finally { photoJobs.delete(job); }
         }
 
@@ -808,8 +884,10 @@
             saveDraft();
         }
 
-        async function applyPhotoDeletions(rooms) {
+        async function applyPhotoDeletions(rooms, context = sessionContext()) {
+            const propertyId = currentPropertyId;
             for (const deletion of pendingPhotoDeletions) {
+                checkSession(context);
                 let operation;
                 if (deletion.group === 'roomPhotos') {
                     const ids = rooms.filter(room => room.room_name === deletion.id).map(room => room.id);
@@ -818,9 +896,9 @@
                 } else {
                     const table = deletion.id === 'sketch' ? 'sketch_photos'
                         : deletion.id === 'extension-location' ? 'extension_photos' : 'exterior_photos';
-                    operation = sb.from(table).delete().eq('property_id', currentPropertyId).eq('photo_url', deletion.photo).select();
+                    operation = sb.from(table).delete().eq('property_id', propertyId).eq('photo_url', deletion.photo).select();
                 }
-                await requireResult(operation, 'Remove saved photo');
+                await requireResult(operation, 'Remove saved photo', context);
             }
         }
 
@@ -1061,6 +1139,7 @@
         });
 
         async function generatePDF() {
+            const context = sessionContext();
             const survey = captureSurvey();
             const setText = (id, value) => { document.getElementById(id).textContent = value || 'Not recorded'; };
             setText('pdf-date', new Date().toLocaleDateString('en-GB'));
@@ -1089,32 +1168,48 @@
             const element = document.getElementById('pdf-content');
             element.style.display = 'block';
             try {
-                await html2pdf().set({ margin: 12, filename: `Urbanfold_Survey_${survey.details.postcode || 'report'}.pdf`,
+                const pdf = await html2pdf().set({ margin: 12, filename: `Urbanfold_Survey_${survey.details.postcode || 'report'}.pdf`,
                     image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                     pagebreak: { mode: ['css', 'legacy'], avoid: '.room-item' }
-                }).from(element).save();
-            } catch (error) { alert('Unable to generate PDF: ' + error.message); }
-            finally { element.style.display = 'none'; }
+                }).from(element).outputPdf('blob');
+                checkSession(context);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(pdf);
+                link.download = `Urbanfold_Survey_${survey.details.postcode || 'report'}.pdf`;
+                document.body.appendChild(link); link.click();
+                setTimeout(() => { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
+            } catch (error) { if (sessionIsCurrent(context)) alert('Unable to generate PDF: ' + error.message); }
+            finally { if (sessionIsCurrent(context)) element.style.display = 'none'; }
         }
 
         let submittingSurvey = false;
 
-        async function requireResult(operation, label) {
+        async function requireResult(operation, label, context = sessionContext()) {
+            const authOperation = ['Create account','Log in','Sign out','Restore session','Request password reset','Update password'].includes(label);
+            if (!authOperation) {
+                checkSession(context);
+                if (typeof operation?.abortSignal === 'function') operation = operation.abortSignal(context.signal);
+            }
             const result = await operation;
+            if (!authOperation) checkSession(context);
             if (result.error) throw new Error(`${label}: ${result.error.message}`);
             return result.data;
         }
 
-        async function saveSurveyPhotos(photos, bucket, table, parent, extra = {}) {
+        async function saveSurveyPhotos(photos, bucket, table, parent, extra = {}, context = sessionContext()) {
+            const propertyId = currentPropertyId;
             for (let i = 0; i < photos.length; i++) {
                 // Photos loaded from Supabase already have database records.
                 if (!photos[i].startsWith('data:')) continue;
-                const fileName = `${currentPropertyId}/${crypto.randomUUID()}.jpg`;
+                checkSession(context);
+                const fileName = `${propertyId}/${crypto.randomUUID()}.jpg`;
                 await requireResult(sb.storage.from(bucket).upload(fileName,
-                    dataURLtoFile(photos[i], fileName), { contentType: 'image/jpeg' }), `Upload ${table}`);
+                    dataURLtoFile(photos[i], fileName), { contentType: 'image/jpeg' }), `Upload ${table}`, context);
+                checkSession(context);
                 const reference = `storage://${bucket}/${fileName}`;
-                await requireResult(sb.from(table).insert({ ...parent, ...extra, photo_url: reference }), `Save ${table}`);
+                await requireResult(sb.from(table).insert({ ...parent, ...extra, photo_url: reference }), `Save ${table}`, context);
+                checkSession(context);
                 // A retry must not upload photos whose records were already saved.
                 photos[i] = reference;
                 saveDraft();
@@ -1122,7 +1217,9 @@
         }
 
         async function persistSurvey() {
+            const context = { ...sessionContext(), propertyId: currentPropertyId };
             await Promise.all(Array.from(photoJobs));
+            checkSession(context);
             if (!currentUser || !currentPropertyId) throw new Error('Please sign in and save property details first.');
             const expected = captureSurvey();
                 const value = id => document.getElementById(id).value;
@@ -1130,14 +1227,14 @@
                     property_type: value('prop-type'), surveyor_name: value('detail-name'),
                     client_email: value('detail-client-email'), address: value('detail-address'),
                     postcode: value('detail-postcode'), notes: value('detail-notes')
-                }).eq('id', currentPropertyId).select().single(), 'Save property');
+                }).eq('id', currentPropertyId).select().single(), 'Save property', context);
                 const elevations = elevationsMap[value('prop-type')] || [];
                 for (const elevation of elevations) {
                     await saveSurveyPhotos(appState.photos[elevation] || [], 'exterior-photos',
-                        'exterior_photos', { property_id: currentPropertyId }, { elevation_type: elevation });
+                        'exterior_photos', { property_id: currentPropertyId }, { elevation_type: elevation }, context);
                 }
                 const existingExtensions = await requireResult(sb.from('extensions').select('*')
-                    .eq('property_id', currentPropertyId).order('created_at', { ascending: true, nullsFirst: true }).order('id', { ascending: true }), 'Read extension');
+                    .eq('property_id', currentPropertyId).order('created_at', { ascending: true, nullsFirst: true }).order('id', { ascending: true }), 'Read extension', context);
                 const extension = {
                     property_id: currentPropertyId,
                     extension_types: Array.from(document.querySelectorAll('input[name="ext-type"]:checked')).map(cb => cb.value),
@@ -1146,13 +1243,13 @@
                 const existingExtension = existingExtensions?.[existingExtensions.length - 1];
                 await requireResult(existingExtension
                     ? sb.from('extensions').update(extension).eq('id', existingExtension.id).select().single()
-                    : sb.from('extensions').insert(extension).select().single(), 'Save extension');
+                    : sb.from('extensions').insert(extension).select().single(), 'Save extension', context);
                 await saveSurveyPhotos(appState.photos['extension-location'] || [], 'exterior-photos',
-                    'extension_photos', { property_id: currentPropertyId });
+                    'extension_photos', { property_id: currentPropertyId }, {}, context);
                 await saveSurveyPhotos(appState.photos.sketch || [], 'sketch-photos',
-                    'sketch_photos', { property_id: currentPropertyId });
+                    'sketch_photos', { property_id: currentPropertyId }, {}, context);
                 const existingRooms = await requireResult(sb.from('rooms').select('*')
-                    .eq('property_id', currentPropertyId).order('created_at', { ascending: true, nullsFirst: true }).order('id', { ascending: true }), 'Read rooms');
+                    .eq('property_id', currentPropertyId).order('created_at', { ascending: true, nullsFirst: true }).order('id', { ascending: true }), 'Read rooms', context);
                 for (const room of roomList) {
                     const rid = roomId(room);
                     const shape = value(`shape-${rid}`);
@@ -1166,12 +1263,13 @@
                     const existingRoom = existingRooms?.filter(row => row.room_name === room).pop();
                     const roomData = await requireResult(existingRoom
                         ? sb.from('rooms').update(payload).eq('id', existingRoom.id).select().single()
-                        : sb.from('rooms').insert(payload).select().single(), `Save room ${room}`);
+                        : sb.from('rooms').insert(payload).select().single(), `Save room ${room}`, context);
                     await saveSurveyPhotos(appState.roomPhotos[room] || [], 'room-photos',
-                        'room_photos', { room_id: roomData.id });
+                        'room_photos', { room_id: roomData.id }, {}, context);
                 }
-            await applyPhotoDeletions(existingRooms || []);
-            const { snapshot } = await fetchSurveySnapshot(currentPropertyId);
+            await applyPhotoDeletions(existingRooms || [], context);
+            const { snapshot } = await fetchSurveySnapshot(currentPropertyId, context);
+            checkSession(context);
             verifySavedSurvey(expected, snapshot);
             pendingPhotoDeletions = [];
             activeCloudVersion = surveyVersion(snapshot);
@@ -1218,6 +1316,7 @@
 
         let savingProgress = false;
         async function saveCloudProgress(nextView) {
+            const context = sessionContext();
             if (savingProgress || submittingSurvey) return;
             savingProgress = true;
             draftWritesEnabled = true;
@@ -1225,41 +1324,32 @@
             setLoading(true, 'Saving and verifying your progress...');
             try {
                 await persistSurvey();
+                checkSession(context);
                 if (nextView) showView(nextView);
                 setSaveStatus('Progress verified in the cloud.', 'cloud');
                 showSurveySource('Progress verified in the cloud.');
             } catch (error) {
+                if (!sessionIsCurrent(context)) return;
                 draftWritesEnabled = true;
                 saveDraft();
                 setSaveStatus('Cloud save failed. Keep this page open and retry.', 'error');
                 alert('Progress was not fully saved to the cloud: ' + error.message);
-            } finally { savingProgress = false; setLoading(false); }
+            } finally { if (sessionIsCurrent(context)) { savingProgress = false; setLoading(false); } }
         }
 
         async function notifySurveySaved(snapshot) {
+            const context = sessionContext();
+            if (!currentUser || !currentPropertyId) return;
             const status = document.getElementById('notification-status');
             status.textContent = 'Survey data saved. Requesting the email notification...';
-            const bytes = new TextEncoder().encode(JSON.stringify(snapshot));
-            const digest = await crypto.subtle.digest('SHA-256', bytes);
-            const signature = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
-            const key = `urbanfold_notification_${currentPropertyId}_${signature}`;
             try {
-                if (localStorage.getItem(key)) { status.textContent = 'An email notification was already requested for this version on this device.'; return; }
-            } catch (_) { /* A storage restriction must not block a saved survey. */ }
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 15000);
-            try {
-                const response = await fetch('https://hooks.zapier.com/hooks/catch/29202657/410hu8q/', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
-                    body: JSON.stringify({ client_email: snapshot.details.clientEmail, address: snapshot.details.address,
-                        surveyor_name: snapshot.details.name, property_id: currentPropertyId, submission_id: signature })
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                try { localStorage.setItem(key, 'requested'); } catch (_) {}
+                const result = await sb.functions.invoke('request-survey-notification', { body: { property_id: currentPropertyId } });
+                checkSession(context);
+                if (result.error || result.data?.status !== 'accepted') throw new Error('Notification unconfirmed');
                 status.textContent = 'Email notification request accepted. Check the recipient inbox.';
-            } catch (error) {
-                status.textContent = 'Your survey is saved, but the email request could not be confirmed. Do not resubmit just to retry email; check the inbox and automation history.';
-            } finally { clearTimeout(timeout); }
+            } catch (_) {
+                if (sessionIsCurrent(context)) status.textContent = 'Your survey is saved, but the email request could not be confirmed. Do not resubmit just to retry email; check the inbox and automation history.';
+            }
         }
 
         async function openSurveyReview() {
@@ -1299,6 +1389,7 @@
         }
 
         async function finishSurvey() {
+            const context = sessionContext();
             if (submittingSurvey || savingProgress || savingDetails) return;
             if (!document.getElementById('detail-address').value.trim() || !document.getElementById('detail-postcode').value.trim()) {
                 showView('view-details');
@@ -1320,20 +1411,23 @@
             setLoading(true, "Uploading photos and saving data... This may take a minute.");
             try {
                 const savedSnapshot = await persistSurvey();
+                checkSession(context);
                 await requireResult(sb.from('properties').update({ last_submitted_at: new Date().toISOString() })
                     .eq('id', currentPropertyId).select().single(), 'Mark verified submission');
+                checkSession(context);
                 clearCurrentDraft();
                 showView('view-success');
                 await notifySurveySaved(savedSnapshot);
+                checkSession(context);
                 document.getElementById('admin-pdf-section').style.display =
                     currentUser && currentUser.email === ADMIN_EMAIL ? 'block' : 'none';
             } catch (err) {
+                if (!sessionIsCurrent(context)) return;
                 draftWritesEnabled = true;
                 saveDraft();
                 alert("Survey was not fully submitted. Your draft has been kept. " + err.message);
             } finally {
-                submittingSurvey = false;
-                setLoading(false);
+                if (sessionIsCurrent(context)) { submittingSurvey = false; setLoading(false); }
             }
         }
 
@@ -1341,6 +1435,12 @@
         // The callback does not await auth operations, avoiding the auth client's lock.
         if (typeof sb.auth.onAuthStateChange === 'function') {
             sb.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT') { if (currentUser) clearPrivateSession(); else privateSessionGeneration++; }
+                if (['SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event) && session?.user && currentUser && (currentUser.id !== session.user.id || currentUser.email !== session.user.email)) {
+                    clearPrivateSession();
+                    currentUser = session.user;
+                    queueMicrotask(() => { if (currentUser?.id === session.user.id && !passwordRecoveryActive) void loadDashboard(); });
+                }
                 if (event === 'PASSWORD_RECOVERY' && (recoveryLinkRequested || passwordRecoveryActive)) activatePasswordRecovery(session);
             });
         }

@@ -127,6 +127,9 @@ python3 tests/test_survey_flow.py
 python3 tests/test_browser_integration.py
 python3 tests/test_client_allowance.py
 python3 tests/test_leica_connection.py
+python3 tests/test_session_security.py
+node --test tests/test_notification_handlers.mjs
+python3 tests/test_survey_notifications.py
 python3 tests/test_database_policies.py
 python3 tests/test_survey_purchases.py
 ```
@@ -145,13 +148,15 @@ PostgreSQL 17 container with no network or persistent volume, then remove it.
 - Photo removal deletes the survey reference after a successful cloud save. Bytes
   remain in private storage for recovery; a separate reviewed retention process
   should clean unreferenced objects. No existing photo bytes are deleted by setup.
-- Email still uses the existing browser-to-Zapier integration. The app distinguishes
-  survey storage from notification acceptance and avoids repeat requests for an
-  identical saved version on the same device. It cannot promise exactly-once email
-  across devices or resolve a network timeout after remote acceptance. For durable
-  server-side notification delivery, replace it with an authenticated Supabase Edge
-  Function and outbox before relying on automated retries. The existing webhook URL
-  was already public in the original source; this release does not make it secret.
+- This development branch proposes an authenticated notification gateway/outbox;
+  see [supabase/NOTIFICATIONS.md](supabase/NOTIFICATIONS.md). It needs separately
+  approved backend migration, deployment and secret configuration before a client
+  cutover. No live notification changes or webhook rotation have been performed.
+  Uncertain delivery is not blindly retried; downstream exactly-once email is not
+  guaranteed. Professional users' saved client contacts remain supported.
+- Proposed F01 behaviour: logout/session loss clears private device drafts and
+  browser state. Explicit logout warns and can be cancelled to save progress first.
+  Saved cloud surveys remain intact; approve this retention policy before release.
 - Leica S910 Bluetooth room entry is available in Chrome on Android using
   **Connect Leica** in Room Details. The user's S910 successfully connected and
   supplied distance `16 6a 51 40` (3.2721 metres) and format `00 00` notifications.

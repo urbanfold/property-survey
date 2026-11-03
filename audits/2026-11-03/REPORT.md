@@ -3,7 +3,13 @@
 **Date:** 3 November 2026 (UK)  
 **Audit branch:** `audit/security-2026-11-03`  
 **Reviewed source:** commit `6874d8ab034df341bb6c32f21f1b94f3279f224b`  
-**Status:** source review and isolated tests completed for the attached checkout; live Pages URL availability is user-confirmed, but intended private-repository identity and deployed commit remain unverified.
+**Status:** baseline audit complete; intended repository and live URL confirmed by user evidence. Repository is Public. Fix candidates are local only; deployed commit/live security remain unverified.
+
+## Remediation update — development only
+
+The owner subsequently supplied a GitHub Code-page screenshot confirming **property-survey**, main **6874d8a**, marked **Public**. This resolves the earlier repository-name ambiguity: the reviewed source matches the intended repository. The live Pages URL is user-confirmed; direct deployed-artifact/API checks remain unavailable.
+
+F01/F02 candidates are implemented and tested locally on `plan/security-remediation-2026-11-03`; see [CANDIDATE_CHANGES.md](CANDIDATE_CHANGES.md). **No fix has been deployed, no live SQL/Stripe/automation setting was changed, and the exposed old webhook has not been rotated.** The original baseline findings below remain the audit record for commit 6874d8a; the candidate evidence is separate.
 
 ## Business and hosting update — 3 November 2026
 
@@ -11,15 +17,17 @@ The owner has explicitly confirmed that **£6 additional-survey credits are inte
 
 **Urbanfold Essential Feasibility** is a separate homeowner service with a proposed £179 introductory price, including the owner's professional assessment/report. It must not be conflated with app credits.
 
-The owner also confirmed that **https://urbanfold.github.io/property-survey/** currently opens the app. Together with the Pages domain and tracked deployment workflow, this supports GitHub Pages hosting. Direct live HTTP/Pages API checks remain blocked here; the deployed commit and old Netlify site's current state were not independently established. The configured source remote is verified as `urbanfold/property-survey`; confirmation of the intended private repository's full URL is still outstanding.
+The owner also confirmed that **https://urbanfold.github.io/property-survey/** currently opens the app. Together with the Pages domain and tracked deployment workflow, this supports GitHub Pages hosting. Direct live HTTP/Pages API checks remain blocked here; the deployed commit and old Netlify site's current state were not independently established. The user subsequently confirmed the configured `urbanfold/property-survey` source via a Code-page screenshot; it is Public.
 
-See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for the traced £6 Stripe flow, hosting evidence, and prepared F01/F02 implementation specifications. Those specifications are **not applied fixes**. Application files, live Supabase, Stripe, automation settings and deployments remain unchanged.
+See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for the traced £6 Stripe flow, hosting evidence, and prepared F01/F02 implementation specifications. The specifications now have local candidate implementations described in CANDIDATE_CHANGES.md. They are **not deployed fixes**. Live Supabase, Stripe, automation settings and deployments remain unchanged.
+
+The numbered baseline sections below describe the original audit of 6874d8a. Later local changes and their remaining release gates are recorded in the remediation update above.
 
 ## 1. Scope, authorisation and important limitations
 
-The user requested the private repository named **`urbanfold-property-survey`**. The only attached checkout is `/workspace/property-survey`, whose configured origin is **`urbanfold/property-survey`**. A read-only `git ls-remote origin HEAD` returned the same commit as the checkout. These names are not assumed to identify the same private repository. Confirmation was requested; until received, this report covers **only the attached checkout**, not an unseen private copy or its £179 implementation.
+The user requested the private repository named **`urbanfold-property-survey`**. The only attached checkout is `/workspace/property-survey`, whose configured origin is **`urbanfold/property-survey`**. A read-only `git ls-remote origin HEAD` returned the same commit as the checkout. The names were initially ambiguous; the owner's subsequent Code-page screenshot resolved the target as **urbanfold/property-survey**, Public, main 6874d8a. No separate unseen repository or £179 implementation is covered.
 
-The original checkout was on branch `work`. A new local audit branch was created before writing audit files. No application code, existing migrations, CI workflow or existing tests were changed. No repository push, deployment, payment, email delivery, production login, live storage upload or live database operation was performed. All new files are under this audit directory.
+The original checkout was on branch `work`. During the initial audit, a new local audit branch was created and no application code, migrations, CI workflow or existing tests were changed. Subsequent local fix candidates are tracked separately on the development branch described above. No repository push, deployment, payment, email delivery, production login, live storage upload or live database operation was performed. All original audit files were under this audit directory; later candidate changes are listed in CANDIDATE_CHANGES.md.
 
 Browser requests were intercepted by local fixtures. PostgreSQL tests used temporary, digest-pinned PostgreSQL 17 containers with `--network none`; these containers were removed afterwards. SQL permission tests set simulated JWT claims inside that isolated database. They **do not prove real Supabase JWT validation, Auth configuration or deployed Storage API behaviour**.
 
@@ -303,4 +311,4 @@ The workflow in this checkout publishes GitHub Pages, while the user mentions pr
 5. Keep £6 and £179 product changes separate. Verify their server-side amounts, entitlements and refund/fulfilment behaviour independently.
 6. Review test evidence and a concrete diff/rollback plan before approving any merge, deployment or production migration.
 
-**No security fixes, migrations, deployments, production tests or production data changes were applied during this audit.**
+**The original baseline audit applied no fixes. Subsequent candidates exist only on the local development branch: no live security fix, migration, deployment, production test or production data change has been applied.**

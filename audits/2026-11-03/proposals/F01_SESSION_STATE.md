@@ -1,8 +1,8 @@
-# F01 — targeted fix specification (not applied)
+# F01 — targeted fix specification (candidate implemented locally; not deployed)
 
 **Goal:** prevent private information from surviving in the UI/in-memory caches or being restored by old requests after logout/account change. Preserve cloud data and the normal same-user draft workflow.
 
-**Prerequisite:** confirm the intended repository and current deployed source. No app source has been changed by this proposal.
+**Prerequisite:** confirm the intended repository and current deployed source. The repository is now confirmed and a local candidate exists; see ../CANDIDATE_CHANGES.md. No deployed app source was changed.
 
 ## Concrete change boundary
 
@@ -40,4 +40,4 @@ Convert audit `BROWSER-01/03/04` to assertions for corrected behaviour, rather t
 
 ## Definition of ready for release
 
-Minimal reviewed diff, failing-before/passing-after regression results, all existing functional suites passing, agreed draft policy, isolated real-Auth two-account checks, rollback review and explicit production approval. At this stage this is a prepared implementation specification, not an implemented or deployed fix.
+Minimal reviewed diff, failing-before/passing-after regression results, all existing functional suites passing, agreed draft policy, isolated real-Auth two-account checks, rollback review and explicit production approval. This specification now has a locally tested candidate implementation. It is not a deployed fix; its device-draft policy requires approval before release.

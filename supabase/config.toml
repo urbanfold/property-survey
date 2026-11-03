@@ -5,3 +5,7 @@ verify_jwt = false
 
 [functions.stripe-survey-webhook]
 verify_jwt = false
+
+# Proposed F02 gateway validates Auth itself; do not deploy without approval.
+[functions.request-survey-notification]
+verify_jwt = false
