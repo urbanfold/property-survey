@@ -28,7 +28,7 @@ Teardown clears prior fields, photos, review/PDF data, passwords, dashboard and 
 
 ### Behaviour change requiring approval
 
-**The proposed default clears local survey drafts on explicit logout, account switch or session loss.** Cloud-saved surveys remain available. Before explicit logout, a warning allows cancellation to save unsaved work first. The Room Details page explains the policy.
+**The candidate clears local survey drafts on explicit logout, account switch or session loss.** The owner has approved explicit logout clearing with a clear warning and an opportunity to cancel and save first. Involuntary-session behaviour remains a separate release decision. Cloud-saved surveys remain available. Before explicit logout, a warning allows cancellation to save unsaved work first. The Room Details page explains the policy.
 
 This closes the plaintext-device-retention part of F01, but ending a session with unsaved local-only changes can discard those changes. The policy is a review decision, not an unnoticed production change. If retaining drafts across logout is required, revise the policy/design before deployment; owner namespacing alone does not protect plaintext local storage on a shared browser profile.
 
@@ -92,3 +92,7 @@ The candidate's CI workflow adds these new checks, but it does not deploy Supaba
 4. Resolve the exact deployed `get_survey_allowance()` warning using read-only metadata; its existing source definition was not changed.
 5. Record the current deployment artifact/version and investigate the old Netlify endpoint before calling a production cutover complete.
 6. Approve the exact backend migration/function/secret sequence, client deployment and old-hook retirement. No main-branch merge, push or production operation has been performed or pre-approved by this document.
+
+## PR preparation update
+
+The owner requested a PR without deployment. Explicit logout warning/cancel/save-first preference is approved. See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) and [PULL_REQUEST.md](PULL_REQUEST.md). The checked-in workflow only publishes main, but GitHub API inspection was blocked and residual external deployment integrations could not be checked. No branch push or remote PR was attempted; remote main remains at `6874d8a` on the latest read-only check.
