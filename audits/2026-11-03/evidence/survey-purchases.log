@@ -1,0 +1,5 @@
+PASS lifetime free limit, existing survey preservation, admin exemption, idempotent retries
+PASS service-only verified payment writes, exact £6, duplicate webhook handling, test/live separation, single redemption
+PASS refunds/disputes revoke unused credit, out-of-order events stay revoked, existing paid surveys preserved
+PASS submitted addresses remain locked, admin corrections, failed insert does not lose free allocation or paid credit
+PASS simultaneous requests cannot double-spend free allowance; reapplying migration preserves payment history
