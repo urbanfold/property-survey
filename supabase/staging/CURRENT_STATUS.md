@@ -56,3 +56,9 @@ The first configured seed failed its exact email/confirmation guard before any s
 - B, `staging-owner-b@example.invalid`: `d72b4323-d71b-4b87-b78a-09896647fddf`.
 
 This supersedes the earlier owner-supplied A/B labels above. Only the two settings in the configured seed were corrected; staging/email/confirmation/empty-allocation guards remain intact. No SQL was executed by the assistant and no account was altered. After correction the owner may run the complete configured seed as a new staging query; do not rerun the baseline. No successful seed result has yet been received.
+
+## Dummy seed completion and local client preparation
+
+The owner supplied the expected completion screenshot after correcting the A/B settings directly in the SQL Editor. This is user-provided evidence that the two dummy properties/free allocations were created; no paid credits were added. Do not rerun either the baseline or seed. The assistant did not execute cloud SQL.
+
+A separate local-only client ZIP has been prepared under `/workspace/urbanfold-staging-client.zip` using `scripts/build_staging_client.py`; see `client-tools/README.md`. The user enters the staging public key only into that local screen, not chat or repository. No public key/password/secret was supplied to the assistant. The original live client files and all production services remain unchanged. Generated-client Chromium tests passed with all HTTP intercepted; actual staging login, cross-user API/storage denial, email/functions, admin exports and Windows launcher behaviour remain to be verified by the operator. No new code was pushed or deployed.
