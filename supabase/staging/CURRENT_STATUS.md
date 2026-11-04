@@ -41,3 +41,9 @@ This first step performs no SQL, imports, migrations, user creation, function de
 - Real dummy-owner cross-account read/write/photo signing/upload denial tests, cloud recovery/F01/exports/Leica checks, and separate notification/backend checks after approved deployment.
 - A new dummy notification receiver and staging-only sender/test inbox configuration if testing real email delivery. Production Brevo credentials/settings are not staging configuration and must not be copied.
 - No production writes, merges, deployment, secret rotation or live Stripe changes are authorised by resuming staging preparation. This documentation update is local only.
+
+## Dummy identity update — owner-supplied IDs
+
+A (`staging-owner-a@example.invalid`): `d72b4323-d71b-4b87-b78a-09896647fddf`. B (`staging-owner-b@example.invalid`): `9036b71c-4f09-4d1b-9dce-519533c4001e`. The owner supplied two distinct UUIDs; the assistant has not verified them through an Auth connection. No passwords or keys were supplied.
+
+`seed_confirmed_dummy_users.sql` is a local, configured copy of the optional dummy seed. It additionally requires the exact A/B email-to-UUID mapping and confirmed emails, retains the staging marker/empty-allocation guards, and creates no paid credits or external calls. No seed execution result has yet been received. Do not rerun setup.sql; run the configured seed once only in the identified staging project, stopping on any error. SQL claim simulation is not real user/API isolation verification.
