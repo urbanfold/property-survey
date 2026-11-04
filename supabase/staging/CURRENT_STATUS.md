@@ -47,3 +47,12 @@ This first step performs no SQL, imports, migrations, user creation, function de
 A (`staging-owner-a@example.invalid`): `d72b4323-d71b-4b87-b78a-09896647fddf`. B (`staging-owner-b@example.invalid`): `9036b71c-4f09-4d1b-9dce-519533c4001e`. The owner supplied two distinct UUIDs; the assistant has not verified them through an Auth connection. No passwords or keys were supplied.
 
 `seed_confirmed_dummy_users.sql` is a local, configured copy of the optional dummy seed. It additionally requires the exact A/B email-to-UUID mapping and confirmed emails, retains the staging marker/empty-allocation guards, and creates no paid credits or external calls. No seed execution result has yet been received. Do not rerun setup.sql; run the configured seed once only in the identified staging project, stopping on any error. SQL claim simulation is not real user/API isolation verification.
+
+## Corrected dummy mapping from Auth screenshot
+
+The first configured seed failed its exact email/confirmation guard before any survey INSERT. Read-only results showed both accounts exist and are confirmed but neither matched its assigned email. The owner’s Auth screenshot establishes the corrected mapping:
+
+- A, `staging-owner-a@example.invalid`: `9036b71c-4f09-4d1b-9dce-519533c4001e`.
+- B, `staging-owner-b@example.invalid`: `d72b4323-d71b-4b87-b78a-09896647fddf`.
+
+This supersedes the earlier owner-supplied A/B labels above. Only the two settings in the configured seed were corrected; staging/email/confirmation/empty-allocation guards remain intact. No SQL was executed by the assistant and no account was altered. After correction the owner may run the complete configured seed as a new staging query; do not rerun the baseline. No successful seed result has yet been received.

@@ -2,8 +2,8 @@
 -- Target Dashboard reference: hexhtduvqzleoazusskh. The settings below do NOT verify the server reference.
 -- No SQL executed by this preparation. No Stripe call, paid credit, email or Storage object created.
 set urbanfold.staging_setup = 'Urbanfold-Survey-Staging';
-set urbanfold.dummy_a = 'd72b4323-d71b-4b87-b78a-09896647fddf';
-set urbanfold.dummy_b = '9036b71c-4f09-4d1b-9dce-519533c4001e';
+set urbanfold.dummy_a = '9036b71c-4f09-4d1b-9dce-519533c4001e';
+set urbanfold.dummy_b = 'd72b4323-d71b-4b87-b78a-09896647fddf';
 
 -- OPTIONAL, PREPARED ONLY. After approval and verified setup, not part of setup.sql.
 -- Create TWO NEW staging Auth users through the staging Dashboard first. Never insert auth.users directly.
