@@ -1,6 +1,6 @@
-# Urbanfold-Survey-Staging — prepared setup, awaiting approval
+# Urbanfold-Survey-Staging — setup and verification guide
 
-**Nothing in this directory has been executed against any database. No function has been deployed. No GitHub connection, push, production setting or real customer data change is part of this preparation.** Stay on `plan/security-remediation-2026-11-03` / existing draft PR #1; these new files remain local until approved.
+**Current status:** the owner subsequently supplied staging setup success and 12/12 true metadata-check screenshots for project `hexhtduvqzleoazusskh`. Do not rerun the fresh-project installer. See [CURRENT_STATUS.md](CURRENT_STATUS.md) for the next inspection-only step, remaining tests and evidence limits. No staging Edge Function deployment has been confirmed; no production setting/customer-data change or GitHub integration was made by the assistant. Package/documentation changes remain on the existing development branch and are local unless separately recorded as pushed.
 
 This is a reproducible reconstruction for a **fresh** Supabase project using current source requirements and historical diagnostic metadata. It is not a production clone and must not be called verified production parity. Start with [SCHEMA_INVENTORY.md](SCHEMA_INVENTORY.md), then review the SQL files themselves.
 
@@ -33,11 +33,11 @@ python scripts/build_staging_setup.py --check
 python tests/test_staging_setup_files.py
 ```
 
-Do not run the existing database policy/credit tests as a way to apply this setup: they execute fixture SQL in disposable PostgreSQL and do not provision real Supabase. No SQL has been executed during this preparation, including in local containers. The prepared SQL still needs an approved database dry run and real-service checks; text checks cannot validate live DDL privileges/services.
+Do not run the existing database policy/credit tests as a way to apply this setup: they execute fixture SQL in disposable PostgreSQL and do not provision real Supabase. At package-preparation time no SQL had been executed by the assistant, including in local containers. The owner subsequently executed staging setup and metadata checks as recorded above; real-service checks remain necessary. text checks cannot validate live DDL privileges/services.
 
-## Approval gate before any SQL
+## Fresh-project execution procedure — historical reference, do not rerun on the initialised project
 
-1. Record the staging project's exact Dashboard URL/project reference from the owner and verify it is **Urbanfold-Survey-Staging**, not the original production project. The display name alone is not a unique identity. The reference is currently unknown to this preparation.
+1. Record the staging project's exact Dashboard URL/project reference from the owner and verify it is **Urbanfold-Survey-Staging**, not the original production project. The display name alone is not a unique identity. The owner subsequently supplied reference `hexhtduvqzleoazusskh`; the screenshots document that setup has already run.
 2. Confirm it is fresh, healthy, and contains no copied customers/Auth users/files/Stripe settings. Do not export/import production rows, auth.users, identities, passwords or Storage objects.
 3. Review the schema reconstruction uncertainties and baseline index/grant differences in SCHEMA_INVENTORY.md. Approve staging-only execution of the exact SQL hashes. Production metadata comparison requires separate read-only approval and is not a reason to run writes there.
 4. Use an explicitly selected staging SQL Editor session. The `urbanfold.staging_setup` acknowledgement and staging-only table comment are **operator interlocks, not proof of project identity**. Never paste this bundle into production. Original production app objects cause 000 to reject it, but operator target checking is still mandatory.

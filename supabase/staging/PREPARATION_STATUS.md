@@ -1,3 +1,5 @@
+> Historical package-preparation record. The later owner-supplied staging completion and 12/12 true metadata-check screenshots supersede the initial execution/unknown-reference status below. See [CURRENT_STATUS.md](CURRENT_STATUS.md); do not rerun the fresh installer. The assistant has not directly connected to Supabase or independently verified live security.
+
 # Local preparation status — 3 November 2026
 
 Prepared on `plan/security-remediation-2026-11-03` after approved F01 commit `2ea131a`. Draft PR #1 is preserved. This staging package is local only, not pushed. No SQL (including local container SQL) has been executed, no Supabase connection made, no function deployed, no secret copied/configured and no staging GitHub integration added. Production application/Pages, Supabase, Stripe and customer data are unchanged.

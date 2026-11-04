@@ -3,7 +3,13 @@
 **Date:** 3 November 2026 (UK)  
 **Audit branch:** `audit/security-2026-11-03`  
 **Reviewed source:** commit `6874d8ab034df341bb6c32f21f1b94f3279f224b`  
-**Status:** baseline audit complete; intended repository and live URL confirmed by user evidence. Repository is Public. Fix candidates are local only; deployed commit/live security remain unverified.
+**Status:** baseline audit complete; intended repository and live URL confirmed by user evidence. Repository is Public. F01/F02 candidates are on the development branch/PR, not deployed; newer documentation/staging package updates remain local. Deployed application parity/live security remain unverified.
+
+## Configuration/evidence update — 4 November 2026
+
+The owner reports production email confirmation enabled, Brevo SMTP configured with the authenticated urbanfold.uk domain, and successful verification/password-recovery tests. These are owner-reported results, not independent assistant validation. No SMTP credentials, customer data or production setting changes are part of this documentation update. See [PRODUCTION_AUTH_UPDATE_2026-11-04.md](PRODUCTION_AUTH_UPDATE_2026-11-04.md).
+
+That update also reconciles later history: F01 commit 2ea131a was pushed to development/PR #1, and the owner supplied staging setup success plus 12/12 true metadata-check screenshots for project hexhtduvqzleoazusskh. Staging is already initialised on this evidence; do not rerun the fresh installer. Older "not pushed"/"no SQL executed" statements below describe earlier phases and are superseded by this dated update. No production F01/F02 deployment or live Supabase security verification is claimed.
 
 ## Remediation update — development only
 

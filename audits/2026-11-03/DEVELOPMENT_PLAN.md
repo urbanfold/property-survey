@@ -114,3 +114,7 @@ The exact Supabase `get_survey_allowance()` warning and read-only deployed metad
 The local branch now contains implemented candidates and regression tests. See [CANDIDATE_CHANGES.md](CANDIDATE_CHANGES.md) for the exact behaviour changes, test evidence and outstanding approval gates. Earlier proposal documents describe design intent; they are not claims of production remediation.
 
 F01's candidate clears device drafts on logout/session loss, with a cancelable explicit-logout warning and an on-screen saving notice. This privacy choice requires approval before release. F02's candidate preserves the saved client contact, confirmed sender ownership, durable event deduplication and proposed caps (20/account, 5/property per rolling 24 hours). It does not introduce client-contact verification; that residual recipient-policy risk must be acknowledged/reviewed.
+
+## Owner configuration update — 4 November 2026
+
+Production email confirmation and Brevo SMTP using authenticated urbanfold.uk are reported working; the owner reports successful verification and password recovery. This is owner evidence, not independent production validation. See [PRODUCTION_AUTH_UPDATE_2026-11-04.md](PRODUCTION_AUTH_UPDATE_2026-11-04.md). Staging project `hexhtduvqzleoazusskh` already has user-supplied setup success/12-check evidence. Resume with the inspection-only first step in [CURRENT_STATUS.md](/workspace/property-survey/supabase/staging/CURRENT_STATUS.md), not a new baseline run. No production Auth settings or SMTP credentials should be copied to staging.
