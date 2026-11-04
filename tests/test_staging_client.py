@@ -20,6 +20,7 @@ def main():
     f.tables['properties']=[{'id':'f0000000-0000-4000-8000-000000000001','user_id':f.user['id'],
        'address':'DUMMY PROPERTY A - NOT A REAL ADDRESS','postcode':'ZZ1 1ZZ','created_at':'2026-11-04T00:00:00Z'}]
     requests=[]
+    deny_reads={'enabled':False}
     def route(r):
         u=urlparse(r.request.url)
         if u.hostname=='localhost':
@@ -28,6 +29,8 @@ def main():
                 return r.fulfill(body=path.read_bytes(),content_type=mimetypes.guess_type(str(path))[0] or 'application/octet-stream')
             return r.fulfill(status=404,body='Not found')
         requests.append(u.hostname)
+        if deny_reads['enabled'] and u.path == '/rest/v1/properties':
+            return r.fulfill(status=403,body='{"message":"fixture denied"}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
         return f.route(r)
     with sync_playwright() as p:
         browser=p.chromium.launch(executable_path=shutil.which('chromium'),args=['--no-sandbox'])
@@ -49,6 +52,30 @@ def main():
         expect(page.locator('.survey-item')).to_have_count(1)
         page.locator('.survey-item').click();expect(page.locator('#view-details')).to_be_visible()
         assert page.locator('#detail-address').input_value()=='DUMMY PROPERTY A - NOT A REAL ADDRESS'
+        button=page.get_by_role('button',name='Check account isolation (read only)')
+        result=page.locator('#staging-isolation-result')
+        mutations=[]
+        page.on('request',lambda req:mutations.append(req.url) if '/rest/v1/' in req.url and req.method!='GET' else None)
+        button.click();expect(result).to_contain_text('PASS — Account A')
+        assert not mutations,mutations
+        # An API permission/transport error must never be interpreted as empty rows/pass.
+        deny_reads['enabled']=True
+        button.click();expect(result).to_contain_text('NOT VERIFIED')
+        deny_reads['enabled']=False
+        # Simulate an unprotected API, despite a dashboard that filtered by user_id.
+        other={'id':'f0000000-0000-4000-8000-000000000002','user_id':'d72b4323-d71b-4b87-b78a-09896647fddf',
+          'address':'DUMMY PROPERTY B','postcode':'ZZ2 2ZZ','created_at':'2026-11-04T00:00:00Z'}
+        f.tables['properties'].append(other)
+        button.click();expect(result).to_contain_text('FAIL — Account A')
+        f.tables['properties'].pop()
+        button.click();expect(result).to_contain_text('PASS — Account A')
+        page.evaluate('handleLogout()');expect(page.locator('#view-auth')).to_be_visible()
+        expect(result).not_to_contain_text('PASS')
+        f.user={**f.user,'id':other['user_id'],'email':'staging-owner-b@example.invalid'}
+        f.tables['properties']=[other]
+        page.locator('#login-email').fill(f.user['email']);page.locator('#login-password').fill('dummy-fixture-password')
+        page.get_by_role('button',name='Log In',exact=True).click();expect(page.locator('#view-dashboard')).to_be_visible()
+        button.click();expect(result).to_contain_text('PASS — Account B')
         # CSP must reject accidental network calls to another project before any HTTP route receives them.
         blocked=page.evaluate("async()=>{try{await fetch('https://wrong-project.supabase.co/auth/v1/user');return false;}catch{return true;}}")
         assert blocked and 'wrong-project.supabase.co' not in requests
@@ -56,7 +83,7 @@ def main():
         assert not f.unexpected,f.unexpected
         browser.close()
     assert 'arnzqizcycesukplmvuc' not in (ROOT/'app.js').read_text()
-    print('PASS generated local staging key/role/project guards, key-field clearing, staging-only Auth/login/survey opening, and CSP external-backend denial; all HTTP intercepted')
+    print('PASS generated local staging key/role/project guards, key-field clearing, staging-only Auth/login/survey opening, read-only A/B isolation button, failure/no-false-pass/leak detection and cleared account results, and CSP external-backend denial; all HTTP intercepted')
     print('No live login, SQL, API or deployment. Windows PowerShell launcher not executed on this Linux host; real-service account isolation remains unverified.')
 
 if __name__=='__main__':main()

@@ -25,7 +25,7 @@ def build():
     banner = '''
     <aside style="background:#7f1d1d;color:white;padding:14px;text-align:center;margin-bottom:20px" role="note">
       <strong>STAGING ONLY — dummy users and fictional surveys</strong><br>
-      Project: hexhtduvqzleoazusskh · Never enter production passwords, keys or customer data.
+      Project: hexhtduvqzleoazusskh · Never enter production passwords, keys or customer data. · Test tools v2
     </aside>
     <section id="staging-config" class="container">
       <h1>Configure the isolated test app</h1>
@@ -35,6 +35,12 @@ def build():
       <button id="staging-start" class="btn" type="button">Open staging app</button>
       <p id="staging-config-status" role="status" style="margin-top:16px"></p>
       <p>Enter the key again after reloading. Auth sessions and drafts use this separate localhost origin. Do not submit, buy credits or configure email until the staging backend is ready.</p>
+    </section>
+    <section id="staging-checks" class="container" hidden style="margin-bottom:20px;padding:16px;background:#fff;border:2px solid #7f1d1d">
+      <h2>Staging checks — v2</h2>
+      <p>After signing in as A or B, check property reads directly through the API. This button never writes data.</p>
+      <button id="staging-isolation-check" type="button" class="btn">Check account isolation (read only)</button>
+      <pre id="staging-isolation-result" role="status" style="white-space:pre-wrap;margin-top:12px">Sign in, then run this check.</pre>
     </section>
     <div id="staging-app" hidden>
 '''
@@ -56,7 +62,7 @@ def build():
 2. Open START-STAGING.cmd. It starts a local-only server using built-in Windows PowerShell. No installation/admin access is requested. Leave its window open.
 3. In Chrome open http://localhost:8794/ (the launcher may open your default browser).
 4. Paste ONLY the public/publishable or legacy anon key from Urbanfold-Survey-Staging into the configuration box; click Open staging app. Never send a key or password in chat.
-5. Log in with staging-owner-a@example.invalid and its staging-only password. Open DUMMY PROPERTY A. Record what appears, then use the app's Log Out and test B separately.
+5. Log in with staging-owner-a@example.invalid and its staging-only password. Open DUMMY PROPERTY A. Click Check account isolation (read only) and record its result; use the app's Log Out and test B separately. No console commands are needed.
 
 Fixed project: hexhtduvqzleoazusskh. CSP blocks fetch/WebSocket/image connections to other external backends, including production. No production anon key is packaged. This is a development test copy, not a deployment or exact production artifact.
 

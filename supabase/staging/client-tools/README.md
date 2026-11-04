@@ -11,3 +11,7 @@ Enter only the STAGING project's publishable or legacy anon/public key into the 
 Browser regression: build, then run `python tests/test_staging_client.py`. It checks wrong-project/role rejection, key-field clearing, login/resume with intercepted staging HTTP, and CSP rejection of another backend. This is not live Supabase isolation verification. The Windows launcher cannot be executed on the current Linux host and remains operator-validated; testing the same static content in Chromium with intercepted HTTP passed.
 
 No GitHub push, PR state change, deployment, production SQL/Stripe/customer change or secret copy is included. Further authenticated API/storage tests require real dummy sessions in staging; UI filtering alone does not prove RLS.
+
+## Test tools v2
+
+The user encountered the browser console-paste protection before executing the suggested check. Do not bypass it. The staging client now provides Check account isolation (read only). It verifies dummy A/B identity, reads properties without an owner filter, directly requests the other dummy property, checks the account again and reports PASS/FAIL/NOT VERIFIED without displaying records/tokens. No mutation requests are issued by the test. Logout/account changes clear displayed results. This is a limited property-read check; writes, child records and photographs still need further tests.
