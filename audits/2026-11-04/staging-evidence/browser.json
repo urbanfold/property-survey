@@ -1,0 +1,70 @@
+{
+  "target": "hexhtduvqzleoazusskh.supabase.co",
+  "checks": [
+    {
+      "check": "Cleanup session belongs to dummy A",
+      "passed": true
+    },
+    {
+      "check": "Browser target is seeded fictional A property",
+      "passed": true
+    },
+    {
+      "check": "Real staging browser A login and unfiltered/direct property-read check",
+      "passed": true
+    },
+    {
+      "check": "Simulated local expiry locks live-staging UI and keeps immediate edit only in memory",
+      "passed": true
+    },
+    {
+      "check": "Same-user live Auth/property check restores temporary measurement",
+      "passed": true
+    },
+    {
+      "check": "Real staging token refresh keeps room measurement",
+      "passed": true
+    },
+    {
+      "check": "Simulated disconnected REST save retains measurement/device draft",
+      "passed": true
+    },
+    {
+      "check": "Actual JPEG upload and full survey save verified in real staging",
+      "passed": true
+    },
+    {
+      "check": "Fresh reload reopens actual saved measurements and signed photo",
+      "passed": true
+    },
+    {
+      "check": "Own-property PDF export creates actual PDF bytes",
+      "passed": true
+    },
+    {
+      "check": "Own-property ZIP export creates actual ZIP bytes",
+      "passed": true
+    },
+    {
+      "check": "Different real dummy account cannot recover A measurements",
+      "passed": true
+    },
+    {
+      "check": "Real staging browser B property-read check",
+      "passed": true
+    },
+    {
+      "check": "Explicit logout clears current identity and private drafts",
+      "passed": true
+    },
+    {
+      "check": "No other external host contacted by the browser",
+      "passed": true
+    },
+    {
+      "check": "Seeded dummy property/rooms/references restored after browser test",
+      "passed": true
+    }
+  ],
+  "transport": "real staging HTTPS via environment proxy; local static assets routed in-process"
+}

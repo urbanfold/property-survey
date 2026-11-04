@@ -320,3 +320,7 @@ The workflow in this checkout publishes GitHub Pages, while the user mentions pr
 6. Review test evidence and a concrete diff/rollback plan before approving any merge, deployment or production migration.
 
 **The original baseline audit applied no fixes. Subsequent candidates exist only on the local development branch: no live security fix, migration, deployment, production test or production data change has been applied.**
+
+## Direct staging verification update — 4 November 2026
+
+After the owner supplied secure staging-only test access, actual staging Auth/API/Storage and cloud browser tests passed for the scenarios in [STAGING_RESULTS.md](../2026-11-04/STAGING_RESULTS.md). This supersedes earlier statements that no authorised real staging accounts were tested; those statements remain true for the initial audit/production. No production security verification or release is claimed. F02 Edge Function remains unavailable (404), with notification delivery untested; source findings and remaining release gates still apply.

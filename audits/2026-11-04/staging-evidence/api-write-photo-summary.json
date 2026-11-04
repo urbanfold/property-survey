@@ -1,0 +1,48 @@
+{
+  "target": "hexhtduvqzleoazusskh.supabase.co",
+  "evidence_source": "Actual staging HTTPS requests observed during this session; not mocked responses",
+  "owner": "dummy A",
+  "foreign_actor": "dummy B",
+  "checks_passed": [
+    "A own notes update and readback",
+    "B foreign property update blocked; A readback unchanged",
+    "A ownership transfer to B denied HTTP403",
+    "second property without credit denied HTTP400 URBANFOLD_SURVEY_LIMIT; failed insert absent",
+    "B foreign room update blocked",
+    "A own photo reference creation across exterior/extension/sketch/room categories",
+    "B foreign photo-reference reads and inserts blocked for exterior/sketch/room tables",
+    "temporary references removed and original dummy notes restored"
+  ],
+  "storage_checks_per_bucket": [
+    "A upload HTTP200",
+    "A authenticated download HTTP200",
+    "A signing HTTP200",
+    "B authenticated download denied HTTP400",
+    "B signing denied HTTP400",
+    "A list includes dummy file; B list excludes it",
+    "B foreign prefix upload denied HTTP400",
+    "anonymous public download denied HTTP400"
+  ],
+  "buckets": [
+    "exterior-photos",
+    "sketch-photos",
+    "room-photos"
+  ],
+  "retained_tiny_private_dummy_objects": [
+    {
+      "bucket": "exterior-photos",
+      "path": "f0000000-0000-4000-8000-000000000001/staging-test-39c0737ebe84491bb3f595b97b0a1aa0.png"
+    },
+    {
+      "bucket": "sketch-photos",
+      "path": "f0000000-0000-4000-8000-000000000001/staging-test-fdd7ad59fa58404a940b3ad62aa796ab.png"
+    },
+    {
+      "bucket": "room-photos",
+      "path": "f0000000-0000-4000-8000-000000000001/staging-test-2358cc4e24cc49aa90a077a29edd2085.png"
+    }
+  ],
+  "no_production_access": true,
+  "no_credits_or_submissions_or_email_or_stripe_changes": true,
+  "notes": "Summary transcribed from actual tool results; raw request headers/bodies/tokens intentionally not retained. Browser-generated JPEG retention is recorded separately."
+}

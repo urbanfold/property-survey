@@ -1,0 +1,18 @@
+{"check": "A sign-in", "passed": true, "http_status": 200}
+{"check": "A verified Auth identity", "passed": true, "http_status": 200}
+{"check": "A unfiltered property read", "passed": true, "visible_count": 1}
+{"check": "A direct foreign property read denied", "passed": true, "visible_count": 0}
+{"check": "A own free allocation only", "passed": true, "visible_count": 1}
+{"check": "A no paid credits seeded", "passed": true, "visible_count": 0}
+{"check": "A unchanged free/600-pence allowance", "passed": true, "http_status": 200}
+{"check": "B sign-in", "passed": true, "http_status": 200}
+{"check": "B verified Auth identity", "passed": true, "http_status": 200}
+{"check": "B unfiltered property read", "passed": true, "visible_count": 1}
+{"check": "B direct foreign property read denied", "passed": true, "visible_count": 0}
+{"check": "B own free allocation only", "passed": true, "visible_count": 1}
+{"check": "B no paid credits seeded", "passed": true, "visible_count": 0}
+{"check": "B unchanged free/600-pence allowance", "passed": true, "http_status": 200}
+{"check": "A can read seeded own room", "passed": true, "visible_count": 1}
+{"check": "B cannot read A seeded room", "passed": true, "visible_count": 0}
+{"check": "Anonymous property API access denied", "passed": true, "http_status": 401}
+PASS staging authenticated property/room/free-allocation read isolation and unchanged allowance. No application records, SQL, Stripe, email, Storage objects or production endpoints modified.
