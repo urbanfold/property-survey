@@ -1,0 +1,1 @@
+PASS optional strict signup intent, server audit timestamp/version, confirmation-only unique registration queue, no historic backfill, ownership/ACLs, opt-in/withdrawal, concurrency/uncertain no-retry, dummy-only capture and unchanged £6 constraint

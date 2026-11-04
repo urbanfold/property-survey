@@ -9,3 +9,10 @@ verify_jwt = false
 # Proposed F02 gateway validates Auth itself; do not deploy without approval.
 [functions.request-survey-notification]
 verify_jwt = false
+
+# Candidate server-only endpoints; receiver must be deployed to staging only.
+[functions.staging-notification-receiver]
+verify_jwt = false
+
+[functions.dispatch-registration-notifications]
+verify_jwt = false

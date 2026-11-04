@@ -21,8 +21,15 @@ async function smallBody(request){
  return JSON.parse(new TextDecoder().decode(bytes));
 }
 export async function requestSurveyNotification(request,{env,fetcher=fetch}){
+ const transport=env('NOTIFICATION_TRANSPORT')||'zapier';
+ if(!['zapier','staging_capture'].includes(transport))return response({error:'Notification transport is not configured.'},503);
+ const capture=transport==='staging_capture';
+ const staging='https://hexhtduvqzleoazusskh.supabase.co';
+ if(env('SUPABASE_URL')===staging&&!capture)return response({error:'Staging notifications require capture-only mode.'},503);
+ if(capture&&!env('APP_URL'))return response({error:'An explicit staging application URL is required.'},503);
+ if(capture&&env('SUPABASE_URL')!==staging)return response({error:'Staging capture requires the isolated staging project.'},503);
  let app;
- try{app=new URL(env('APP_URL')||DEFAULT_APP);if(app.protocol!=='https:'||app.search||app.hash)throw Error();}
+ try{app=new URL(env('APP_URL')||DEFAULT_APP);const local=capture&&app.protocol==='http:'&&['localhost','127.0.0.1'].includes(app.hostname);if((app.protocol!=='https:'&&!local)||app.search||app.hash)throw Error();}
  catch{return response({error:'Notification service is not configured.'},503);}
  const origin=request.headers.get('origin');
  if(origin&&origin!==app.origin)return response({error:'Origin not permitted.'},403);
@@ -33,7 +40,7 @@ export async function requestSurveyNotification(request,{env,fetcher=fetch}){
  if(!/^Bearer \S+$/.test(authorization))return response({error:'Sign in to request a notification.'},401,cors);
  const base=env('SUPABASE_URL'),anon=env('SUPABASE_ANON_KEY'),service=env('SUPABASE_SERVICE_ROLE_KEY');
  let hook;
- try{hook=new URL(env('SURVEY_NOTIFICATION_WEBHOOK_URL'));if(hook.protocol!=='https:'||hook.hostname!=='hooks.zapier.com'||!hook.pathname.startsWith('/hooks/catch/'))throw Error();}
+ try{hook=new URL(capture?staging+'/functions/v1/staging-notification-receiver':env('SURVEY_NOTIFICATION_WEBHOOK_URL'));if(!capture&&(hook.protocol!=='https:'||hook.hostname!=='hooks.zapier.com'||!hook.pathname.startsWith('/hooks/catch/')))throw Error();}
  catch{return response({error:'Your survey is saved; notifications are not configured yet.'},503,cors);}
  if(!base||!anon||!service)return response({error:'Notification service is not configured.'},503,cors);
  const headers={apikey:anon,authorization,'Content-Type':'application/json'};
@@ -64,7 +71,7 @@ export async function requestSurveyNotification(request,{env,fetcher=fetch}){
   const submission_id=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');
   let accepted=false;
   try{
-   const sent=await fetcher(hook.href,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':claim.id},
+   const sent=await fetcher(hook.href,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':claim.id,...(capture?{Authorization:'Bearer '+service,'X-Urbanfold-Notification-Type':'survey'}:{})},...(capture?{redirect:'error'}:{}),
     body:JSON.stringify({...claim.payload,submission_id}),signal:AbortSignal.timeout(10000)});
    accepted=sent.ok;
   }catch{/* Ambiguous delivery: record uncertain and do not automatically resend. */}

@@ -35,6 +35,12 @@ jobs:
         run: node --test tests/test_billing_handlers.mjs
       - name: Test authenticated notification gateway
         run: node --test tests/test_notification_handlers.mjs
+      - name: Test capture-only notification and registration workers
+        run: node --test tests/test_registration_handlers.mjs
+      - name: Test consent audit and verified registration queue
+        run: python tests/test_registration_notifications.py
+      - name: Test optional newsletter settings and withdrawal
+        run: python tests/test_newsletter_ui.py
       - name: Test private-session teardown
         run: python tests/test_session_security.py
       - name: Test same-account temporary session recovery

@@ -324,3 +324,7 @@ The workflow in this checkout publishes GitHub Pages, while the user mentions pr
 ## Direct staging verification update — 4 November 2026
 
 After the owner supplied secure staging-only test access, actual staging Auth/API/Storage and cloud browser tests passed for the scenarios in [STAGING_RESULTS.md](../2026-11-04/STAGING_RESULTS.md). This supersedes earlier statements that no authorised real staging accounts were tested; those statements remain true for the initial audit/production. No production security verification or release is claimed. F02 Edge Function remains unavailable (404), with notification delivery untested; source findings and remaining release gates still apply.
+
+## Phase 2 candidate update — 4 November 2026
+
+F02 capture-only staging receiver/transport and a verified-registration consent/outbox candidate are prepared locally. See [PHASE2_REPORT.md](../2026-11-04/PHASE2_REPORT.md). Local tests pass after targeted reruns, with an initial simulated-Leica timeout preserved. Actual staging function/table probes are still 404 for new components; deployment access is absent. New migration/functions/email delivery are not installed or verified in cloud, and production is untouched.

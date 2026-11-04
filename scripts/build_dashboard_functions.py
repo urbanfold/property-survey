@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Fail if generated files are stale')
     args = parser.parse_args()
-    for slug, handler, module in [('create-survey-checkout', 'createCheckout', 'billing'), ('stripe-survey-webhook', 'stripeWebhook', 'billing'), ('request-survey-notification', 'requestSurveyNotification', 'notifications')]:
+    for slug, handler, module in [('create-survey-checkout', 'createCheckout', 'billing'), ('stripe-survey-webhook', 'stripeWebhook', 'billing'), ('request-survey-notification', 'requestSurveyNotification', 'notifications'), ('staging-notification-receiver','stagingNotificationReceiver','staging_receiver'), ('dispatch-registration-notifications','dispatchRegistrationNotifications','registration')]:
         source = (ROOT / ('supabase/functions/_shared/' + module + '.mjs')).read_text()
         path = ROOT / 'supabase/dashboard' / (slug + '.ts')
         content = ('// @ts-nocheck\n'

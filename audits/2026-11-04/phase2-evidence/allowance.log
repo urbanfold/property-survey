@@ -1,0 +1,3 @@
+PASS first survey has no paywall, second shows £6 one-off popup, unavailable payments are honest, existing survey remains accessible on mobile
+PASS forged success URL grants no credit; confirmed credit unlocks exactly one new property; client review shows completeness without measurement export
+PASS staged SQL rollout preserves first-time client access

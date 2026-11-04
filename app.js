@@ -96,6 +96,7 @@
                 if (input.type === 'checkbox') input.checked = false; else input.value = '';
             });
             clearRecoveryState();
+            closeNewsletterPreferences();
             requestedResetEmail = null;
             document.getElementById('reset-email').value = '';
             hidePasswords();
@@ -164,6 +165,7 @@
                         newsletter_consent_version: newsletterSubscribed ? '2026-10-23' : null }, emailRedirectTo: new URL('.', location.href).href }
                 }), 'Create account');
                 document.getElementById('signup-password').value = '';
+                document.getElementById('signup-newsletter').checked = false;
                 if (data.session) { currentUser = data.user; await loadDashboard(); }
                 else {
                     alert('Account created. Check your email to confirm, then log in.');
@@ -188,6 +190,48 @@
                 await loadDashboard();
             } catch (error) { alert(error.message); }
             finally { setLoading(false); }
+        }
+
+        function closeNewsletterPreferences() {
+            const dialog = document.getElementById('newsletter-dialog');
+            if (dialog?.open) dialog.close();
+            document.getElementById('newsletter-opt-in').checked = false;
+            document.getElementById('newsletter-opt-in').disabled = true;
+            document.getElementById('newsletter-save').disabled = true;
+            document.getElementById('newsletter-preference-status').textContent = '';
+        }
+        async function openNewsletterPreferences() {
+            const context = sessionContext();
+            if (!currentUser) return;
+            const dialog = document.getElementById('newsletter-dialog');
+            const status = document.getElementById('newsletter-preference-status');
+            const save = document.getElementById('newsletter-save');
+            document.getElementById('newsletter-opt-in').checked = false;
+            document.getElementById('newsletter-opt-in').disabled = true;
+            save.disabled = true; status.textContent = 'Loading your preference…'; dialog.showModal();
+            try {
+                const data = await requireResult(sb.rpc('get_newsletter_preference'), 'Read newsletter preference', context);
+                if (typeof data?.opted_in !== 'boolean') throw Error('Preference unavailable');
+                document.getElementById('newsletter-opt-in').checked = data.opted_in;
+                document.getElementById('newsletter-opt-in').disabled = false;
+                status.textContent = 'This choice is optional. Untick and save to withdraw your subscription.';
+                save.disabled = false;
+            } catch (_) { if (sessionIsCurrent(context)) status.textContent = 'Newsletter settings are not available yet. Your surveys are unaffected.'; }
+        }
+        async function saveNewsletterPreferences() {
+            const context = sessionContext();
+            if (!currentUser) return;
+            const save = document.getElementById('newsletter-save');
+            const status = document.getElementById('newsletter-preference-status');
+            const requested = document.getElementById('newsletter-opt-in').checked;
+            document.getElementById('newsletter-opt-in').disabled = true;
+            save.disabled = true;
+            try {
+                const data = await requireResult(sb.rpc('set_newsletter_preference', { subscribe: requested }), 'Save newsletter preference', context);
+                if (typeof data?.opted_in !== 'boolean' || data.opted_in !== requested) throw Error('Preference was not verified.');
+                status.textContent = data.opted_in === true ? 'Newsletter subscription saved.' : 'You are unsubscribed from Urbanfold newsletters.';
+            } catch (_) { if (sessionIsCurrent(context)) status.textContent = 'Your preference could not be saved. Please retry when connected.'; }
+            finally { if (sessionIsCurrent(context) && document.getElementById('newsletter-dialog').open) { save.disabled = false; document.getElementById('newsletter-opt-in').disabled = false; } }
         }
 
         async function handleLogout() {
