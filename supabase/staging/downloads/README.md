@@ -1,3 +1,5 @@
+> **OBSOLETE — DO NOT DOWNLOAD OR RUN.** Windows Defender blocked the old ZIP. Do not restore it, allowlist it or run its CMD/PowerShell launchers. These files remain as historical evidence only. Use the static-only replacement described in [SAFE_STATIC_CLIENT.md](../SAFE_STATIC_CLIENT.md); it contains no launchers. The historical instructions below are superseded.
+
 # Local staging client download
 
 This ZIP is a generated, local-only staging test client, not a deployment. It contains no entered key/password or production Supabase endpoint/public key. Configuration targets only hexhtduvqzleoazusskh. Source/limitations: ../client-tools/README.md and scripts/build_staging_client.py.

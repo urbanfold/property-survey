@@ -1,0 +1,110 @@
+[
+  {
+    "case": "syntax",
+    "exit_code": 0,
+    "seconds": 0.25,
+    "log": "syntax.log"
+  },
+  {
+    "case": "dashboard",
+    "exit_code": 0,
+    "seconds": 0.08,
+    "log": "dashboard.log"
+  },
+  {
+    "case": "billing",
+    "exit_code": 0,
+    "seconds": 0.7,
+    "log": "billing.log"
+  },
+  {
+    "case": "notifications",
+    "exit_code": 0,
+    "seconds": 0.53,
+    "log": "notifications.log"
+  },
+  {
+    "case": "registration-handlers",
+    "exit_code": 0,
+    "seconds": 12.58,
+    "log": "registration-handlers.log"
+  },
+  {
+    "case": "registration-sql",
+    "exit_code": 0,
+    "seconds": 91.68,
+    "log": "registration-sql.log"
+  },
+  {
+    "case": "newsletter-ui",
+    "exit_code": 0,
+    "seconds": 3.65,
+    "log": "newsletter-ui.log"
+  },
+  {
+    "case": "session-security",
+    "exit_code": 0,
+    "seconds": 3.96,
+    "log": "session-security.log"
+  },
+  {
+    "case": "session-recovery",
+    "exit_code": 0,
+    "seconds": 32.35,
+    "log": "session-recovery.log"
+  },
+  {
+    "case": "survey-flow",
+    "exit_code": 0,
+    "seconds": 5.7,
+    "log": "survey-flow.log"
+  },
+  {
+    "case": "browser",
+    "exit_code": 0,
+    "seconds": 12.64,
+    "log": "browser.log"
+  },
+  {
+    "case": "allowance",
+    "exit_code": 0,
+    "seconds": 5.53,
+    "log": "allowance.log"
+  },
+  {
+    "case": "leica",
+    "exit_code": 0,
+    "seconds": 5.12,
+    "log": "leica.log"
+  },
+  {
+    "case": "rls",
+    "exit_code": 0,
+    "seconds": 18.96,
+    "log": "rls.log"
+  },
+  {
+    "case": "credits",
+    "exit_code": 0,
+    "seconds": 11.44,
+    "log": "credits.log"
+  },
+  {
+    "case": "notification-database",
+    "exit_code": 0,
+    "seconds": 15.2,
+    "log": "notification-database.log"
+  },
+  {
+    "case": "product-isolation",
+    "exit_code": 0,
+    "seconds": 0.15,
+    "log": "product-isolation.log"
+  },
+  {
+    "case": "staging-setup",
+    "exit_code": 0,
+    "seconds": 0.06,
+    "log": "staging-setup.log"
+  }
+]

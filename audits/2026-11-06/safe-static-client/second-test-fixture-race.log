@@ -1,0 +1,11 @@
+PASS exact eight-file static inventory, source parity/checksums, no launcher/production credentials/webhook/payment implementation/remote script references; bundled vendor parity
+PASS generated local staging key/role/project guards, key-field clearing, staging-only Auth/login/survey opening, read-only A/B isolation button, failure/no-false-pass/leak detection and cleared account results, and CSP external-backend denial; all HTTP intercepted
+No live login, SQL, API or deployment. Windows PowerShell launcher not executed on this Linux host; real-service account isolation remains unverified.
+Traceback (most recent call last):
+  File "/workspace/property-survey/tests/test_safe_staging_client.py", line 88, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/property-survey/tests/test_safe_staging_client.py", line 59, in main
+    assert len(requests)==before
+           ^^^^^^^^^^^^^^^^^^^^^
+AssertionError

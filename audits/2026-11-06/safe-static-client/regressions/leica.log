@@ -1,0 +1,3 @@
+PASS unsupported browser, chooser cancellation, blocked permissions, unavailable service and notification failure retain manual measurements
+PASS notifications show bounded raw diagnostics without decoding or writing survey fields; disconnect removes listeners
+PASS distance decoding, explicit opt-in, selected one-shot entry, L-shaped dimensions, corrupt-packet rejection, manual edits, context isolation and precise cloud recovery

@@ -1,3 +1,5 @@
+> **OBSOLETE — DO NOT DOWNLOAD OR RUN.** Windows Defender blocked the old ZIP. Do not restore it, allowlist it or run its CMD/PowerShell launchers. These files remain as historical evidence only. Use the static-only replacement described in [SAFE_STATIC_CLIENT.md](../SAFE_STATIC_CLIENT.md); it contains no launchers. The historical instructions below are superseded.
+
 # Isolated local staging client package
 
 `python scripts/build_staging_client.py` writes `/workspace/urbanfold-staging-client/` and `/workspace/urbanfold-staging-client.zip`. It does not start a server, deploy, execute SQL, request credentials or contact an API. Artifacts are outside the repository. The builder copies current app/vendor sources and replaces only client initialization in the generated app with the local staging key bootstrap. Original app.js/index.html remain unchanged.

@@ -1,0 +1,42 @@
+PASS exact eight-file static inventory, source parity/checksums, no launcher/production credentials/webhook/payment implementation/remote script references; bundled vendor parity
+PASS generated local staging key/role/project guards, key-field clearing, staging-only Auth/login/survey opening, read-only A/B isolation button, failure/no-false-pass/leak detection and cleared account results, and CSP external-backend denial; all HTTP intercepted
+No live login, SQL, API or deployment. Windows PowerShell launcher not executed on this Linux host; real-service account isolation remains unverified.
+Traceback (most recent call last):
+  File "/workspace/property-survey/tests/test_safe_staging_client.py", line 88, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/property-survey/tests/test_safe_staging_client.py", line 77, in main
+    expect(recovery.locator('#view-reset-password')).to_be_visible()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/playwright/sync_api/_generated.py", line 23332, in to_be_visible
+    self._sync(
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+           ^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/playwright/_impl/_assertions.py", line 852, in to_be_visible
+    await self._expect_impl(
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/playwright/_impl/_assertions.py", line 128, in _expect_impl
+    _record_soft_or_raise(
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/playwright/_impl/_assertions.py", line 60, in _record_soft_or_raise
+    raise error
+AssertionError: Locator expected to be visible
+Actual value: hidden 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("#view-reset-password")
+    14 × locator resolved to <div class="view" id="view-reset-password">…</div>
+       - unexpected value "hidden"
+
+Aria snapshot:
+- note:
+  - strong: STAGING ONLY — dummy users and fictional surveys
+  - text: "Project: hexhtduvqzleoazusskh · Static-only client · Payments disabled Source: c773345d436a. Never enter production credentials or customer information."
+- heading "Dummy A/B account isolation" [level=2]
+- button "Check account isolation (read only)"
+- status: Sign in, then run this check.
+- heading "My Surveys" [level=1]
+- paragraph: Select a survey to continue or start a new one.
+- button "+ Start New Survey"
+- text: No surveys yet. Start a new one above!
+- button "Newsletter preferences"
+- button "Log Out"
+- paragraph: "App version: SAFE-STAGING-4a146132c4f6"

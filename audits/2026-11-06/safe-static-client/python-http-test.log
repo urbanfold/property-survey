@@ -1,0 +1,1 @@
+PASS independently installed Python stdlib server binds 127.0.0.1:8794 and serves exact static bytes; no browser/app scripts executed, no external calls; test server stopped
