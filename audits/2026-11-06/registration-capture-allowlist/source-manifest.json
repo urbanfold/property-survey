@@ -1,0 +1,17 @@
+{
+  "base_commit": "d55febdbe492cf1293638875f16a2181aa61b5f5",
+  "build": "urbanfold-staging-receiver-allowlist-1",
+  "sha256": {
+    "supabase/functions/_shared/staging_receiver.mjs": "20b183bd5330e1a7db0c65fa28f90ea85f3aa76dce3a7ccbccbd786ecca3cebf",
+    "supabase/dashboard/staging-notification-receiver.ts": "2087893684197e08a8563f36eb7716bf318462ab1ea6253a9dc9507aa73386f3",
+    "supabase/staging/010_registration_capture_allowlist.sql": "3674893428bfb5dcad0a0deb7422b464552a3606b39e1a8ae84f27de248e67d5",
+    "supabase/staging/010_registration_capture_rollback.sql": "2c3b4c85a8c305088e625f1ed1516243bff58890c6e6b61008f7dda13fb85df7",
+    "supabase/staging/010_registration_capture_preflight_readonly.sql": "d59724cd3153910c5b39e945b73689fd087ef60b276980d234346ad45280e65b",
+    "supabase/staging/010_registration_capture_verify_readonly.sql": "e42f4c187bcf3ca6af436414759716a0d6c0d44a5b2d48b66cc73ec89c221823",
+    "scripts/build_registration_capture_sql.py": "300d5a36ca5c87247dcf7afee182dc0abc9bddb6b8f853478ad86ecc2995fe34",
+    "tests/test_registration_capture_allowlist.py": "8a100a7ae75114f937768082984c4b2cd19d3d776bc5896259e65bc3bd274593",
+    "tests/test_staging_receiver_diagnostics.mjs": "a691494d818a658faf1c62679ed4009bf5488a60e9318a19e35a611de757dc48",
+    "tests/test_registration_notifications.py": "faa017519b29517f5f0b92ea599b18b7dc1a986aef414e57e2087204dfa61acc",
+    "supabase/staging/REGISTRATION_CAPTURE_ALLOWLIST_REVIEW.md": "2c5d915120f47e1e24732f20993247b75f032f5c8f69898301697dea0cb94d92"
+  }
+}

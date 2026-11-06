@@ -6,7 +6,7 @@ import {performance} from 'node:perf_hooks';
 import {stagingNotificationReceiver as shared} from '../supabase/functions/_shared/staging_receiver.mjs';
 import {requestSurveyNotification as gateway} from '../supabase/functions/_shared/notifications.mjs';
 const BASE='https://hexhtduvqzleoazusskh.supabase.co';
-const BUILD='urbanfold-staging-receiver-diag-1';
+const BUILD='urbanfold-staging-receiver-allowlist-1';
 const UID='00000000-0000-4000-8000-000000000001';
 const PID='00000000-0000-4000-8000-000000000002';
 const ID='00000000-0000-4000-8000-000000000003';
@@ -76,6 +76,17 @@ for(const [name,handler] of variants){
   assert.equal(r.status,200);assert.deepEqual(await r.json(),{captured:true,email_sent:false});
   assert.equal(f.calls.length,1);assert.deepEqual(f.calls[0],{kind:'survey',delivery_id:ID,payload});
   assert.deepEqual(f.logs.map(x=>x.event),['mode_selected','capture_committed']);safeLogs(f.logs);
+ });
+ test(name+': registration identity is forwarded only to private SQL, never logged or sent as email',async()=>{
+  const registration={user_id:'b83f87d8-abf2-4800-beab-8279917804c7',registration_email:'urbanfolduk+staging-reg-01@gmail.com',recipient:'urbanfolduk@gmail.com'};
+  const f=fixture();
+  const request=()=>req({headers:{'X-Urbanfold-Notification-Type':'registration_verified'},payload:registration});
+  assert.equal((await handler(request(),f)).status,200);
+  assert.equal(f.calls.length,1);assert.deepEqual(f.calls[0],{kind:'registration_verified',delivery_id:ID,payload:registration});
+  for(const value of Object.values(registration))assert(!JSON.stringify(f.logs).includes(value));
+  const denied=fixture();
+  assert.equal((await handler(request(),{...denied,fetcher:async()=>json({},422)})).status,422);
+  assert.deepEqual(denied.logs.map(x=>x.event),['mode_selected']);
  });
  test(name+': explicit reject does not capture or sleep',async()=>{
   const f=fixture({STAGING_RECEIVER_BEHAVIOUR:'reject'});

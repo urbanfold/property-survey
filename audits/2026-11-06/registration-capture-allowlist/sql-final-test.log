@@ -1,0 +1,1 @@
+PASS exact identity + confirmed Auth + claimed queue/snapshot binding; no Gmail/domain wildcard; private owner-write/service-read allowlist; client/service mutation denials; pending/forged/disabled/unconfirmed/wrong-ID failures; original consent/credits/F02 preserved; one-row receipt idempotency; guarded source/marker install and data-preserving rollback

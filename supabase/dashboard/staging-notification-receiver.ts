@@ -4,7 +4,9 @@
 // Disable the gateway JWT check; authentication is verified inside the handler.
 // STAGING ONLY. This receiver stores dummy receipts. It has no email-delivery code.
 const STAGING='https://hexhtduvqzleoazusskh.supabase.co';
-const BUILD='urbanfold-staging-receiver-diag-1';
+// Registration identity exceptions are enforced by the private SQL allowlist,
+// never by trusting a browser header or allowing an entire email domain here.
+const BUILD='urbanfold-staging-receiver-allowlist-1';
 const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 export async function stagingNotificationReceiver(request,{
  env,

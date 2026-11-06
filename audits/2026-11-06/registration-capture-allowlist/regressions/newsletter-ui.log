@@ -1,0 +1,1 @@
+PASS signup unchecked, preference read/opt-in/withdrawal, failure without false success, unavailable migration fallback, caller-only boolean payload, and delayed response cannot restore preference after logout; no email

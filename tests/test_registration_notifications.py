@@ -102,4 +102,8 @@ def main():
   assert sql(f"select count(*) from newsletter_preferences where user_id='{paused}';")=='0'
   print('PASS optional strict signup intent, server audit timestamp/version, confirmation-only unique registration queue, no historic backfill, ownership/ACLs, opt-in/withdrawal, concurrency/uncertain no-retry, dummy-only capture and unchanged £6 constraint')
  finally:subprocess.run(['docker','rm','-f',name],capture_output=True)
-if __name__=='__main__':main()
+if __name__=='__main__':
+ main()
+ # Keep the new capture permission checks in the existing SQL CI test command.
+ from test_registration_capture_allowlist import main as test_capture_allowlist
+ test_capture_allowlist()
