@@ -1,0 +1,68 @@
+✔ generated receiver matches shared source and preserves the exact dashboard entry point (41.349976ms)
+✔ shared: missing/invalid mode fails closed without capture or sleep and never logs raw values (131.079568ms)
+✔ shared: project/auth/method guards execute before diagnostic logging (4.074667ms)
+✔ shared: explicit accept captures exact original payload once without sleeping (3.264977ms)
+✔ shared: explicit reject does not capture or sleep (1.355533ms)
+✔ shared: mode is loaded on each invocation, not cached (2.038602ms)
+✔ shared: receiver SQL rejection or exception never records capture success or starts delay (2.989801ms)
+✔ shared: malformed capture metadata remains rejected before RPC (1.195961ms)
+✔ shared: logging failure cannot break successful capture (1.08334ms)
+✔ shared: timeout waits only AFTER capture and cannot complete before delay resolves (4.940208ms)
+✔ dashboard: missing/invalid mode fails closed without capture or sleep and never logs raw values (32.852349ms)
+✔ dashboard: project/auth/method guards execute before diagnostic logging (1.142207ms)
+✔ dashboard: explicit accept captures exact original payload once without sleeping (0.754381ms)
+✔ dashboard: explicit reject does not capture or sleep (0.328049ms)
+✔ dashboard: mode is loaded on each invocation, not cached (2.856481ms)
+✔ dashboard: receiver SQL rejection or exception never records capture success or starts delay (1.99712ms)
+✔ dashboard: malformed capture metadata remains rejected before RPC (4.341503ms)
+✔ dashboard: logging failure cannot break successful capture (0.473652ms)
+✔ dashboard: timeout waits only AFTER capture and cannot complete before delay resolves (0.555679ms)
+✔ actual dashboard Deno entry point reads current env and uses safe default JSON logger (4.979193ms)
+{"local_test":"shared","gateway_ms":15212,"receiver_ms":15203,"captures":1}
+{"local_test":"dashboard","gateway_ms":15227,"receiver_ms":15203,"captures":1}
+✔ real 12-second receiver delay and real 10-second gateway timeout, both source variants, capture exactly once (15236.565211ms)
+✔ staging capture never permits production targets or a Zapier fallback (2.625167ms)
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"accept"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"capture_committed","mode":"accept"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"reject"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"capture_committed","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"timeout_wait_started","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"timeout_wait_finished","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"accept"}
+✔ F02 staging transport preserves auth/property checks and sends only to fixed server-authorised sink (3.236114ms)
+✔ dummy receiver requires exact project/server auth and never contacts an email provider (7.209716ms)
+✔ registration server-only worker captures exact admin payload once; browser body cannot override recipient (1.576347ms)
+✔ registration rejection/timeout/receipt failure records uncertainty, never automatic duplicate delivery (6.534649ms)
+✔ registration delivery disabled/missing config fails before claim; staging cannot use real email (2.011395ms)
+✔ future Brevo delivery uses fixed admin, text payload, no marketing action and no staging credentials (2.446232ms)
+✖ new dashboard wrappers register and deny requests without server configuration (24.890004ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 28
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15842.998445
+
+✖ failing tests:
+
+test at tests/test_registration_handlers.mjs:92:1
+✖ new dashboard wrappers register and deny requests without server configuration (24.890004ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/test_registration_handlers.mjs:99:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

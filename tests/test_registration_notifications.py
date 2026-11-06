@@ -7,6 +7,7 @@ import subprocess,time,uuid,json
 from test_database_policies import IMAGE
 ROOT=Path(__file__).resolve().parents[1]
 def main():
+ subprocess.run(['python','scripts/build_registration_staging_sql.py','--check'],cwd=ROOT,check=True)
  name='urbanfold-registration-'+uuid.uuid4().hex[:8]
  def sql(statement,error=None):
   p=subprocess.run(['docker','exec','-i',name,'psql','-X','-q','-t','-A','-v','ON_ERROR_STOP=1','-U','postgres'],input=statement,text=True,capture_output=True)
@@ -23,8 +24,16 @@ def main():
   sql((ROOT/'tests/database_fixture.sql').read_text())
   sql("alter table auth.users add column email text,add column email_confirmed_at timestamptz,add column created_at timestamptz not null default now(),add column raw_user_meta_data jsonb default '{}'::jsonb;")
   old=str(uuid.uuid4());sql(f"insert into auth.users(id,email) values('{old}','old@example.invalid');")
-  for f in ['001_secure_access.sql','002_survey_purchases.sql','003_survey_notifications.sql','004_verified_registration_notifications.sql']:sql((ROOT/'supabase'/f).read_text())
+  for f in ['001_secure_access.sql','002_survey_purchases.sql','003_survey_notifications.sql']:sql((ROOT/'supabase'/f).read_text())
+  sql("comment on table public.properties is 'Urbanfold-Survey-Staging reconstructed baseline; prepared 2026-11-03; never production.';")
+  installer=(ROOT/'supabase/staging/004_registration_install_fresh.sql').read_text()
+  sql(installer)
+  sql(installer,'Registration objects already exist')
   sql((ROOT/'supabase/004_verified_registration_notifications.sql').read_text())
+  checks=json.loads(sql((ROOT/'supabase/staging/004_registration_verify_readonly.sql').read_text()))
+  assert checks and all(checks.values()),checks
+  preflight=json.loads(sql((ROOT/'supabase/staging/004_registration_preflight_readonly.sql').read_text()))
+  assert preflight['staging_marker_matches'] and len(preflight['registration_tables'])==3
   a,b,unconfirmed=[str(uuid.uuid4()) for _ in range(3)]
   sql(f'''insert into auth.users(id,email,raw_user_meta_data)values('{a}','a@example.invalid','{{"newsletter_subscribed":true,"newsletter_consent_at":"1900-01-01","newsletter_consent_version":"forged"}}');''')
   assert sql('select count(*) from registration_notification_events;')=='0'
@@ -83,6 +92,14 @@ def main():
   sql(f"set role service_role;select capture_staging_notification('registration_verified','{uuid.uuid4()}','{{\"user_id\":\"{a}\",\"registration_email\":\"real@example.com\"}}');",'DUMMY_REGISTRATION_REQUIRED')
   sql(user(a,'select * from staging_notification_receipts;'),'permission denied')
   assert sql("select count(*) from information_schema.check_constraints where constraint_name='survey_credit_purchases_amount_total_check' and check_clause like '%600%';")=='1'
+  from registration_dispatch_checks import run
+  run(sql)
+  pause=(ROOT/'supabase/staging/004_registration_pause_auth_triggers.sql').read_text()
+  sql(pause,'Explicit approved staging rollback acknowledgement required')
+  sql(pause.replace('-- set local urbanfold.registration_rollback_approved', 'set local urbanfold.registration_rollback_approved'))
+  assert sql("select count(*) from pg_trigger where tgrelid='auth.users'::regclass and tgname in('urbanfold_auth_signup','urbanfold_auth_first_confirmation') and tgenabled='D';")=='2'
+  paused=str(uuid.uuid4());sql(f"insert into auth.users(id,email) values('{paused}','pause@example.invalid');")
+  assert sql(f"select count(*) from newsletter_preferences where user_id='{paused}';")=='0'
   print('PASS optional strict signup intent, server audit timestamp/version, confirmation-only unique registration queue, no historic backfill, ownership/ACLs, opt-in/withdrawal, concurrency/uncertain no-retry, dummy-only capture and unchanged £6 constraint')
  finally:subprocess.run(['docker','rm','-f',name],capture_output=True)
 if __name__=='__main__':main()

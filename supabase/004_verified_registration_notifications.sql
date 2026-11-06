@@ -31,9 +31,20 @@ create table if not exists public.registration_notification_events(
  newsletter_opted_in_at_verification boolean not null,
  state text not null default 'pending' check(state in('pending','sending','accepted','uncertain')),
  created_at timestamptz not null default clock_timestamp(),
- finished_at timestamptz
+ finished_at timestamptz,
+ claim_started_at timestamptz,
+ completion_reason text
 );
+-- Support reapplying the candidate after a separately reviewed early-004 install.
+alter table public.registration_notification_events add column if not exists claim_started_at timestamptz;
+alter table public.registration_notification_events add column if not exists completion_reason text;
+-- Legacy attempts have unknown claim times. Count them conservatively from this
+-- migration, rather than exempting them from the new rolling limits.
+update public.registration_notification_events set claim_started_at=clock_timestamp()
+ where state<>'pending' and claim_started_at is null;
 create index if not exists registration_notification_pending on public.registration_notification_events(created_at) where state='pending';
+create index if not exists registration_notification_claim_time on public.registration_notification_events(claim_started_at)
+ where claim_started_at is not null;
 alter table public.newsletter_preferences enable row level security;
 alter table public.newsletter_consent_events enable row level security;
 alter table public.registration_notification_events enable row level security;
@@ -116,14 +127,54 @@ revoke all on function public.get_newsletter_preference() from public,anon;
 revoke all on function public.set_newsletter_preference(boolean) from public,anon;
 grant execute on function public.get_newsletter_preference(),public.set_newsletter_preference(boolean) to authenticated;
 
+-- Five minutes exceeds the worker's bounded transport/finish waits. Interrupted
+-- attempts are ambiguous, never safe to automatically requeue or resend.
+create or replace function public.recover_stale_registration_notifications()
+returns integer language plpgsql security definer set search_path='' as $$
+declare recovered integer;
+begin
+ perform pg_advisory_xact_lock(hashtextextended('urbanfold.registration.dispatch',0));
+ update public.registration_notification_events
+ set state='uncertain',finished_at=clock_timestamp(),completion_reason='worker_interrupted'
+ where state='sending' and (claim_started_at is null or claim_started_at<=clock_timestamp()-interval '5 minutes');
+ get diagnostics recovered=row_count;
+ return recovered;
+end $$;
+revoke all on function public.recover_stale_registration_notifications() from public,anon,authenticated;
+grant execute on function public.recover_stale_registration_notifications() to service_role;
+
 create or replace function public.claim_registration_notification()
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare e public.registration_notification_events;
+declare e public.registration_notification_events; claimed_at timestamptz;
+ minute_count integer;hour_count integer;retry_seconds integer:=1;next_slot timestamptz;
 begin
+ -- Serialize ALL callers across rows: SKIP LOCKED alone cannot enforce a global cap.
+ perform pg_advisory_xact_lock(hashtextextended('urbanfold.registration.dispatch',0));
+ perform public.recover_stale_registration_notifications();
  select * into e from public.registration_notification_events where state='pending' order by created_at,id for update skip locked limit 1;
  if not found then return null;end if;
- update public.registration_notification_events set state='sending' where id=e.id;
- return jsonb_build_object('id',e.id,'user_id',e.user_id,'registration_email',e.registration_email,
+ claimed_at:=clock_timestamp();
+ select count(*) filter(where claim_started_at>claimed_at-interval '1 minute'),count(*)
+ into minute_count,hour_count from public.registration_notification_events
+ where claim_started_at>claimed_at-interval '1 hour';
+ if minute_count>=5 then
+  select claim_started_at+interval '1 minute' into next_slot
+  from public.registration_notification_events where claim_started_at>claimed_at-interval '1 minute'
+  order by claim_started_at offset (minute_count-5) limit 1;
+  retry_seconds:=greatest(retry_seconds,ceil(extract(epoch from next_slot-claimed_at))::integer);
+ end if;
+ if hour_count>=50 then
+  select claim_started_at+interval '1 hour' into next_slot
+  from public.registration_notification_events where claim_started_at>claimed_at-interval '1 hour'
+  order by claim_started_at offset (hour_count-50) limit 1;
+  retry_seconds:=greatest(retry_seconds,ceil(extract(epoch from next_slot-claimed_at))::integer);
+ end if;
+ if minute_count>=5 or hour_count>=50 then
+  return jsonb_build_object('status','rate_limited','retry_after_seconds',retry_seconds);
+ end if;
+ update public.registration_notification_events set state='sending',claim_started_at=claimed_at,
+  finished_at=null,completion_reason=null where id=e.id;
+ return jsonb_build_object('id',e.id,'claim_started_at',claimed_at,'user_id',e.user_id,'registration_email',e.registration_email,
   'registered_at',e.registered_at,'verified_at',e.verified_at,'newsletter_signup_choice',e.newsletter_signup_choice,
   'newsletter_opted_in_at_verification',e.newsletter_opted_in_at_verification);
 end $$;
@@ -131,8 +182,25 @@ create or replace function public.finish_registration_notification(event uuid,ac
 returns void language plpgsql security definer set search_path='' as $$
 begin
  update public.registration_notification_events set state=case when accepted then 'accepted' else 'uncertain' end,
- finished_at=clock_timestamp() where id=event and state='sending';
+ finished_at=clock_timestamp(),completion_reason=case when accepted then 'transport_accepted' else 'transport_uncertain' end
+ where id=event and state='sending';
+end $$;
+-- New workers finish against their exact claim and inspect the persisted state.
+-- A delayed worker cannot turn an already recovered/uncertain attempt accepted.
+-- Keep the two-argument early-candidate RPC for migration compatibility only.
+create or replace function public.finish_registration_notification(event uuid,accepted boolean,claimed_at timestamptz)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare persisted_state text;
+begin
+ update public.registration_notification_events e
+ set state=case when accepted then 'accepted' else 'uncertain' end,
+ finished_at=clock_timestamp(),completion_reason=case when accepted then 'transport_accepted' else 'transport_uncertain' end
+ where e.id=event and e.state='sending' and e.claim_started_at=claimed_at;
+ select e.state into persisted_state from public.registration_notification_events e where e.id=event;
+ return jsonb_build_object('state',coalesce(persisted_state,'uncertain'));
 end $$;
 revoke all on function public.claim_registration_notification(),public.finish_registration_notification(uuid,boolean) from public,anon,authenticated;
 grant execute on function public.claim_registration_notification(),public.finish_registration_notification(uuid,boolean) to service_role;
+revoke all on function public.finish_registration_notification(uuid,boolean,timestamptz) from public,anon,authenticated;
+grant execute on function public.finish_registration_notification(uuid,boolean,timestamptz) to service_role;
 commit;

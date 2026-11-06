@@ -1,0 +1,31 @@
+✔ generated receiver matches shared source and preserves the exact dashboard entry point (8.996329ms)
+✔ shared: missing/invalid mode fails closed without capture or sleep and never logs raw values (58.998348ms)
+✔ shared: project/auth/method guards execute before diagnostic logging (3.052307ms)
+✔ shared: explicit accept captures exact original payload once without sleeping (1.96419ms)
+✔ shared: explicit reject does not capture or sleep (0.799048ms)
+✔ shared: mode is loaded on each invocation, not cached (1.184817ms)
+✔ shared: receiver SQL rejection or exception never records capture success or starts delay (1.623889ms)
+✔ shared: malformed capture metadata remains rejected before RPC (1.124364ms)
+✔ shared: logging failure cannot break successful capture (0.867765ms)
+✔ shared: timeout waits only AFTER capture and cannot complete before delay resolves (1.133502ms)
+✔ dashboard: missing/invalid mode fails closed without capture or sleep and never logs raw values (1.901126ms)
+✔ dashboard: project/auth/method guards execute before diagnostic logging (2.075038ms)
+✔ dashboard: explicit accept captures exact original payload once without sleeping (0.532834ms)
+✔ dashboard: explicit reject does not capture or sleep (0.15412ms)
+✔ dashboard: mode is loaded on each invocation, not cached (0.479542ms)
+✔ dashboard: receiver SQL rejection or exception never records capture success or starts delay (0.69706ms)
+✔ dashboard: malformed capture metadata remains rejected before RPC (0.679651ms)
+✔ dashboard: logging failure cannot break successful capture (0.253407ms)
+✔ dashboard: timeout waits only AFTER capture and cannot complete before delay resolves (0.969074ms)
+✔ actual dashboard Deno entry point reads current env and uses safe default JSON logger (0.681534ms)
+{"local_test":"shared","gateway_ms":10018,"receiver_ms":12003,"captures":1}
+{"local_test":"dashboard","gateway_ms":10017,"receiver_ms":12003,"captures":1}
+✔ real 12-second receiver delay and real 10-second gateway timeout, both source variants, capture exactly once (12021.444483ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12219.614805

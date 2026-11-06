@@ -74,3 +74,25 @@ The owner published environment settings and the assistant directly verified rea
 ## Phase 2 current boundary
 
 See [PHASE2_REPORT.md](/workspace/property-survey/audits/2026-11-04/PHASE2_REPORT.md) and F02_PHASE2_PLAN.md. New capture-only receiver (005), registration/consent schema (004), dispatcher and optional schedule (006) are prepared/tested locally only. Current dummy credentials cannot deploy; actual new endpoint/table probes remain 404. No cloud SQL/functions, live receiver, Brevo or Stripe change was made in this phase. The original A/B fixtures remain untouched by these read-only probes. Root staging setup.sql remains the historical 000–003 baseline; do not rerun it or assume it installs new optional features.
+
+## Deployed F02 negative checks
+
+Owner reports 005 installation/security checks and both capture-only function deployments completed. Direct authenticated deployed boundary tests now pass; see `audits/2026-11-04/F02_DEPLOYED_STAGING_RESULTS.md`. This supersedes previous endpoint-404 status for these two functions only. Successful capture/duplicate/rate/fault tests remain blocked on dedicated fixtures and owner-only count access. Prepared (not executed): `007_f02_dedicated_test_fixtures.sql` and `f02_read_only_counts.sql`. No production changes, additional deployments, pushes or credit changes.
+
+## Dedicated F02 endpoint phase
+
+Owner reports 007 installed with six fixtures and zero starting events/receipts. Direct tests now exercise accepted requests, sequential/concurrent duplicates, changed submissions, five-per-property and twenty-per-actor cap responses, reserved-domain receiver guard rejection and saved-data preservation. Original A/B property hashes and allowance responses matched before/after. Private counts remain unverified; expected totals are 22 events (21 accepted, 1 uncertain), 21 receipts, 21 committed capture attempts. Run `f02_positive_read_only_evidence.sql` to reconcile. Configured timeout/reject modes require a manual staging-only setting change; not performed. No cleanup or push. See updated F02_DEPLOYED_STAGING_RESULTS.md and timestamped JSONL evidence.
+
+## Timeout attempt — 2026-11-06
+
+Owner confirmed timeout_after_capture saved. One dedicated B/fixture-6 revision/request was made. Unexpected HTTP 200 accepted in 2.303 seconds, so timeout verification FAILED to exercise the fault. No retry; saved fixture and original B property hashes matched. Operator instructed to restore accept and reconcile counts; cause unknown pending configuration/deployed-source review. Evidence: audits/2026-11-06/F02_TIMEOUT_STATUS.md. No cleanup, push, merge, deploy or production change.
+
+## F02 survey staging verification PASSED — final reconciliation
+
+Owner confirmed final 25 events / 23 accepted / 2 uncertain / 0 sending, 24 captured receipts / 24 attempts / zero repeated captures. Owner logs confirmed diag-1 real timeout sequence and no receiver capture during exact-revision duplicate; accept restored. Direct request/readback evidence retained. See audits/2026-11-06/F02_STAGING_VERIFICATION_PASSED.md for scope and production limits. This supersedes earlier pending-reconciliation status, not the unperformed production tests. Cleanup008 not run.
+
+Registration 004/dispatcher/consent/scheduler reviewed without SQL, deployment or messages; plan and gaps in audits/2026-11-06/REGISTRATION_NOTIFICATION_REVIEW_PLAN.md. No numeric dispatch cap and no claim timestamp/stale-sending recovery currently implemented; local targeted changes require separate approval. Registration staging is NOT marked passed. Future receipt counts must separate survey and registration_verified kinds.
+
+## Registration implementation completed locally for committed-source handoff
+
+Root004 and generated dispatcher now include atomic 5/minute + 50/hour caps, server claim timestamps, safe stale-sending recovery to uncertain, exact-claim/persisted-state completion and fixed-field privacy diagnostics. Existing confirmation-state/strict consent/withdrawal/no-backfill rules preserved. Guarded fresh-only installer, SELECT-only pre/post verification and acknowledgement-guarded trigger-only rollback pause are prepared and tested locally. Source/test review and approval boundaries: REGISTRATION_RELEASE_CHECKLIST.md and audits/2026-11-06/registration-implementation/REVIEW.md. All 18 local regression targets passed, combined handlers 34/34. No Supabase SQL/functions/settings/accounts/emails or cleanup executed in this implementation. Connected Supabase reviewer must check metadata and obtain installation approval separately; no registration staging pass or production release is implied.

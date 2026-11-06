@@ -1,0 +1,82 @@
+✖ registration server-only worker captures exact admin payload once; browser body cannot override recipient (47.964994ms)
+✖ registration rejection/timeout/receipt failure records uncertainty, never automatic duplicate delivery (1.271454ms)
+✖ registration delivery disabled/missing config fails before claim; staging cannot use real email (2.245135ms)
+✖ future Brevo delivery uses fixed admin, text payload, no marketing action and no staging credentials (1.469306ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 225.320457
+
+✖ failing tests:
+
+test at tests/.baseline_registration_handlers.mjs:60:1
+✖ registration server-only worker captures exact admin payload once; browser body cannot override recipient (47.964994ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/.baseline_registration_handlers.mjs:65:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/.baseline_registration_handlers.mjs:69:1
+✖ registration rejection/timeout/receipt failure records uncertainty, never automatic duplicate delivery (1.271454ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 202
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/.baseline_registration_handlers.mjs:70:120)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 202,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/.baseline_registration_handlers.mjs:72:1
+✖ registration delivery disabled/missing config fails before claim; staging cannot use real email (2.245135ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 503
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/.baseline_registration_handlers.mjs:74:165)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 503,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/.baseline_registration_handlers.mjs:77:1
+✖ future Brevo delivery uses fixed admin, text payload, no marketing action and no staging credentials (1.469306ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/.baseline_registration_handlers.mjs:86:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

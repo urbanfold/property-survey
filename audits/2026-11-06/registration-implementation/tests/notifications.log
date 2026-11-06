@@ -1,0 +1,15 @@
+✔ missing Auth/config and hostile origins never send a notification (45.953921ms)
+✔ confirmed account, RLS-visible property and submitted marker are required (11.531904ms)
+✔ browser recipient/payload tampering and oversized bodies are rejected (4.381173ms)
+✔ professional can notify saved client contact; duplicate requests reuse one durable event (14.471305ms)
+✔ timeouts/rejections remain uncertain and are not automatically resent (11.571425ms)
+✔ durable rate limit rejects without contacting the receiver (1.298339ms)
+✔ generated dashboard gateway registers and fails closed without configured secrets (8.981308ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 195.49267

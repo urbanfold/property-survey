@@ -1,0 +1,17 @@
+PASS show/hide controls preserve both passwords and reset when switching tabs
+Browser dialog: Account created. Check your email to confirm, then log in.
+Browser dialog: Account created. Check your email to confirm, then log in.
+PASS newsletter opt-in is optional, unchecked by default, and recorded separately from survey emails
+PASS sign-up sends telephone number as profile metadata using the real client
+PASS newer device edits survive refresh even after earlier progress was saved to the cloud
+PASS real client login, per-section cloud saves, private photo rendering, recovery with all device state removed
+PASS existing public URL references are signed without changing or exposing private buckets
+PASS deleting and replacing a saved photo updates cloud records
+PASS review shows saved sections and completeness, supports corrections, and sends no email before confirmation
+Browser dialog: Survey was not fully submitted. Your draft has been kept. Save room Porch: fixture permission denied
+Browser dialog: Survey was not fully submitted. Your draft has been kept. Mark verified submission: completion marker denied
+Browser dialog: Survey was not fully submitted. Your draft has been kept. Saved Porch len did not match. Your device draft has been kept.
+PASS actual-client permission errors and mismatching readback suppress success and email
+PASS verified submission, one intercepted email, real PDF and ZIP containing all four photo categories
+PASS original tab becomes an email confirmation and acknowledges completion in the recovery tab
+PASS reset email redirect, expired link, recovery-session refresh, mismatch and backend policy checks, password update, and return to login
