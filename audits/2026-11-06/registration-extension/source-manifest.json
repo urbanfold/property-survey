@@ -1,0 +1,16 @@
+{
+  "base_commit": "e48f42e12d7eb3c9c346583322c03618792a20a9",
+  "expected_capture_body_sha256_normalized": "a0a932e15140581b19189404dcb42d2d36190ce7bb3f27b4199b9ee9a84995c7",
+  "sha256": {
+    "scripts/build_registration_capture_extension_sql.py": "91a1cf42fefe0d3217dd7780a7852df794821421e2d0f9cc7ae98f9305192f86",
+    "supabase/staging/011_registration_capture_extend.sql": "40d0314f00ae59a0e09ca7f4449033b1603b7f31e0d4586e72b0dda153615c88",
+    "supabase/staging/011_registration_capture_preflight_readonly.sql": "6581c2312e275294ccef35647275ad8ab8be2d37dd9816b98a7d647a25fe5278",
+    "supabase/staging/011_registration_capture_verify_readonly.sql": "6581c2312e275294ccef35647275ad8ab8be2d37dd9816b98a7d647a25fe5278",
+    "supabase/staging/011_registration_capture_rollback.sql": "2b970a8bfe34507cabd4a784199b6e29e38e043f8c55c820bf3245081b612ad9",
+    "supabase/staging/011_newsletter_withdrawal_evidence_readonly.sql": "1a94aede563d697a8daaab7c659fc6d6f3b209bdd0f7893f2877eae9acb78160",
+    "supabase/staging/NEWSLETTER_WITHDRAWAL_TEST_PLAN.md": "0f3dc0799a44cb10f5ef2e05b70fcd2d5e3bacb5d8e7072df2b21ffea6d7870b",
+    "supabase/staging/REGISTRATION_EXTENSION_REVIEW.md": "f3eb8f72e12822540e85b347feb316ae260617819e9d131a0918f472346c2d86",
+    "tests/test_registration_capture_extension.py": "e75b6ca5f67e479fe512a9d187561f3ab4c1b26617c6d46bf2e94478a42cf802",
+    "tests/test_registration_notifications.py": "88f8e8673f75c8346a8b9f720d5435ceac44a6390b89acb76302b404d2e3b65a"
+  }
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "case": "syntax",
+    "exit_code": 0,
+    "seconds": 0.16,
+    "log": "syntax.log"
+  },
+  {
+    "case": "dashboard",
+    "exit_code": 0,
+    "seconds": 0.06,
+    "log": "dashboard.log"
+  },
+  {
+    "case": "billing",
+    "exit_code": 0,
+    "seconds": 0.35,
+    "log": "billing.log"
+  },
+  {
+    "case": "notifications",
+    "exit_code": 0,
+    "seconds": 0.24,
+    "log": "notifications.log"
+  },
+  {
+    "case": "registration-handlers",
+    "exit_code": 0,
+    "seconds": 12.39,
+    "log": "registration-handlers.log"
+  },
+  {
+    "case": "registration-sql",
+    "exit_code": 0,
+    "seconds": 62.94,
+    "log": "registration-sql.log"
+  },
+  {
+    "case": "newsletter-ui",
+    "exit_code": 0,
+    "seconds": 4.02,
+    "log": "newsletter-ui.log"
+  },
+  {
+    "case": "session-security",
+    "exit_code": 0,
+    "seconds": 4.77,
+    "log": "session-security.log"
+  },
+  {
+    "case": "session-recovery",
+    "exit_code": 0,
+    "seconds": 33.44,
+    "log": "session-recovery.log"
+  },
+  {
+    "case": "survey-flow",
+    "exit_code": 0,
+    "seconds": 5.21,
+    "log": "survey-flow.log"
+  },
+  {
+    "case": "browser",
+    "exit_code": 0,
+    "seconds": 15.28,
+    "log": "browser.log"
+  },
+  {
+    "case": "allowance",
+    "exit_code": 0,
+    "seconds": 5.04,
+    "log": "allowance.log"
+  },
+  {
+    "case": "leica",
+    "exit_code": 0,
+    "seconds": 5.18,
+    "log": "leica.log"
+  },
+  {
+    "case": "rls",
+    "exit_code": 0,
+    "seconds": 10.49,
+    "log": "rls.log"
+  },
+  {
+    "case": "credits",
+    "exit_code": 0,
+    "seconds": 16.98,
+    "log": "credits.log"
+  },
+  {
+    "case": "notification-database",
+    "exit_code": 0,
+    "seconds": 18.01,
+    "log": "notification-database.log"
+  },
+  {
+    "case": "product-isolation",
+    "exit_code": 0,
+    "seconds": 0.13,
+    "log": "product-isolation.log"
+  },
+  {
+    "case": "staging-setup",
+    "exit_code": 0,
+    "seconds": 0.04,
+    "log": "staging-setup.log"
+  }
+]

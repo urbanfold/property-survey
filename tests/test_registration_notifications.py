@@ -107,3 +107,5 @@ if __name__=='__main__':
  # Keep the new capture permission checks in the existing SQL CI test command.
  from test_registration_capture_allowlist import main as test_capture_allowlist
  test_capture_allowlist()
+ from test_registration_capture_extension import main as test_capture_extension
+ test_capture_extension()
