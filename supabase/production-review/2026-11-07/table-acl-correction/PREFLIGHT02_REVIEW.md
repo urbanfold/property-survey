@@ -1,72 +1,66 @@
-# Production ACL02 evidence and SQL03 readiness — 7 November 2026
+# Final SQL03 approval-readiness review — 7 November 2026
 
-**Structurally ready for a separate independent approval review; NOT approved for execution. Limited manual watcher inspection is recorded; full watcher-body verification remains OPEN.** This is a documentation/evidence update only. SQL02/03/04/05, generator, approval placeholders and application/runtime code remain unchanged from f4c08465fd750444a9b40ff57a6d52f96557ccaa. No SQL, permission change, rollback, deployment, notification, Stripe operation or website release was executed by this development agent.
+**READY FOR A SEPARATE APPROVAL DECISION; NOT AUTHORISED FOR EXECUTION.** The independent watcher behavioural review is complete. Upstream provider-version equivalence was not established. No production SQL or permission change was performed in this documentation update.
 
-## Owner-reported read-only evidence
+## Exact scope
 
-Project: arnzqizcycesukplmvuc. The owner reports production02 completed successfully and gives:
+Only these seven public tables: `properties`, `extensions`, `rooms`, `exterior_photos`, `extension_photos`, `sketch_photos`, `room_photos`.
 
-- Original baseline unchanged: `10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6`.
-- Observed ACL snapshot SHA256: `fd7f49766854f09d849adee619f02054612ee1014aa63cbf6bfe3a53b7e6a861`.
--56/56 effective excessive privileges currently allowed; seven expected postgres-owned, RLS-enabled tables with CRUD intact.
--All56 affected grants recorded with grantor postgres and grantable=false.
--No column-level ACLs found; neither client role is SUPERUSER/BYPASSRLS.
--The three credit tables and storage.objects are outside the correction.
--Both PostgREST watcher fingerprints remain unchanged.
+Only `TRUNCATE`, `REFERENCES`, `TRIGGER`, `MAINTAIN` for `anon` and `authenticated`: **7 × 4 × 2 = 56 privileges**. One explicit REVOKE RESTRICT. Preserve SELECT/INSERT/UPDATE/DELETE, RLS policies, existing FKs/triggers, rows, private Storage, all credit tables, Stripe services, privileged-role grants and global default privileges.
 
-These are supplied results, not a live query or independent hash recomputation by this agent. Full raw02 metadata is not pasted here; the approving reviewer should retain and inspect that original output securely. A snapshot digest does not prove historical grant attribution, function behaviour or execution approval. The recorded grantor role does not identify the original person/time/default mechanism.
+TRUNCATE bypasses row filtering; the other three privileges enable unnecessary DDL/maintenance capability under their additional prerequisites. These are confirmed excessive database privileges, not proof of an exploitable arbitrary-SQL route through the normal PostgREST API.
 
-Grantor/options/column-state evidence requested in the original package is now supplied. The old findings/results files remain historical preparation records; this update supersedes their “not yet captured” status without overwriting that evidence. Neither observed hash is automatically approved or filled into a script.
+## Previously saved production02 evidence
 
-## Structural assessment of unchanged SQL03
+Project: `arnzqizcycesukplmvuc`.
 
-SQL03 SHA256: `625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf`.
+- Original baseline: `10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6`.
+- Original ACL snapshot: `fd7f49766854f09d849adee619f02054612ee1014aa63cbf6bfe3a53b7e6a861`.
+- Exactly56 excessive grants, all direct postgres-issued and non-grantable; seven expected postgres-owned RLS-enabled tables with CRUD intact.
+- No column ACLs; neither client role has SUPERUSER/BYPASSRLS; billing tables and storage.objects excluded.
+- Recorded watcher fingerprints unchanged.
 
-The supported shape now agrees with the reported grant evidence. One explicit REVOKE RESTRICT targets only TRUNCATE/REFERENCES/TRIGGER/MAINTAIN for anon/authenticated on the seven named tables. No global defaults, CRUD grants, RLS, privileged-role access, Storage/billing ACLs, FKs or rows are changed by that statement.
+These are owner/connected-reviewer supplied results, not a fresh database query by this agent. Retain the full saved02 output privately. Recorded grantor does not establish the historical operator or prove that defaults caused the grants.
 
-The file still starts with a transaction, short timeouts and NOT_APPROVED/REVIEW_REQUIRED parameters. It verifies the separately accepted baseline and original ACL snapshot, owner/RLS/roles/CRUD state and direct non-grantable entries; refuses unsupported PUBLIC/other-grantor/delegated/column REFERENCES cases; derives an expected snapshot removing only56 entries; and checks exact after-state plus effective denial before commit. Rollback05 remains separately guarded against the saved original ACL digest and requires its own explicit RESTORE action.
+## Do the guards match?
 
-Before deciding execution approval, the connected reviewer must also check the remaining runtime prerequisites in the **already saved02 output**, rather than infer them from this abbreviated summary: PostgreSQL17+, trusted postgres/no simulated JWT context, client can_login=false, no owner inheritance and no additional PUBLIC/delegated grant paths. If absent/stale/changed, stop for targeted review; do not bypass a guard. The original preparation was static/Python-model only. A subsequent separately authorised isolated PostgreSQL17.11 rehearsal now passes18 checks of exact03/05 logic with only documented local parameters; see the linked rehearsal report in README.md. This validates the tested dummy runtime shape, not actual managed-platform behaviour. Full real watcher-body review remains OPEN and production execution still needs separate approval.
+**The reported grant/owner/RLS/column evidence matches SQL03's supported correction shape.** Before execution approval, the connected reviewer must confirm the remaining prerequisites in the already saved full02 output: PostgreSQL17+, trusted postgres session without simulated JWT, both client roles NOLOGIN, no owner inheritance, and no additional PUBLIC/delegated grant paths. The abbreviated owner results do not independently establish every one of these fields. Do not mark missing evidence passed by inference.
 
-The original baseline omits the target non-row table ACLs, so it can remain10fa... after correction. The new ACL fingerprint is the separate state anchor. A changed state must be re-reviewed; never replace a saved hash merely to force correction or rollback through.
+SQL03 checks approved action/acknowledgment, both exact accepted hashes, supported roles/table state, direct nongrantable grant shape, unsupported column REFERENCES/delegation paths and expected before/after ACL snapshots. It preserves the original baseline and requires all56 effective privileges denied before commit. Short lock/statement timeouts and RESTRICT fail closed. A guard/error rolls back the transaction; do not bypass it or retry automatically. A hash/label does not establish the actual connected project's identity.
 
-## Unresolved PostgREST watcher requirement
+The original baseline omits target non-row ACLs and can remain unchanged after correction. The separate ACL snapshot is required to verify the56-entry transition and rollback. Never replace a saved digest merely to make a guard pass.
 
-Both are Supabase-admin-owned, SECURITY INVOKER event-trigger functions in extensions with fixed empty search paths, enabled according to earlier supplied metadata:
+## Completed watcher and local runtime evidence
 
-- extensions.pgrst_ddl_watch(): raw-body CRLF-normalized digest `de987df746eb39647098459e7993bd8595e592969b0cd647828a3d13d37cffe0`.
-- extensions.pgrst_drop_watch(): corresponding digest `791b41f0632fc86e0fc86a303ec0fd710c4e2ecf947a23422dae2b7a2c122f1d`.
+[WATCHER_MANUAL_INSPECTION.md](WATCHER_MANUAL_INSPECTION.md) records the independent complete production control-flow review: catalog event inspection/filtering, temporary-object exclusions and fixed local PostgREST notification; no dynamic SQL, data/permission writes, external/network/email/payment actions or unreviewed user-defined calls. The previous OPEN behavioural requirement is satisfied on this supplied review. No authenticated upstream version comparison was performed; provider provenance remains unverified, not a blocker to the established behavioural conclusion for these definitions.
 
-The owner/operator has now opened both existing definitions with the approved read-only query. They report `NOTIFY pgrst, 'reload schema';` on line26 of ddl_watch and line24 of drop_watch, no occurrences of http/webhook/email/EXECUTE/PERFORM, and unchanged recorded fingerprints. This is positive, **limited manual source-inspection evidence**, not a complete independent source/provider comparison. Full bodies were not provided to this development agent; search method/case sensitivity and all branches/indirect calls have not been independently assessed. The expected NOTIFY is a local PostgREST cache-refresh signal, not customer email or a webhook. Full verification remains OPEN; do not label the watcher requirement passed, disable/replace/re-own a watcher or invoke it as a test.
+Commit `8710ff81df7249b92e7c37729f4cd9d77e14f773` contains the successful isolated PostgreSQL17.11 rehearsal: **18/18 checks passed**. Evidence: [report](../../../../audits/2026-11-07/acl-runtime-rehearsal/README.md), [results](../../../../audits/2026-11-07/acl-runtime-rehearsal/results.json), [parameterization](../../../../audits/2026-11-07/acl-runtime-rehearsal/parameterization.json).
 
-See [WATCHER_MANUAL_INSPECTION.md](WATCHER_MANUAL_INSPECTION.md) for the precise remaining work. The definitions are already available privately to the operator, so **do not repeat the retrieval query just to reproduce evidence**. Review those saved full definitions instead.
+Coverage includes56 removals, preserved CRUD/RLS/credit/Storage/dummy data, RESTRICT dependency mechanics, delegation rejection, failed-guard and post-REVOKE rollback, repeat-execution rejection and exact normalized ACL restoration. Only four documented parameter literals changed in local copies; production03/05 remained byte-identical. The native dummy run does not certify actual managed-platform locking, production runtime or upstream watcher provenance. No new rehearsal or SQL was run for this review.
 
-### Private retrieval method reference — operator retrieval now completed
+## Frozen source and next action
 
-1. Prefer an authorised administrator viewing the **existing** two definitions in the production Supabase Dashboard database-function editor, if that editor exposes event-trigger functions. Independently confirm project arnzqizcycesukplmvuc and schema extensions. Open definitions for inspection only; do not Save, Run or invoke either function.
-2. If that UI does not expose them, seek separate approval for the following tightly scoped SELECT through a trusted SQL Editor/direct read-only connection. This retrieves definitions; it does NOT call the watchers. The owner now reports using this approved query read-only. It is retained as a method reference, not an instruction to retrieve the same definitions again. This development agent has not executed it:
+SQL03 SHA-256: `625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf`.
 
-```sql
-select
-  p.oid::regprocedure::text as signature,
-  pg_get_functiondef(p.oid) as definition
-from pg_proc p
-join pg_namespace n on n.oid = p.pronamespace
-where n.nspname = 'extensions'
-  and p.proname in ('pgrst_ddl_watch', 'pgrst_drop_watch')
-  and p.pronargs = 0
-  and p.prorettype = 'pg_catalog.event_trigger'::regtype
-order by p.proname;
-```
+SQL05 SHA-256: `a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8`.
 
-3. Keep the result within the trusted administrator/private review channel. Do not send raw results through a public issue/PR/chat connector, commit them, screenshot them for sharing, or paste any embedded credentials/URLs/secrets. No new database credentials or grants should be created to perform this inspection. If fewer/more than the expected two definitions appear, stop and reconcile signatures/metadata.
-4. Review the complete control flow and any referenced routines. Expected provider behaviour is event-trigger metadata inspection/filtering and a fixed PostgREST schema-cache notification (for example NOTIFY/pg_notify). Such a local database notification is not an email/webhook. Verify there are no unexpected data/permission writes, dynamic SQL, process/remote-code/network/email/payment actions. A text search alone cannot establish that; inspect indirect calls where present.
-5. Where available, compare complete definitions with a trusted provider-maintained baseline appropriate to the deployed Supabase/PostgREST version. Do not assume an arbitrary latest online snippet is identical or copy it over production. Have an authorised reviewer document only the project, exact signatures/body fingerprints, review method, trusted reference/version if used, conclusion and remaining caveats. Derive/compare fingerprints with the same CRLF-normalized prosrc algorithm used by02, not a different full-definition/whitespace-trimmed hash.
+Local byte comparison against reviewed commit `8710ff81df7249b92e7c37729f4cd9d77e14f773` confirms **both SQL03 and SQL05 are byte-for-byte unchanged**, including all four approval placeholders in each: `acl_ack` and `acl_action` remain `NOT_APPROVED`; `reviewed_baseline_sha256` and `original_acl_sha256` remain `REVIEW_REQUIRED`. No SQL/guard revision is proposed.
 
-If body provenance/behaviour cannot be established, retain the OPEN requirement and withhold execution approval. Do not “fix” or bypass provider watchers to remove the uncertainty.
+1. Independently inspect the saved02 remaining guard fields and confirm the target project, no intervening state change and an approved low-traffic window with no concurrent grant/schema changes. No repeat functional suite or repeated watcher retrieval is needed. If evidence is missing or drift suspected, obtain approval for only the targeted read-only check.
+2. Request separate approval for exact SQL03 and the accepted baseline/ACL snapshot. Only that approval may authorise filling its four literals in a copy; record the parameterised copy hash. Run the complete transaction, never selected fragments.
+3. After separately approved execution, use approved SELECT-only04 to verify all56 denied, CRUD/other ACLs and baseline preserved, and expected ACL transition. Retain02/04 evidence.
+4. Any committed-change rollback requires separate SQL05 approval and the ORIGINAL02 ACL digest. Its inverse guard restores only56 original rights and refuses unrelated drift. Rollback restores excessive capability; prefer a reviewed forward fix when feasible. No automatic rollback or cleanup.
 
-## Next decision and later sequence
+Backend migrations003/004, worker/email configuration, Stripe, merges and website release remain independent decisions. This report authorises none of them.
 
-The next action is **a focused private whole-body review of the already retrieved watcher definitions and independent inspection of the saved02 snapshot**, not another functional test, permission change or blind re-run of passed preflights. Once those gates are satisfied, seek separate approval for the exact unchanged03 and specific project/state. Only that future approval may authorise filling its four parameter literals. This publication is not that approval, and no SQL03/05 execution is authorised here.
+## Remaining risks and controlled verification
 
-After a later approved03 transaction, approved read-only04 should confirm all56 excess effective privileges denied, CRUD/other ACLs unchanged and the expected new ACL snapshot while preserving the original baseline. Keep the original full02 snapshot/digest for any separately approved rollback05; do not automatically restore excessive privileges or clean up evidence.003/004 backend installation, delivery setup, Stripe, frontend release and other outstanding launch decisions remain separate.
+Readiness for a decision is not a claim that every live execution prerequisite has already passed. The saved production summary supports the grant shape; missing session/role fields must be checked in the full saved02 evidence. The actual future execution session must independently be confirmed as trusted postgres with no customer/simulated JWT, on PostgreSQL17+, connected to production project `arnzqizcycesukplmvuc`. Project text, staging-marker rejection and matching metadata hashes cannot independently authenticate the connected server. Do not change roles or weaken guards to proceed.
+
+The rehearsal proves the tested isolated PostgreSQL17.11 behaviour, not zero downtime or identical managed-service locking. Coordinate a low-traffic window with no concurrent schema/grant changes. The advisory lock coordinates only operations using the same lock; it does not prevent arbitrary administrator changes. Short timeouts/dependencies may abort safely. Broad global defaults remain unchanged and could reintroduce excess rights on future recreated tables; future migrations need explicit object grants.
+
+After a separately approved SQL03 execution, SQL04 must be explicitly authorised as the SELECT-only postflight. Compare its full saved output with original02: all56 effective high privileges false; every existing CRUD grant unchanged; same original baseline; exact expected ACL snapshot obtained by removing only the56 targeted entries; unchanged role/owner/RLS/column ACLs and credit/Storage/privileged-role ACLs. A different ACL digest alone does not prove correctness. Keep the original02 and postflight04 outputs and parameterised execution source/hash in the private release record. Postflight reads metadata, not customer row contents, and does not itself prove data contents or email/payment functionality; no fresh customer activity or broad functional retesting is implied.
+
+If SQL03 fails before commit, its transaction rolls back; preserve the error and stop. If a committed change needs reversal, SQL05 is a separate security decision because it restores excessive capability. Independently reconfirm the production connection, obtain explicit rollback approval, and only then use its RESTORE action with the saved ORIGINAL baseline and ORIGINAL02 ACL digest. SQL05 requires all56 rights currently denied, reconstructs the original normalized ACL state and refuses unrelated drift before granting. It restores only those56 direct non-grantable rights; it does not restore data, defaults or other services. Retain rollback output and obtain approval for the read-only snapshot verification of exact original normalized ACL/baseline restoration. Never substitute the corrected ACL digest for the original or broaden grants to bypass a failure.
+
+**Decision boundary:** this documentation commit/push approves publication of review evidence only. It does not approve SQL03, SQL04 or SQL05 execution, filling approval parameters, production/staging access, deployment, merging or website publication. Once saved prerequisites and connection checks are accepted, request a separate, explicit SQL03 execution decision.
