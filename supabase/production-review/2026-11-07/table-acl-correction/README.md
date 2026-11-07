@@ -1,0 +1,79 @@
+# Review-only correction: excessive client table privileges
+
+**NOT APPROVED FOR EXECUTION.** Target production **arnzqizcycesukplmvuc**. Prepared from review commit **1d1c934ce39650433a58ec70640d4f3671ad018f**. The owner authorises this package's development-branch commit/push only. No SQL (including local SQL), production permissions, data, services, secrets, Stripe, functions or website changes are made by preparing/publishing these files.
+
+## Confirmed evidence versus uncertainty
+
+The owner/connected reviewer reports read-only01 completed with unchanged observed baseline `10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6`. Both anon/authenticated have direct, non-grantable SELECT/INSERT/UPDATE/DELETE and TRUNCATE/REFERENCES/TRIGGER/MAINTAIN on seven postgres-owned, RLS-enabled tables: properties, extensions, rooms, exterior_photos, extension_photos, sketch_photos, room_photos. They do not inherit the owner and are neither SUPERUSER nor BYPASSRLS. The three credit tables lack these four extra client privileges. All five billing bodies match; all nine foreign keys are valid/cascading; public.rls_auto_enable() is absent. These are owner-supplied findings, not a new direct production inspection by this development agent.
+
+The previous01 ACL expansion did not include grantor. Broad global defaults are a possible explanation, NOT proven grant provenance. The new02 query captures **recorded grantor role**, grant options and column ACLs. Even a recorded grantor=postgres does not identify an original human, date or whether defaults produced the grant. Grantor/options/column state and the private watcher review must be accepted before approving execution.
+
+## Security assessment and scope
+
+- TRUNCATE operates on whole tables and is not constrained by RLS row policies. Lack of BYPASSRLS does not make this privilege harmless.
+- REFERENCES can permit FK construction/probing where a caller also has the necessary DDL/schema access; it does not itself grant SELECT. RLS does not protect REFERENCES in the way it protects row operations.
+- TRIGGER permits creating triggers with the additional required function/DDL permissions. Existing trigger execution does not require customers to retain this table privilege.
+- MAINTAIN permits maintenance operations on supported PostgreSQL versions; it is not required for app CRUD and can create availability/operational risks.
+- PostgREST's normal table API does NOT expose arbitrary SQL/TRUNCATE/DDL. These grants prove excessive database capability, not an already-demonstrated unauthenticated HTTP exploit, compromise or data loss. Reachability through any other SQL/RPC path affects exploitability. No exploit/probe or destructive test was run.
+
+Recommended correction: revoke **only** those four table privileges from **only** anon and authenticated on the seven named tables, using **RESTRICT**. Preserve their CRUD grants exactly and leave RLS to continue enforcing row ownership. Preserve all postgres/service_role rights, existing FKs/triggers/functions, Storage ACLs, credit tables and global/default/schema/sequence/function privileges. Do not apply001/002, blanket-revoke ALL, revoke PUBLIC broadly, use CASCADE, change roles or alter defaults as a shortcut.
+
+Existing FKs remain valid: REFERENCES is checked when creating constraints, not a new permission requirement for ordinary DML using an existing FK. TRIGGER is for creation, not a permission customers need when existing allowance/address triggers fire. Normal survey saving, uploads, exports and Stripe credit handling use CRUD/RPC/Storage paths, not these four privileges. This is source/permission reasoning, not a fresh runtime test; no functional SQL was executed in this preparation.
+
+## Files / review sequence
+
+1. **02_acl_preflight_readonly.sql** — SELECT-only metadata. Same original baseline algorithm plus a NEW independent ACL snapshot/digest. Includes target table/column ACLs with grantor/options, CRUD, roles/owner-inheritance flags and untouched Storage/credit ACLs. No data rows, Auth users, raw watcher bodies, secrets or network calls.
+2. **03_revoke_excess_table_privileges.sql** — one transaction and one explicit REVOKE covering the seven tables/two roles/four rights. Disabled approval parameters, exact reviewed hashes, owner/role/RLS/CRUD/column checks,56 direct supported entries, RESTRICT and before/after invariants. No database helper/audit table is installed.
+3. **04_acl_postflight_readonly.sql** — SELECT-only same snapshots/digests/effective permissions. All56 effective excess-access checks must be false after approval/application; CRUD/other ACLs and original baseline must be unchanged.
+4. **05_restore_exact_previous_privileges.sql** — independently approved rollback, not routine cleanup. Reconstructs only the56 known former direct entries; refuses unless that inverse snapshot matches the saved ORIGINAL02 ACL digest. No grant options, PUBLIC grants or service/billing changes. Restores the security risk, so forward repair is preferred where possible.
+5. **SOURCE_SPEC.json**, **SHA256SUMS.txt** — scope/source and file integrity. The generator `scripts/build_table_acl_review.py --check` is source-only and never executes SQL. Static/model tests and limitations are in audits/2026-11-07/table-acl-correction.
+
+## Why a new ACL fingerprint is necessary
+
+The original baseline metadata records legacy table **CRUD** and existing function/default ACLs, not the four target non-row table privileges. Therefore this correction can leave baseline10fa... UNCHANGED. That digest alone cannot certify the correction or its rollback. Save/review the full02 `acl_snapshot` and `acl_sha256`, independently of the baseline. The snapshot sorts ACL grantor/grantee/privilege/options and includes roles, RLS/owner, CRUD, column grants and untouched credit/Storage table ACLs. It intentionally does not read customer/credit rows.
+
+No actual new ACL digest is known in this package and no observed digest is silently approved. All executable files retain NOT_APPROVED/REVIEW_REQUIRED. Project-name text/GUC acknowledgements and hashes are NOT independent connection-identity verification; the connected reviewer must confirm the actual production project before even approved SQL.
+
+## Preconditions / supported state
+
+- Trusted postgres owner session, no customer/simulated JWT; PostgreSQL17+ (MAINTAIN supported); independently confirmed production. Known staging marker is rejected. Two client roles must exist and not be login/superuser/BYPASSRLS/owner-inheriting roles. Unexpected attributes cause STOP, not role changes.
+- All seven targets are existing postgres-owned, RLS-enabled ordinary tables, with current CRUD grants intact for both roles. Force-RLS state is preserved, not toggled.
+- Exactly56 relevant grants must be direct, recorded-grantor postgres and non-grantable. PUBLIC high grants, another grantor, grant options, grants delegated by client roles, explicit client/PUBLIC column-level REFERENCES, partial prior correction or missing objects cause STOP. Do not SET ROLE to an unknown grantor or use REVOKE CASCADE to get past it. Prepare a separately reviewed provenance/column/dependency-specific proposal if this state differs.
+- Global/default privileges are not modified. A later table recreation can reintroduce broad defaults; future migrations must explicitly restrict their own new objects. Existing003/004 already explicitly revoke ordinary-role rights on their new private tables.
+- Review the two provider/PostgREST watcher definitions privately first (below). Use one operator/no concurrent grant/schema changes and a low-traffic approved window. Short lock/statement timeouts fail rather than silently wait or retry; customers may continue using existing rows, but no zero-lock/downtime guarantee is made without a runtime rehearsal.
+
+## Watcher review and remaining uncertainty
+
+Supplied metadata identifies enabled **extensions.pgrst_ddl_watch()** and **extensions.pgrst_drop_watch()**, owned by supabase_admin, SECURITY INVOKER, fixed empty search paths. Recorded CRLF-normalized raw-body hashes:
+
+- ddl: de987df746eb39647098459e7993bd8595e592969b0cd647828a3d13d37cffe0
+- drop: 791b41f0632fc86e0fc86a303ec0fd710c4e2ecf947a23422dae2b7a2c122f1d
+
+The existing network-name scan was false for both. This is consistent with provider schema-refresh handlers; it is NOT proof of their full behaviour or official provider-source identity. Neither the owner nor this development agent has inspected their bodies in this review. REVOKE/GRANT can involve DDL-event machinery; do not assume no handler runs. This proposal creates/drops no SQL object and executes no CREATE/DROP EXTENSION; four extension-tagged handlers are outside those command tags.
+
+**Outstanding gate:** an authorised connected reviewer should inspect the two actual definitions privately (or compare exact definitions with a trusted provider baseline), confirming intended schema-cache notification behaviour and no unexpected dynamic/external/email/payment/data actions. Record a non-secret conclusion and hashes; do not post secret-bearing source. Do not disable, replace or re-own these watchers or infer provider management solely from names/owner.02 only rechecks their metadata/hashes, and cannot resolve body uncertainty by itself. No watcher modification is proposed.
+
+## Future application sequence — requires separate approval
+
+1. Review this package, then separately authorise/execute ONLY02 through the connected read-only production integration. Compare reported baseline with original10fa...; any difference requires exact review. Accept grantor/options/columns/role flags and private watcher conclusions; save full snapshots securely. No global defaults or other permissions change at this step.
+2. Obtain independent approval of exact03, the actual connection and observed metadata. Fill only these four parameter literals in a copy of03:
+   - urbanfold.acl_ack: `APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f`
+   - urbanfold.acl_action: `APPROVED REMOVE56 EXCESS PRIVILEGES`
+   - urbanfold.reviewed_baseline_sha256: accepted current original-baseline digest.
+   - urbanfold.original_acl_sha256: accepted02 ACL snapshot digest, never the baseline digest.
+   Record the actual parameterised file hash/approval. Do not edit guards/privilege lists or run a selected section.
+3. Only after that approval apply03. Inside the single DO/transaction it captures before state, derives the expected after snapshot by removing exactly56 entries, performs one REVOKE RESTRICT, verifies baseline unchanged and exact expected after snapshot, and checks all56 effective rights are false. Any exception/dependency/inherited path/side-effect mismatch rolls back the entire transaction. No automatic retries or broad fallback.
+4. Run approved04. Confirm all56 allowed=false, original baseline unchanged, expected ACL digest transition, all CRUD unchanged, privileged-role/column/Storage/credit ACLs unchanged. Keep service/credit/record evidence; no test payment or new survey is required to inspect permissions. A later explicitly approved normal operation check can use a controlled account; do not rerun passed broad suites or create customer activity by assumption.
+5. Treat this as a separate reviewed privilege-hardening record, not a claimed migration-history repair. Existing003/004 installers still need separate final approval; correction does not authorise their installation, worker deployment, scheduling or frontend release.
+
+## Reversibility / failure recovery
+
+Before commit, any guard/RESTRICT/postcheck error rolls back03 automatically. Preserve the error without secrets and stop; do not drop dependent objects, widen grants or change defaults to make it pass.
+
+If a committed correction requires rollback, obtain separate approval for05. Stop concurrent grant/schema changes; verify the same project. Use the same saved ORIGINAL baseline and ORIGINAL02 ACL digest, same acknowledgement, but action must be `APPROVED RESTORE56 ORIGINAL PRIVILEGES`.05 requires all56 effective rights currently false. It adds exactly the56 former grantor=postgres, grantable=false entries to an in-memory expected snapshot and demands its digest equals the saved original. Unrelated state changes or unsupported original provenance therefore stop rollback before GRANT. It grants just those four rights to the two roles on the seven tables, then verifies semantic ACL snapshot equality with the original and unchanged baseline. Logical grantor/options/rights are restored; no promise of binary ACL-array ordering or historical grant timestamps is made. Never GRANT ALL/WITH GRANT OPTION, restore defaults or modify a saved hash to force rollback.
+
+Rollback intentionally restores excessive privileges; it is not a desirable steady state. A later different schema/role/ACL state requires a new reviewed forward correction or rollback, not ad-hoc broad grants. No data restore, table drop, credit reset, Storage deletion or customer-record modification belongs to this package.
+
+## Validation limitations
+
+Only Python source/static checks and an independent Python ACL-model inverse test are run in this preparation. No SQL parser/server, PostgreSQL/Docker test, SQL migration, live query, handler invocation or database privilege test is executed, per instruction. Consequently PostgreSQL syntax/runtime/dependency/managed watcher effects remain for independent review and a separately approved controlled rehearsal/application. Prior application/F02/registration/payment tests remain evidence for unchanged source; they are not relabelled as validation of this new REVOKE. No claim is made that production permissions are already corrected.

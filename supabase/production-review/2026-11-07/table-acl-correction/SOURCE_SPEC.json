@@ -1,0 +1,29 @@
+{
+  "source_review_commit": "1d1c934ce39650433a58ec70640d4f3671ad018f",
+  "project": "arnzqizcycesukplmvuc",
+  "tables": [
+    "properties",
+    "extensions",
+    "rooms",
+    "exterior_photos",
+    "extension_photos",
+    "sketch_photos",
+    "room_photos"
+  ],
+  "roles": [
+    "anon",
+    "authenticated"
+  ],
+  "privileges": [
+    "TRUNCATE",
+    "REFERENCES",
+    "TRIGGER",
+    "MAINTAIN"
+  ],
+  "expected_removed_direct_entries": 56,
+  "required_owner_and_grantor": "postgres",
+  "grant_options_supported": false,
+  "known_production_baseline_observed_not_approved": "10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6",
+  "baseline_builder_sha256": "73aff8838d221197af46ce248b457b4ad6c3de576c3bb416fe5954d45b34050f",
+  "new_preflight_required": "grantor/grant-option/column-ACL snapshot digest and private watcher source review"
+}
