@@ -1,0 +1,110 @@
+{
+  "pinned_commit": "5d434a78ac1f997c86b9c92646771de2018cad04",
+  "production_project": "arnzqizcycesukplmvuc",
+  "migration_sources": {
+    "supabase/001_secure_access.sql": "10d0d24509612550342110d0e7d6317ebb18bc7966b688850571aa4c6c902864",
+    "supabase/002_survey_purchases.sql": "740791bf6e8aa77f6a8ab16b06e284f707f4599417bdf3f21805da02b961c0bf",
+    "supabase/003_survey_notifications.sql": "9f9b7d32477d575665fda9c0839aaa1310853a7db2802fb6364b04bfbe1f3258",
+    "supabase/004_verified_registration_notifications.sql": "990e4f60444379e6ea073c6f397aafcf5f2fe2b6a7220626d465c37d0eb922c2"
+  },
+  "functions": [
+    {
+      "signature": "public.get_survey_allowance()",
+      "name": "get_survey_allowance",
+      "source": "supabase/002_survey_purchases.sql",
+      "body_sha256": "3b3b5e7c335a16a91c9f447b4ac8fd62b8f6e584273d9762c70c70a60be46ad5",
+      "return_type": "jsonb"
+    },
+    {
+      "signature": "public.enforce_survey_allowance()",
+      "name": "enforce_survey_allowance",
+      "source": "supabase/002_survey_purchases.sql",
+      "body_sha256": "2600d2e67866d1163846b11be2035a32dd0c6ea9e4116b36b1325308bbc7b368",
+      "return_type": "trigger"
+    },
+    {
+      "signature": "public.protect_survey_address()",
+      "name": "protect_survey_address",
+      "source": "supabase/002_survey_purchases.sql",
+      "body_sha256": "f2c82f9c423b45fa60fc191048b09c3645803847371cf03fbbf1a1ec391d3260",
+      "return_type": "trigger"
+    },
+    {
+      "signature": "public.record_survey_purchase(text,text,uuid,integer,text,boolean)",
+      "name": "record_survey_purchase",
+      "source": "supabase/002_survey_purchases.sql",
+      "body_sha256": "5a054d2cae96b82d50cf390800fe4ac9aefaa23a71e961ae96e325eff461efed",
+      "return_type": "void"
+    },
+    {
+      "signature": "public.revoke_survey_purchase(text,text)",
+      "name": "revoke_survey_purchase",
+      "source": "supabase/002_survey_purchases.sql",
+      "body_sha256": "09d97cbf0f492925affe2eca085eebdbaa12863269c6f7751be957678b77d433",
+      "return_type": "void"
+    },
+    {
+      "signature": "public.claim_survey_notification(uuid,uuid,timestamptz)",
+      "name": "claim_survey_notification",
+      "source": "supabase/003_survey_notifications.sql",
+      "body_sha256": "835e5f5b72c24dea7c9d16f11ac7325c2127f9fe5003eb3321cad00a5debb624",
+      "return_type": "jsonb"
+    },
+    {
+      "signature": "public.finish_survey_notification(uuid,boolean)",
+      "name": "finish_survey_notification",
+      "source": "supabase/003_survey_notifications.sql",
+      "body_sha256": "b42ff776b1940ee8bd685a6eb547505f8c9b9b2d6f268998908bcfe4a92edc03",
+      "return_type": "void"
+    },
+    {
+      "signature": "public.record_auth_registration()",
+      "name": "record_auth_registration",
+      "source": "supabase/004_verified_registration_notifications.sql",
+      "body_sha256": "80e273428f8ee6ec8a188445d74a579baeaddf7d73e26ccb6f05b45e278696bf",
+      "return_type": "trigger"
+    },
+    {
+      "signature": "public.get_newsletter_preference()",
+      "name": "get_newsletter_preference",
+      "source": "supabase/004_verified_registration_notifications.sql",
+      "body_sha256": "fc4e8efe92594f8c04390286cc54debeca4ef170044419e920df7a6ef7e99362",
+      "return_type": "jsonb"
+    },
+    {
+      "signature": "public.set_newsletter_preference(boolean)",
+      "name": "set_newsletter_preference",
+      "source": "supabase/004_verified_registration_notifications.sql",
+      "body_sha256": "444919b10c66067288b457364d0fc49671fd9ca9c24fee315ba0029c92c16f32",
+      "return_type": "jsonb"
+    },
+    {
+      "signature": "public.recover_stale_registration_notifications()",
+      "name": "recover_stale_registration_notifications",
+      "source": "supabase/004_verified_registration_notifications.sql",
+      "body_sha256": "fdebf598b2ac3fdfc3aa6b83b5d9c64a2df86bb032152f33720260cf09523c1b",
+      "return_type": "integer"
+    },
+    {
+      "signature": "public.claim_registration_notification()",
+      "name": "claim_registration_notification",
+      "source": "supabase/004_verified_registration_notifications.sql",
+      "body_sha256": "a5a5e8223e299445928f58342eeb77f0069e840f786c1e18ed0f1a82dc54d072",
+      "return_type": "jsonb"
+    },
+    {
+      "signature": "public.finish_registration_notification(uuid,boolean)",
+      "name": "finish_registration_notification",
+      "source": "supabase/004_verified_registration_notifications.sql",
+      "body_sha256": "fbdc1a1e12be5735936e934c9997ed823a61088424b3ecf0c66460deeede3668",
+      "return_type": "void"
+    },
+    {
+      "signature": "public.finish_registration_notification(uuid,boolean,timestamptz)",
+      "name": "finish_registration_notification",
+      "source": "supabase/004_verified_registration_notifications.sql",
+      "body_sha256": "cc58f7efefa6b569347ab55877667dbfd1f72fb80bd76d0f2ace2bf0cf547a28",
+      "return_type": "jsonb"
+    }
+  ]
+}
