@@ -1,6 +1,6 @@
 # Production ACL02 evidence and SQL03 readiness — 7 November 2026
 
-**Structurally ready for a separate independent approval review; NOT approved for execution. Private watcher-body verification remains OPEN.** This is a documentation/evidence update only. SQL02/03/04/05, generator, approval placeholders and application/runtime code remain unchanged from f4c08465fd750444a9b40ff57a6d52f96557ccaa. No SQL, permission change, rollback, deployment, notification, Stripe operation or website release was executed by this development agent.
+**Structurally ready for a separate independent approval review; NOT approved for execution. Limited manual watcher inspection is recorded; full watcher-body verification remains OPEN.** This is a documentation/evidence update only. SQL02/03/04/05, generator, approval placeholders and application/runtime code remain unchanged from f4c08465fd750444a9b40ff57a6d52f96557ccaa. No SQL, permission change, rollback, deployment, notification, Stripe operation or website release was executed by this development agent.
 
 ## Owner-reported read-only evidence
 
@@ -37,12 +37,14 @@ Both are Supabase-admin-owned, SECURITY INVOKER event-trigger functions in exten
 - extensions.pgrst_ddl_watch(): raw-body CRLF-normalized digest `de987df746eb39647098459e7993bd8595e592969b0cd647828a3d13d37cffe0`.
 - extensions.pgrst_drop_watch(): corresponding digest `791b41f0632fc86e0fc86a303ec0fd710c4e2ecf947a23422dae2b7a2c122f1d`.
 
-They remain unverified at body level. Unchanged fingerprints and negative network-name scans are not a trusted-source comparison or behavioural proof. No watcher should be disabled, replaced, re-owned or invoked as a test.
+The owner/operator has now opened both existing definitions with the approved read-only query. They report `NOTIFY pgrst, 'reload schema';` on line26 of ddl_watch and line24 of drop_watch, no occurrences of http/webhook/email/EXECUTE/PERFORM, and unchanged recorded fingerprints. This is positive, **limited manual source-inspection evidence**, not a complete independent source/provider comparison. Full bodies were not provided to this development agent; search method/case sensitivity and all branches/indirect calls have not been independently assessed. The expected NOTIFY is a local PostgREST cache-refresh signal, not customer email or a webhook. Full verification remains OPEN; do not label the watcher requirement passed, disable/replace/re-own a watcher or invoke it as a test.
 
-### Safest private verification method
+See [WATCHER_MANUAL_INSPECTION.md](WATCHER_MANUAL_INSPECTION.md) for the precise remaining work. The definitions are already available privately to the operator, so **do not repeat the retrieval query just to reproduce evidence**. Review those saved full definitions instead.
+
+### Private retrieval method reference — operator retrieval now completed
 
 1. Prefer an authorised administrator viewing the **existing** two definitions in the production Supabase Dashboard database-function editor, if that editor exposes event-trigger functions. Independently confirm project arnzqizcycesukplmvuc and schema extensions. Open definitions for inspection only; do not Save, Run or invoke either function.
-2. If that UI does not expose them, seek separate approval for the following tightly scoped SELECT through a trusted SQL Editor/direct read-only connection. This retrieves definitions; it does NOT call the watchers. The query is documentation for a future approved private inspection and was NOT run in this task:
+2. If that UI does not expose them, seek separate approval for the following tightly scoped SELECT through a trusted SQL Editor/direct read-only connection. This retrieves definitions; it does NOT call the watchers. The owner now reports using this approved query read-only. It is retained as a method reference, not an instruction to retrieve the same definitions again. This development agent has not executed it:
 
 ```sql
 select
@@ -65,6 +67,6 @@ If body provenance/behaviour cannot be established, retain the OPEN requirement 
 
 ## Next decision and later sequence
 
-The next action is **private watcher-source verification and independent inspection of the saved02 snapshot**, not another functional test, permission change or blind re-run of passed preflights. Once those gates are satisfied, seek separate approval for the exact unchanged03 and specific project/state. Only that future approval may authorise filling its four parameter literals. This publication is not that approval, and no SQL03/05 execution is authorised here.
+The next action is **a focused private whole-body review of the already retrieved watcher definitions and independent inspection of the saved02 snapshot**, not another functional test, permission change or blind re-run of passed preflights. Once those gates are satisfied, seek separate approval for the exact unchanged03 and specific project/state. Only that future approval may authorise filling its four parameter literals. This publication is not that approval, and no SQL03/05 execution is authorised here.
 
 After a later approved03 transaction, approved read-only04 should confirm all56 excess effective privileges denied, CRUD/other ACLs unchanged and the expected new ACL snapshot while preserving the original baseline. Keep the original full02 snapshot/digest for any separately approved rollback05; do not automatically restore excessive privileges or clean up evidence.003/004 backend installation, delivery setup, Stripe, frontend release and other outstanding launch decisions remain separate.

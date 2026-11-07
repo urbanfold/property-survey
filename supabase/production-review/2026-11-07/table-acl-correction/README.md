@@ -46,14 +46,16 @@ The observed02 ACL digest is now recorded above, but no observed digest is silen
 
 ## Watcher review and remaining uncertainty
 
+**Manual inspection update:** positive but partial evidence is recorded in [WATCHER_MANUAL_INSPECTION.md](WATCHER_MANUAL_INSPECTION.md). The watcher requirement is NOT marked passed. Do not retrieve the same definitions or rerun passed preflights merely to repeat evidence.
+
 Supplied metadata identifies enabled **extensions.pgrst_ddl_watch()** and **extensions.pgrst_drop_watch()**, owned by supabase_admin, SECURITY INVOKER, fixed empty search paths. Recorded CRLF-normalized raw-body hashes:
 
 - ddl: de987df746eb39647098459e7993bd8595e592969b0cd647828a3d13d37cffe0
 - drop: 791b41f0632fc86e0fc86a303ec0fd710c4e2ecf947a23422dae2b7a2c122f1d
 
-The existing network-name scan was false for both. This is consistent with provider schema-refresh handlers; it is NOT proof of their full behaviour or official provider-source identity. Neither the owner nor this development agent has inspected their bodies in this review. REVOKE/GRANT can involve DDL-event machinery; do not assume no handler runs. This proposal creates/drops no SQL object and executes no CREATE/DROP EXTENSION; four extension-tagged handlers are outside those command tags.
+The existing network-name scan was false for both. This is consistent with provider schema-refresh handlers; it is NOT proof of their full behaviour or official provider-source identity. The owner/operator has now reported a limited manual inspection of both definitions: fixed NOTIFY statements on lines26/24, no occurrences of the five searched terms and unchanged fingerprints. This development agent has not received/reviewed the full bodies; a complete private whole-body or trusted-provider comparison remains outstanding. REVOKE/GRANT can involve DDL-event machinery; do not assume no handler runs. This proposal creates/drops no SQL object and executes no CREATE/DROP EXTENSION; four extension-tagged handlers are outside those command tags.
 
-**Outstanding gate:** an authorised connected reviewer should inspect the two actual definitions privately (or compare exact definitions with a trusted provider baseline), confirming intended schema-cache notification behaviour and no unexpected dynamic/external/email/payment/data actions. Record a non-secret conclusion and hashes; do not post secret-bearing source. Do not disable, replace or re-own these watchers or infer provider management solely from names/owner.02 only rechecks their metadata/hashes, and cannot resolve body uncertainty by itself. No watcher modification is proposed.
+**Outstanding gate:** an authorised reviewer should finish reviewing the complete already-retrieved definitions privately (or compare exact definitions with a trusted provider baseline), confirming intended schema-cache notification behaviour and no unexpected dynamic/external/email/payment/data actions. Record a non-secret conclusion and hashes; do not post secret-bearing source. Do not disable, replace or re-own these watchers or infer provider management solely from names/owner.02 only rechecks their metadata/hashes, and cannot resolve body uncertainty by itself. No watcher modification is proposed.
 
 ## Future application sequence — requires separate approval
 
