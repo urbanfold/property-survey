@@ -4,9 +4,11 @@
 
 ## Confirmed evidence versus uncertainty
 
+**02 update:** read-only production preflight02 is reported passed. Original baseline remains `10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6`; observed ACL snapshot is `fd7f49766854f09d849adee619f02054612ee1014aa63cbf6bfe3a53b7e6a861`. All56 affected grants have recorded grantor postgres/grantable=false, all seven owners/RLS/CRUD are expected, and no column ACLs were found. SQL03 is structurally ready for separate approval review, NOT execution approval. Watcher body verification remains OPEN. See [PREFLIGHT02_REVIEW.md](PREFLIGHT02_REVIEW.md) for the evidence boundary, remaining guards and safest private verification method.
+
 The owner/connected reviewer reports read-only01 completed with unchanged observed baseline `10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6`. Both anon/authenticated have direct, non-grantable SELECT/INSERT/UPDATE/DELETE and TRUNCATE/REFERENCES/TRIGGER/MAINTAIN on seven postgres-owned, RLS-enabled tables: properties, extensions, rooms, exterior_photos, extension_photos, sketch_photos, room_photos. They do not inherit the owner and are neither SUPERUSER nor BYPASSRLS. The three credit tables lack these four extra client privileges. All five billing bodies match; all nine foreign keys are valid/cascading; public.rls_auto_enable() is absent. These are owner-supplied findings, not a new direct production inspection by this development agent.
 
-The previous01 ACL expansion did not include grantor. Broad global defaults are a possible explanation, NOT proven grant provenance. The new02 query captures **recorded grantor role**, grant options and column ACLs. Even a recorded grantor=postgres does not identify an original human, date or whether defaults produced the grant. Grantor/options/column state and the private watcher review must be accepted before approving execution.
+The previous01 ACL expansion did not include grantor. Broad global defaults are a possible explanation, NOT proven grant provenance. The completed02 query captures **recorded grantor role**, grant options and column ACLs; its reported grantor/options/column findings now match the supported correction shape. Even recorded grantor=postgres does not identify an original human, date or whether defaults produced the grant. Independently inspect the saved full snapshot/remaining guards and complete private watcher review before deciding execution approval.
 
 ## Security assessment and scope
 
@@ -32,7 +34,7 @@ Existing FKs remain valid: REFERENCES is checked when creating constraints, not 
 
 The original baseline metadata records legacy table **CRUD** and existing function/default ACLs, not the four target non-row table privileges. Therefore this correction can leave baseline10fa... UNCHANGED. That digest alone cannot certify the correction or its rollback. Save/review the full02 `acl_snapshot` and `acl_sha256`, independently of the baseline. The snapshot sorts ACL grantor/grantee/privilege/options and includes roles, RLS/owner, CRUD, column grants and untouched credit/Storage table ACLs. It intentionally does not read customer/credit rows.
 
-No actual new ACL digest is known in this package and no observed digest is silently approved. All executable files retain NOT_APPROVED/REVIEW_REQUIRED. Project-name text/GUC acknowledgements and hashes are NOT independent connection-identity verification; the connected reviewer must confirm the actual production project before even approved SQL.
+The observed02 ACL digest is now recorded above, but no observed digest is silently approved or prefilled into SQL. All executable files retain NOT_APPROVED/REVIEW_REQUIRED. Project-name text/GUC acknowledgements and hashes are NOT independent connection-identity verification; the connected reviewer must confirm the actual production project before even approved SQL.
 
 ## Preconditions / supported state
 
@@ -55,7 +57,7 @@ The existing network-name scan was false for both. This is consistent with provi
 
 ## Future application sequence — requires separate approval
 
-1. Review this package, then separately authorise/execute ONLY02 through the connected read-only production integration. Compare reported baseline with original10fa...; any difference requires exact review. Accept grantor/options/columns/role flags and private watcher conclusions; save full snapshots securely. No global defaults or other permissions change at this step.
+1. The owner reports02 already completed read-only. Review and retain that saved result; do not repeat it merely to reproduce passed evidence. Complete private watcher-body verification and inspect the remaining guards before any execution decision. If a changed/stale state requires a new02, separately authorise that read-only check through the connected integration. Compare reported baseline with original10fa...; any difference requires exact review. Accept grantor/options/columns/role flags and private watcher conclusions; save full snapshots securely. No global defaults or other permissions change at this step.
 2. Obtain independent approval of exact03, the actual connection and observed metadata. Fill only these four parameter literals in a copy of03:
    - urbanfold.acl_ack: `APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f`
    - urbanfold.acl_action: `APPROVED REMOVE56 EXCESS PRIVILEGES`
