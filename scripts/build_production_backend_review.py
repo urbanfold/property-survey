@@ -103,6 +103,12 @@ def post_guard(functions,tables):
 end $$;
 '''
 
+def column_type_match_sql():
+ # Only two source-model numeric fields accept the exact observed typmod.
+ # Keep the source fixture and production schema unchanged.
+ return "(actual->>'type'=required->>'type' or (required->>'table'='extensions' and required->>'column' in('width','length') and required->>'type'='numeric' and actual->>'type'='numeric(5,2)'))"
+
+
 def generate():
  for part in ['supabase/001_secure_access.sql','supabase/002_survey_purchases.sql']+PARTS:
   assert (ROOT/part).read_bytes()==subprocess.check_output(['git','show',PIN+':'+part],cwd=ROOT)
@@ -137,7 +143,7 @@ select jsonb_build_object('expected_project',{lit(PROJECT)},'execution_role',cur
  or exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in({seq(target_names)})) then raise exception 'Fresh-only target objects already exist. STOP and review; never reset/reapply.';end if;'''
   if n==1:
    presence+="\n if to_regclass('public.survey_notification_events') is null then raise exception 'Install/review003 first.';end if;\n if exists(select 1 from pg_trigger where tgrelid='auth.users'::regclass and tgname in('urbanfold_auth_signup','urbanfold_auth_first_confirmation')) then raise exception 'Reserved Auth trigger already exists.';end if;"
-  safety=f'''\n if (select jsonb_array_length(baseline->'billing_functions'))<>5 then raise exception 'Unexpected billing helper overloads.';end if;\n if exists(select 1 from jsonb_array_elements({lit(json.dumps(reference['required_columns']))}::jsonb) required where not exists(select 1 from jsonb_array_elements(baseline->'columns') actual where actual->>'table'=required->>'table' and actual->>'column'=required->>'column' and actual->>'type'=required->>'type')) then raise exception 'Required application columns/types differ from reviewed source model. Review compatibility before proceeding.';end if;\n if (select policies from (select baseline->'policies' as policies) s) is distinct from {lit(json.dumps(reference['policies']))}::jsonb then raise exception '001/002 policy mismatch/additional policy. Review exact differences; do not blanket replace policies.';end if;
+  safety=f'''\n if (select jsonb_array_length(baseline->'billing_functions'))<>5 then raise exception 'Unexpected billing helper overloads.';end if;\n if exists(select 1 from jsonb_array_elements({lit(json.dumps(reference['required_columns']))}::jsonb) required where not exists(select 1 from jsonb_array_elements(baseline->'columns') actual where actual->>'table'=required->>'table' and actual->>'column'=required->>'column' and {column_type_match_sql()})) then raise exception 'Required application columns/types differ from reviewed source model. Review compatibility before proceeding.';end if;\n if (select policies from (select baseline->'policies' as policies) s) is distinct from {lit(json.dumps(reference['policies']))}::jsonb then raise exception '001/002 policy mismatch/additional policy. Review exact differences; do not blanket replace policies.';end if;
 '''
   files[('10_install_003_fresh.sql' if n==0 else '20_install_004_fresh.sql')]=header+'''-- Replace ONLY the two NOT_APPROVED/REVIEW_REQUIRED parameter literals after review/approval.
 -- Confirm the actual Dashboard project independently; do not copy a staging fingerprint.

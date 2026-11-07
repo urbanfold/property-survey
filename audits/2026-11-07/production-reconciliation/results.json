@@ -1,0 +1,32 @@
+{
+  "reviewed_package_commit": "d42263a8fb10e44136564a5224c956bcc47c89c7",
+  "canonical_application_commit": "5d434a78ac1f997c86b9c92646771de2018cad04",
+  "observed_production_baseline_sha256": "10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6",
+  "baseline_approved_for_installation": false,
+  "evidence_provenance": "User-supplied production metadata and subsequent read-only hash correction; not fetched by this agent",
+  "all_five_raw_billing_bodies_reconcile_with_supplied_evidence": true,
+  "transcription_issue": "RESOLVED; original paste and correction preserved",
+  "existing_trigger_definition_hashes_match_canonical": true,
+  "public_rls_auto_enable": "absent from supplied complete public dependency/definer/event inventories; no production revoke proposed",
+  "schema_correction_proposed": false,
+  "installer_guard_correction": "Only extensions.width/length accept exact numeric(5,2) alongside original numeric",
+  "remaining_checks": [
+    "Actual effective non-row privileges/API-role bypass/owner flags",
+    "Exact seven cascade FK mappings/constraint validation from metadata",
+    "Private validation of the two unfiltered provider/PostgREST watcher bodies"
+  ],
+  "local_checks_passed": [
+    "23 SELECT-only PostgreSQL guard cases",
+    "numeric precision SELECT",
+    "supplemental catalog query with only original app-baseline expression stubbed",
+    "exact two-predicate diff and preserved original00/30/reference/source hashes/recovery/scheduler",
+    "generator parity"
+  ],
+  "application_ddl_or_migrations_executed_this_change": false,
+  "cloud_sql_executed": false,
+  "supabase_or_provider_requests": 0,
+  "secret_changes": false,
+  "production_data_changes": false,
+  "deployments": 0,
+  "push_authorized_or_performed": false
+}

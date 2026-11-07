@@ -1,0 +1,23 @@
+{
+  "audits/2026-11-07/production-reconciliation/CHANGED_FILES.txt": "17457de73ec4b58b7f7b7a55cd52d96b6ae6974693455eda664008c6e3a45344",
+  "audits/2026-11-07/production-reconciliation/body_digest_comparison.json": "9166298a200bc0d52fa821c0aba512abcd1a37928186c4e8c3a5406cabdd3c23",
+  "audits/2026-11-07/production-reconciliation/owner_supplied_metadata.json": "ff2e30c4971cb46b724e54dcf98d40d3a3187cc9ea4ddf7564f422ecad926898",
+  "audits/2026-11-07/production-reconciliation/results.json": "85a31627c2da7e83292c8ffadeb3683928f7fd9b350c929ceaad5f32b51e5fff",
+  "audits/2026-11-07/production-reconciliation/select-only-test.log": "e72f997bf006fb035f057d36e928f1b1253201c787bc78b9e8be1cb699685a29",
+  "scripts/build_production_backend_review.py": "73aff8838d221197af46ce248b457b4ad6c3de576c3bb416fe5954d45b34050f",
+  "supabase/production-review/2026-11-07/00_preflight_readonly.sql": "faada72c6159ca4b701a936b7bf1ecb21758fc7fd3c4bbdf592f0f6172e12c16",
+  "supabase/production-review/2026-11-07/01_reconciliation_readonly.sql": "c08fff1b4894c3e42a54feb54e2a4d5241145f23aa3c7d024765ce8160b667ef",
+  "supabase/production-review/2026-11-07/10_install_003_fresh.sql": "8a5cd6cfb8437b4ce9b569777f17d5246ad19ec67ae30e098bfbb38419838c17",
+  "supabase/production-review/2026-11-07/20_install_004_fresh.sql": "f87f04817f851909d4f1c30b942f9f4164631708f2a53b1bcefdb3a169c6a264",
+  "supabase/production-review/2026-11-07/30_postinstall_readonly.sql": "0829d04be342dd3c3352329a774648612a96f1240fc1bf4b721e788371b30f27",
+  "supabase/production-review/2026-11-07/40_disable_auth_recording.sql": "dc7e16f6b750b7475ebf94c969a982db0f8bb9adc35bdae0869d85c719647171",
+  "supabase/production-review/2026-11-07/41_enable_auth_recording.sql": "1e08a624c33f82412d4c5d077ae8d4a431f6482cbad1e2e01cd923827443288a",
+  "supabase/production-review/2026-11-07/50_registration_schedule_review.sql": "8bb9a0d8e6e060232dcac238df7f3a519b4c9712b48dfdfc21a1932c9fd195e9",
+  "supabase/production-review/2026-11-07/51_schedule_verify_readonly.sql": "adb6988cf112985d306ce5250b21e028aa16212a5c02290ace8083d50898e705",
+  "supabase/production-review/2026-11-07/README.md": "3c85b795d080b4aaf63d528fe65f3e65fe37173095abfc543435c09f930e74dc",
+  "supabase/production-review/2026-11-07/RECONCILIATION_REPORT.md": "6a55e9b3b521fb0d344a292886c1b91c27be1c403bc4ee22d1a5c86656ca92a9",
+  "supabase/production-review/2026-11-07/SHA256SUMS.txt": "eefc8369289daed2ef26e68e6b796db49c343c1b018f017473b21d6aec8c26de",
+  "supabase/production-review/2026-11-07/reference_001_002.json": "4fab897829131923880d8019799cfe3c65c5ee5c657b308803c2a8207ca61b85",
+  "supabase/production-review/2026-11-07/source_spec.json": "48c83deefabac7294f184d90ef70139e7139083dcd10b7f70c29e5c8debaf182",
+  "tests/test_production_reconciliation.py": "7f8fbcceb754f70cbaf71103b9aa9cca8beed5231f4ea233a3d280d80aa54e3c"
+}
