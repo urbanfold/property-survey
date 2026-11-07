@@ -1,6 +1,6 @@
 # PostgREST watchers: limited manual inspection — 7 November 2026
 
-**PARTIAL SUPPORTING EVIDENCE. Full watcher verification remains OPEN; SQL03 is not approved or executed.** This update changes documentation/evidence only. It does not alter functions, fingerprints, SQL03/05, approval parameters or production permissions.
+**PARTIAL SUPPORTING EVIDENCE. Full watcher verification remains OPEN; production SQL03 is not approved or executed.** This update changes documentation/evidence only. It does not alter functions, fingerprints, SQL03/05, approval parameters or production permissions.
 
 ## What the operator reports
 
@@ -29,6 +29,6 @@ Keep complete definitions in the trusted administrator/private review channel; d
 
 SQL03 is structurally ready for a separate approval decision, conditional on that focused watcher conclusion and review of its unchanged guards against the **saved02 output**. The grantor/options/column-state gap has already been closed by reported02 findings; do not reopen it or re-run passed registration, recovery, payment, survey or ACL preflights merely because this document is updated. If the actual metadata/state changes, stop and review the change; SQL03's saved-hash guards also fail closed rather than silently accept another state.
 
-The new correction/rollback still have only static/source and Python ACL-model validation; no PostgreSQL runtime rehearsal has been performed by this development agent. A separately authorised, narrowly scoped PostgreSQL17+ dummy-ACL rehearsal of unchanged03/05 would reduce syntax/dependency/inverse-state risk before production execution. It would not replace watcher review or justify rerunning all previously passed functional tests. No rehearsal or SQL execution is authorised or performed by this documentation update; the independent approver should explicitly assess this remaining runtime-validation limitation.
+A subsequent separately authorised isolated PostgreSQL17.11 dummy rehearsal of exact unchanged03/05 logic now passes18 checks; only four documented local parameter literals differed. It closes the tested local syntax/transaction/inverse-state gap. See the rehearsal report linked from README.md. That rehearsal did not install/review real managed watcher bodies, connect to Supabase or run a production permission change; it does NOT close the watcher gate or justify repeating all previously passed functional tests. The full private watcher-body review remains OPEN.
 
 After the remaining review, seek explicit approval for the exact SQL03 source and target snapshots, not a general instruction to launch. The observed baseline10fa... and original ACL digestfd7f... remain evidence, not approval; NOT_APPROVED/REVIEW_REQUIRED placeholders stay untouched. Retain original02 and later approved04 results for the separately guarded rollback05. No merge, worker deployment, delivery configuration, Stripe change or website publication follows automatically.

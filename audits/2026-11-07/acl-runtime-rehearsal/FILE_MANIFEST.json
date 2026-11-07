@@ -1,0 +1,17 @@
+{
+  "audits/2026-11-07/acl-runtime-rehearsal/CHANGED_FILES.txt": "8251e3b94f36c8dcd0b08058956b09ddf76fc0c6eb14a9ef1907340fb2c1d0b3",
+  "audits/2026-11-07/acl-runtime-rehearsal/LOCAL_ONLY_fixture.sql": "b39ee520b5f5987227bf7393c771dc430796785ad4dbbffe18cf0e1fdf6f64ed",
+  "audits/2026-11-07/acl-runtime-rehearsal/README.md": "e5bb1cf9b39b79a22bd391db984e18851d72777c498e28c5ee8bcb48d3fdb20e",
+  "audits/2026-11-07/acl-runtime-rehearsal/attempt1-startup-results.json": "ee8aafe0e6c9d5a971edd21cefc4ef0189cc89fd9a8a831e4123a7c8146b6ff9",
+  "audits/2026-11-07/acl-runtime-rehearsal/attempt1-startup.log": "de1c9d2dd23464fdee5cea5d921125048ac441146397bf9d5cac4c94d38238f2",
+  "audits/2026-11-07/acl-runtime-rehearsal/original_source_integrity.json": "7d7aa1023e2d81387fdc7286c21e04ce52c755d62195a73c28dd128834a5d3f3",
+  "audits/2026-11-07/acl-runtime-rehearsal/parameterization.json": "2aea5f244bcd46391fbf3b77a8aa60d9c72475b1e4e923fc3952549f2363a409",
+  "audits/2026-11-07/acl-runtime-rehearsal/publication_review.json": "47d0d31d8b1623aec76015e78d04018120cbe4db2bd4039a97efefbb3edcb42c",
+  "audits/2026-11-07/acl-runtime-rehearsal/results.json": "236bb82a4864ea859e440ca9971812211e36c30db7ea9ace9ac98ca8eb835c22",
+  "audits/2026-11-07/acl-runtime-rehearsal/run.log": "308910ec8978afac7382f80ac799a1c59eea0ee78052dae8efa6a4398e390e58",
+  "supabase/production-review/2026-11-07/table-acl-correction/PREFLIGHT02_REVIEW.md": "77f221b146ba97193237ccf8deb0202c67919975135f881a428fb771702d611d",
+  "supabase/production-review/2026-11-07/table-acl-correction/README.md": "beafa8c0eac804d66dfac20393c4b3f4cd374bb09622a459682c0936c99a984e",
+  "supabase/production-review/2026-11-07/table-acl-correction/SHA256SUMS.txt": "84bb3bca98281dcd7297f5ee7461b7bd1bc9e47233cd241dd536b57266a69305",
+  "supabase/production-review/2026-11-07/table-acl-correction/WATCHER_MANUAL_INSPECTION.md": "524dc230aaececef1d5d320936bbee87a5c8e0fafa59895f431652696ef035da",
+  "tests/test_table_acl_rehearsal.py": "43a49c6d8f82abe026559a87c40afa16263232936ebf2eb9f5e06e94e891eb70"
+}

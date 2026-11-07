@@ -1,0 +1,29 @@
+{
+  "status": "FAILED",
+  "source_commit": "061bff14b887fa4ba03c785ccf2c82cf84a9158e",
+  "original_sql_sha256": {
+    "03_revoke_excess_table_privileges.sql": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "05_restore_exact_previous_privileges.sql": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8"
+  },
+  "isolation": {
+    "docker_endpoint": "unix:///var/run/docker.sock",
+    "network": "none",
+    "published_ports": false,
+    "host_bind_or_volume_mounts": false,
+    "data_mount": "tmpfs",
+    "image": "postgres:17-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb",
+    "cached_image_id": "sha256:ab20e934b27ba3ff927c1b4c9ff8cf6c32f315f743efe68dd3441182a87fb085",
+    "pull_policy": "never",
+    "database": "urbanfold_acl_rehearsal",
+    "host_secrets_forwarded": false
+  },
+  "postgres_version": null,
+  "checks": [],
+  "failure": "psql: error: connection to server on socket \"/var/run/postgresql/.s.PGSQL.5432\" failed: FATAL:  database \"urbanfold_acl_rehearsal\" does not exist\n",
+  "only_local_dummy_database_sql_executed": true,
+  "production_or_staging_connections": 0,
+  "real_customer_data_or_secrets_used": false,
+  "watcher_full_body_review": "OPEN; native managed watcher bodies not supplied or executed",
+  "production_originals_modified": false,
+  "local_container_removed": true
+}

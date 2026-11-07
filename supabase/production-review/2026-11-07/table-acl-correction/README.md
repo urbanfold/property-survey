@@ -1,6 +1,6 @@
 # Review-only correction: excessive client table privileges
 
-**NOT APPROVED FOR EXECUTION.** Target production **arnzqizcycesukplmvuc**. Prepared from review commit **1d1c934ce39650433a58ec70640d4f3671ad018f**. The owner authorises this package's development-branch commit/push only. No SQL (including local SQL), production permissions, data, services, secrets, Stripe, functions or website changes are made by preparing/publishing these files.
+**NOT APPROVED FOR EXECUTION.** Target production **arnzqizcycesukplmvuc**. Prepared from review commit **1d1c934ce39650433a58ec70640d4f3671ad018f**. The owner authorises this package's development-branch commit/push only. Original review preparation/publication executed no SQL. A subsequently authorised isolated dummy PostgreSQL rehearsal is recorded below; no production/staging SQL, permissions, data, services, secrets, Stripe, functions or website changes were made.
 
 ## Confirmed evidence versus uncertainty
 
@@ -78,6 +78,8 @@ If a committed correction requires rollback, obtain separate approval for05. Sto
 
 Rollback intentionally restores excessive privileges; it is not a desirable steady state. A later different schema/role/ACL state requires a new reviewed forward correction or rollback, not ad-hoc broad grants. No data restore, table drop, credit reset, Storage deletion or customer-record modification belongs to this package.
 
-## Validation limitations
+## Local runtime rehearsal update / remaining limitations
 
-Only Python source/static checks and an independent Python ACL-model inverse test are run in this preparation. No SQL parser/server, PostgreSQL/Docker test, SQL migration, live query, handler invocation or database privilege test is executed, per instruction. Consequently PostgreSQL syntax/runtime/dependency/managed watcher effects remain for independent review and a separately approved controlled rehearsal/application. Prior application/F02/registration/payment tests remain evidence for unchanged source; they are not relabelled as validation of this new REVOKE. No claim is made that production permissions are already corrected.
+**Authorised local rehearsal PASSED on PostgreSQL17.11:** exact unchanged03/05 logic with only four documented local test parameter values. All18 recorded checks passed:56 removals, CRUD/RLS/Storage/credit/dummy-data preservation, RESTRICT mechanics/delegation rejection, failed guards and post-REVOKE rollback, repeat rejection and exact normalized ACL restoration. See [rehearsal report](../../../../audits/2026-11-07/acl-runtime-rehearsal/README.md), results.json and parameterization.json. Production originals remain byte-identical. One rehearsal-only startup readiness error was corrected; no production-script correction is proposed.
+
+The previous preparation used static/Python-model checks only; that historical evidence is retained rather than overwritten. The new native rehearsal closes the local SQL-runtime gap, not actual managed-service/provider verification. The disposable cached-image container used network none, no published ports/host mounts/forwarded secrets, tmpfs data and fabricated records/roles; it was removed. No actual Supabase project was contacted. Full managed watcher-body review remains **OPEN**: a synthetic local failure handler is not a validation of the real PostgREST bodies. Actual production drift/roles/grants and managed effects still require the existing private review and separate execution approval. No production03/05 execution, merge or website publication is authorised by these test results.
