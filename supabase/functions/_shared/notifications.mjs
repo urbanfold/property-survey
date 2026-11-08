@@ -107,7 +107,7 @@ export async function requestSurveyNotification(request,{env,fetcher=fetch}){
       ?await fetcher(staging+'/functions/v1/staging-notification-receiver',{method:'POST',redirect:'error',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+service,
           'Idempotency-Key':crypto.randomUUID(),'X-Urbanfold-Notification-Type':'survey'},
-        body:JSON.stringify({test_mode:'staging_brevo_capture',recipient_kind:message.kind,...message.payload}),
+        body:JSON.stringify({test_mode:'staging_brevo_capture',recipient_kind:message.kind,property_id:claim.payload.property_id,client_email:claim.payload.client_email,...message.payload}),
         signal:AbortSignal.timeout(10000)})
       :await fetcher('https://api.brevo.com/v3/smtp/email',{method:'POST',redirect:'error',
         headers:{'Content-Type':'application/json','api-key':brevoKey},body:JSON.stringify(message.payload),
