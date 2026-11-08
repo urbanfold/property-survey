@@ -67,3 +67,29 @@ test('Brevo key missing does not claim or send',async()=>{
  const x=harness(),r=await requestSurveyNotification(req(),{...x,env:n=>n==='BREVO_REGISTRATION_API_KEY'?undefined:x.env(n)});
  assert.equal(r.status,503);assert.equal(x.calls.length,0);
 });
+
+test('staging Brevo simulation captures two emails without calling real Brevo',async()=>{
+ const calls=[],deliveries=[];let prepared=false;
+ const env=n=>n==='NOTIFICATION_TRANSPORT'?'staging_brevo_capture':n==='SUPABASE_URL'?'https://hexhtduvqzleoazusskh.supabase.co':config[n];
+ const fetcher=async(url,init)=>{
+  calls.push(url);
+  if(url.endsWith('/auth/v1/user'))return json({id:uid,email:'professional@example.test',email_confirmed_at:'2026-11-03'});
+  if(url.includes('/rest/v1/properties?'))return json([{id:pid,last_submitted_at:'2026-11-03T12:00:00Z'}]);
+  if(url.endsWith('/rpc/claim_survey_notification'))return json({id:event,claimed:true,payload:{property_id:pid,client_email:'client@example.test',address:'Fixture House',surveyor_name:'Professional'}});
+  if(url.endsWith('/rpc/prepare_survey_brevo_deliveries')){prepared=true;return json(true);}
+  if(url.endsWith('/rpc/finish_survey_brevo_delivery')){const p=JSON.parse(init.body);deliveries.push(p);return json({recipient_kind:p.kind,state:p.accepted?'accepted':'uncertain'});}
+  if(url.endsWith('/functions/v1/staging-notification-receiver')){
+   assert(prepared);assert.equal(init.headers['X-Urbanfold-Notification-Type'],'survey');
+   assert.equal(init.headers.Authorization,'Bearer service-fixture');
+   const p=JSON.parse(init.body);
+   assert.equal(p.test_mode,'staging_brevo_capture');
+   assert(['admin','customer'].includes(p.recipient_kind));
+   assert.equal(p.to.length,1);
+   return json({captured:true,email_sent:false});
+  }
+  throw Error('unexpected call '+url);
+ };
+ const r=await requestSurveyNotification(req(),{env,fetcher});
+ assert.equal(r.status,200);assert.equal(deliveries.length,2);
+ assert(!calls.some(url=>url.includes('api.brevo.com')));
+});
