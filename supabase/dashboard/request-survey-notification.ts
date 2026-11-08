@@ -5,6 +5,27 @@
 // Proposed F02 gateway. Deployment/secret rotation require separate approval.
 const DEFAULT_APP = 'https://urbanfold.github.io/property-survey/';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SURVEY_ADMIN='urbanfolduk@gmail.com';
+const SAFE_EMAIL=/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+const surveyEmail=value=>typeof value==='string'&&value.length<=254&&SAFE_EMAIL.test(value);
+const cleanText=value=>String(value??'').replace(/[\\r\\n\\x00-\\x1f\\x7f]/g,' ').slice(0,300);
+function surveyBrevoMessages(event,claim,sender){
+ const client=claim.payload?.client_email;
+ if(!UUID.test(event)||!surveyEmail(client)||!surveyEmail(sender))throw Error('Invalid verified survey recipients');
+ const address=cleanText(claim.payload.address),surveyor=cleanText(claim.payload.surveyor_name);
+ const root={sender:{email:sender,name:'Urbanfold'}};
+ return [
+  {kind:'admin',payload:{...root,to:[{email:SURVEY_ADMIN}],subject:'Urbanfold survey submitted',
+   textContent:['A saved Urbanfold property survey was submitted.','Property: '+address,
+    'Surveyor: '+surveyor,'Customer email: '+client,'Property reference: '+claim.payload.property_id].join('\\n'),
+   headers:{idempotencyKey:event+'-admin'}}},
+  {kind:'customer',payload:{...root,to:[{email:client}],subject:'Urbanfold — your survey has been received',
+   textContent:['Thank you. Your Urbanfold property survey has been received.','Property: '+address,
+    'We will review the information supplied and contact you about the next steps.',
+    'If you did not authorise this submission, please contact Urbanfold.'].join('\\n'),
+   headers:{idempotencyKey:event+'-customer'}}}
+ ];
+}
 function response(body,status,origin) {
  const headers={'Content-Type':'application/json','Cache-Control':'no-store'};
  if(origin)Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Vary':'Origin',
@@ -22,8 +43,9 @@ async function smallBody(request){
 }
 export async function requestSurveyNotification(request,{env,fetcher=fetch}){
  const transport=env('NOTIFICATION_TRANSPORT')||'zapier';
- if(!['zapier','staging_capture'].includes(transport))return response({error:'Notification transport is not configured.'},503);
+ if(!['zapier','staging_capture','brevo'].includes(transport))return response({error:'Notification transport is not configured.'},503);
  const capture=transport==='staging_capture';
+ const brevo=transport==='brevo';
  const staging='https://hexhtduvqzleoazusskh.supabase.co';
  if(env('SUPABASE_URL')===staging&&!capture)return response({error:'Staging notifications require capture-only mode.'},503);
  if(capture&&!env('APP_URL'))return response({error:'An explicit staging application URL is required.'},503);
@@ -40,8 +62,13 @@ export async function requestSurveyNotification(request,{env,fetcher=fetch}){
  if(!/^Bearer \S+$/.test(authorization))return response({error:'Sign in to request a notification.'},401,cors);
  const base=env('SUPABASE_URL'),anon=env('SUPABASE_ANON_KEY'),service=env('SUPABASE_SERVICE_ROLE_KEY');
  let hook;
- try{hook=new URL(capture?staging+'/functions/v1/staging-notification-receiver':env('SURVEY_NOTIFICATION_WEBHOOK_URL'));if(!capture&&(hook.protocol!=='https:'||hook.hostname!=='hooks.zapier.com'||!hook.pathname.startsWith('/hooks/catch/')))throw Error();}
- catch{return response({error:'Your survey is saved; notifications are not configured yet.'},503,cors);}
+ if(!brevo){
+  try{hook=new URL(capture?staging+'/functions/v1/staging-notification-receiver':env('SURVEY_NOTIFICATION_WEBHOOK_URL'));if(!capture&&(hook.protocol!=='https:'||hook.hostname!=='hooks.zapier.com'||!hook.pathname.startsWith('/hooks/catch/')))throw Error();}
+  catch{return response({error:'Your survey is saved; notifications are not configured yet.'},503,cors);}
+ }
+ const brevoKey=brevo?env('BREVO_REGISTRATION_API_KEY'):null;
+ const senderEmail=brevo?env('REGISTRATION_EMAIL_FROM'):null;
+ if(brevo&&(!brevoKey||!surveyEmail(senderEmail)))return response({error:'Brevo survey delivery is not configured.'},503,cors);
  if(!base||!anon||!service)return response({error:'Notification service is not configured.'},503,cors);
  const headers={apikey:anon,authorization,'Content-Type':'application/json'};
  const serverHeaders={apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'};
@@ -67,6 +94,34 @@ export async function requestSurveyNotification(request,{env,fetcher=fetch}){
   if(!UUID.test(claim?.id||''))throw Error('Invalid claim');
   if(!claim.claimed)return response({status:claim.state==='accepted'?'accepted':'uncertain'},claim.state==='accepted'?200:202,cors);
   if(claim.payload?.property_id!==body.property_id)throw Error('Invalid payload');
+  if(brevo){
+   let messages;
+   try{messages=surveyBrevoMessages(claim.id,claim,senderEmail);}
+   catch{return response({status:'uncertain',error:'Saved survey recipient is invalid. No emails sent.'},202,cors);}
+   const prepared=await fetcher(base+'/rest/v1/rpc/prepare_survey_brevo_deliveries',{method:'POST',headers:serverHeaders,
+    body:JSON.stringify({event:claim.id}),signal:AbortSignal.timeout(10000)});
+   const ready=await parsed(prepared);
+   if(!prepared.ok||ready!==true)return response({status:'uncertain',error:'Survey delivery could not be safely prepared.'},202,cors);
+   const outcomes=[];
+   for(const message of messages){
+    let providerAccepted=false;
+    try{
+     const sent=await fetcher('https://api.brevo.com/v3/smtp/email',{method:'POST',redirect:'error',
+      headers:{'Content-Type':'application/json','api-key':brevoKey},body:JSON.stringify(message.payload),
+      signal:AbortSignal.timeout(10000)});
+     providerAccepted=sent.ok;
+    }catch{/* Could have sent: never retry automatically. */}
+    const finish=await fetcher(base+'/rest/v1/rpc/finish_survey_brevo_delivery',{method:'POST',headers:serverHeaders,
+     body:JSON.stringify({event:claim.id,kind:message.kind,accepted:providerAccepted}),signal:AbortSignal.timeout(10000)});
+    const stored=await parsed(finish);
+    if(!finish.ok||stored?.recipient_kind!==message.kind||
+       stored?.state!==(providerAccepted?'accepted':'uncertain'))
+      return response({status:'uncertain',error:'Delivery acknowledgement unconfirmed. Do not retry automatically.'},202,cors);
+    outcomes.push({kind:message.kind,state:stored.state});
+   }
+   const allAccepted=outcomes.every(x=>x.state==='accepted');
+   return response({status:allAccepted?'accepted':'uncertain'},allAccepted?200:202,cors);
+  }
   const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(claim.id));
   const submission_id=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');
   let accepted=false;
