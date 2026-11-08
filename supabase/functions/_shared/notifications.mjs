@@ -2,9 +2,9 @@
 const DEFAULT_APP = 'https://urbanfold.github.io/property-survey/';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SURVEY_ADMIN='urbanfolduk@gmail.com';
-const SAFE_EMAIL=/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+const SAFE_EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const surveyEmail=value=>typeof value==='string'&&value.length<=254&&SAFE_EMAIL.test(value);
-const cleanText=value=>String(value??'').replace(/[\\r\\n\\x00-\\x1f\\x7f]/g,' ').slice(0,300);
+const cleanText=value=>String(value??'').replace(/[\r\n\x00-\x1f\x7f]/g,' ').slice(0,300);
 function surveyBrevoMessages(event,claim,sender){
  const client=claim.payload?.client_email;
  if(!UUID.test(event)||!surveyEmail(client)||!surveyEmail(sender))throw Error('Invalid verified survey recipients');
@@ -13,12 +13,12 @@ function surveyBrevoMessages(event,claim,sender){
  return [
   {kind:'admin',payload:{...root,to:[{email:SURVEY_ADMIN}],subject:'Urbanfold survey submitted',
    textContent:['A saved Urbanfold property survey was submitted.','Property: '+address,
-    'Surveyor: '+surveyor,'Customer email: '+client,'Property reference: '+claim.payload.property_id].join('\\n'),
+    'Surveyor: '+surveyor,'Customer email: '+client,'Property reference: '+claim.payload.property_id].join('\n'),
    headers:{idempotencyKey:event+'-admin'}}},
   {kind:'customer',payload:{...root,to:[{email:client}],subject:'Urbanfold — your survey has been received',
    textContent:['Thank you. Your Urbanfold property survey has been received.','Property: '+address,
     'We will review the information supplied and contact you about the next steps.',
-    'If you did not authorise this submission, please contact Urbanfold.'].join('\\n'),
+    'If you did not authorise this submission, please contact Urbanfold.'].join('\n'),
    headers:{idempotencyKey:event+'-customer'}}}
  ];
 }
