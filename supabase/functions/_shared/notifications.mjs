@@ -39,13 +39,14 @@ async function smallBody(request){
 }
 export async function requestSurveyNotification(request,{env,fetcher=fetch}){
  const transport=env('NOTIFICATION_TRANSPORT')||'zapier';
- if(!['zapier','staging_capture','brevo'].includes(transport))return response({error:'Notification transport is not configured.'},503);
+ if(!['zapier','staging_capture','staging_brevo_capture','brevo'].includes(transport))return response({error:'Notification transport is not configured.'},503);
  const capture=transport==='staging_capture';
- const brevo=transport==='brevo';
+ const simulatedBrevo=transport==='staging_brevo_capture';
+ const brevo=transport==='brevo'||simulatedBrevo;
  const staging='https://hexhtduvqzleoazusskh.supabase.co';
- if(env('SUPABASE_URL')===staging&&!capture)return response({error:'Staging notifications require capture-only mode.'},503);
- if(capture&&!env('APP_URL'))return response({error:'An explicit staging application URL is required.'},503);
- if(capture&&env('SUPABASE_URL')!==staging)return response({error:'Staging capture requires the isolated staging project.'},503);
+ if(env('SUPABASE_URL')===staging&&!capture&&!simulatedBrevo)return response({error:'Staging notifications require capture-only mode.'},503);
+ if((capture||simulatedBrevo)&&!env('APP_URL'))return response({error:'An explicit staging application URL is required.'},503);
+ if((capture||simulatedBrevo)&&env('SUPABASE_URL')!==staging)return response({error:'Staging capture requires the isolated staging project.'},503);
  let app;
  try{app=new URL(env('APP_URL')||DEFAULT_APP);const local=capture&&app.protocol==='http:'&&['localhost','127.0.0.1'].includes(app.hostname);if((app.protocol!=='https:'&&!local)||app.search||app.hash)throw Error();}
  catch{return response({error:'Notification service is not configured.'},503);}
@@ -62,9 +63,9 @@ export async function requestSurveyNotification(request,{env,fetcher=fetch}){
   try{hook=new URL(capture?staging+'/functions/v1/staging-notification-receiver':env('SURVEY_NOTIFICATION_WEBHOOK_URL'));if(!capture&&(hook.protocol!=='https:'||hook.hostname!=='hooks.zapier.com'||!hook.pathname.startsWith('/hooks/catch/')))throw Error();}
   catch{return response({error:'Your survey is saved; notifications are not configured yet.'},503,cors);}
  }
- const brevoKey=brevo?env('BREVO_REGISTRATION_API_KEY'):null;
- const senderEmail=brevo?env('REGISTRATION_EMAIL_FROM'):null;
- if(brevo&&(!brevoKey||!surveyEmail(senderEmail)))return response({error:'Brevo survey delivery is not configured.'},503,cors);
+ const brevoKey=brevo&&!simulatedBrevo?env('BREVO_REGISTRATION_API_KEY'):null;
+ const senderEmail=brevo?(simulatedBrevo?'survey@urbanfold.uk':env('REGISTRATION_EMAIL_FROM')):null;
+ if(brevo&&(!simulatedBrevo&&!brevoKey||!surveyEmail(senderEmail)))return response({error:'Brevo survey delivery is not configured.'},503,cors);
  if(!base||!anon||!service)return response({error:'Notification service is not configured.'},503,cors);
  const headers={apikey:anon,authorization,'Content-Type':'application/json'};
  const serverHeaders={apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'};
@@ -102,9 +103,15 @@ export async function requestSurveyNotification(request,{env,fetcher=fetch}){
    for(const message of messages){
     let providerAccepted=false;
     try{
-     const sent=await fetcher('https://api.brevo.com/v3/smtp/email',{method:'POST',redirect:'error',
-      headers:{'Content-Type':'application/json','api-key':brevoKey},body:JSON.stringify(message.payload),
-      signal:AbortSignal.timeout(10000)});
+     const sent=simulatedBrevo
+      ?await fetcher(staging+'/functions/v1/staging-notification-receiver',{method:'POST',redirect:'error',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+service,
+          'Idempotency-Key':crypto.randomUUID(),'X-Urbanfold-Notification-Type':'survey'},
+        body:JSON.stringify({test_mode:'staging_brevo_capture',recipient_kind:message.kind,...message.payload}),
+        signal:AbortSignal.timeout(10000)})
+      :await fetcher('https://api.brevo.com/v3/smtp/email',{method:'POST',redirect:'error',
+        headers:{'Content-Type':'application/json','api-key':brevoKey},body:JSON.stringify(message.payload),
+        signal:AbortSignal.timeout(10000)});
      providerAccepted=sent.ok;
     }catch{/* Could have sent: never retry automatically. */}
     const finish=await fetcher(base+'/rest/v1/rpc/finish_survey_brevo_delivery',{method:'POST',headers:serverHeaders,
