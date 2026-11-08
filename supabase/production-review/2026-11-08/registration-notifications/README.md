@@ -24,3 +24,9 @@ On 8 November 2026, a narrowly scoped connected production metadata query found 
 
 ## Scope limitations
 The installer is a prepared candidate, not a production certification. Existing email/password Auth verification may be affected by new database Auth triggers; stage testing and a controlled rollback/pause are prerequisites. Real email accept versus delivery and exactly-once semantics remain unverified. Emergency pause disables registration history collection for new accounts while active.
+
+## Targeted safeguard verification — 8 November 2026 (read-only)
+The two questioned safeguards were checked against the connected databases without modifying either project:
+- **Emergency pause function fingerprint:** staging `public.record_auth_registration()` is owned by `postgres`, is `SECURITY DEFINER`, and its normalized source SHA-256 is `0334f6287816922e1cd6daf79fefa0fd59d11ca42608e7bc6171465975cf7fc0`. This matches the prepared pause script; no change to that constant is necessary. Staging matching alone does not establish what is eventually deployed to production.
+- **Production version/table preflight:** project `arnzqizcycesukplmvuc` reports PostgreSQL `server_version_num = 170011`, role `postgres`, and all seven expected survey tables (`properties`, `extensions`, `rooms`, `exterior_photos`, `extension_photos`, `sketch_photos`, `room_photos`) owned by `postgres` with RLS enabled. No additional non-internal triggers on `auth.users` were observed. The version and seven-table checks agree with the installer's assumptions as of this inspection.
+- **Limitations:** fresh live preflight remains mandatory immediately before any authorised installation, and checks do not prove future Auth insert/confirmation behavior, production email delivery, or rollback of unspecified external changes. No production SQL installation or email sending was performed; `NOT_APPROVED` blocks remain.
