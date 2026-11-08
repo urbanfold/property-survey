@@ -35,6 +35,8 @@ jobs:
         run: node --test tests/test_billing_handlers.mjs
       - name: Test authenticated notification gateway
         run: node --test tests/test_notification_handlers.mjs
+      - name: Test two-recipient Brevo survey notifications
+        run: node --test tests/test_survey_brevo.mjs tests/test_survey_brevo_gateway.mjs
       - name: Test capture-only notification and registration workers
         run: node --test tests/test_registration_handlers.mjs
       - name: Test consent audit and verified registration queue
