@@ -1,0 +1,144 @@
+{
+  "all_final_targets_passed": true,
+  "targets": [
+    {
+      "case": "syntax",
+      "exit_code": 0,
+      "seconds": 0.08,
+      "log": "syntax.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "dashboard",
+      "exit_code": 0,
+      "seconds": 0.04,
+      "log": "dashboard.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "billing",
+      "exit_code": 0,
+      "seconds": 0.42,
+      "log": "billing.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "notifications",
+      "exit_code": 0,
+      "seconds": 0.51,
+      "log": "notifications.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "registration-handlers",
+      "exit_code": 1,
+      "seconds": 0.29,
+      "log": "registration-handlers.log",
+      "final_exit_code": 0,
+      "final_log": "../registration-corrected.log",
+      "note": "Original fixture token mismatch reproduced at HEAD; corrected test-only headers. Dashboard data-URL cache collision corrected in wrapper test. Final combined 29/29 pass."
+    },
+    {
+      "case": "registration-sql",
+      "exit_code": 0,
+      "seconds": 18.93,
+      "log": "registration-sql.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "newsletter-ui",
+      "exit_code": 0,
+      "seconds": 6.07,
+      "log": "newsletter-ui.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "session-security",
+      "exit_code": 0,
+      "seconds": 7.5,
+      "log": "session-security.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "session-recovery",
+      "exit_code": 0,
+      "seconds": 38.62,
+      "log": "session-recovery.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "survey-flow",
+      "exit_code": 0,
+      "seconds": 5.18,
+      "log": "survey-flow.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "browser",
+      "exit_code": 0,
+      "seconds": 13.07,
+      "log": "browser.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "allowance",
+      "exit_code": 0,
+      "seconds": 9.68,
+      "log": "allowance.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "leica",
+      "exit_code": 1,
+      "seconds": 61.78,
+      "log": "leica.log",
+      "final_exit_code": 0,
+      "final_log": "../leica-serial.log",
+      "note": "Initial parallel browser locator timeout; isolated rerun passed without changes. Intermittency remains a limitation."
+    },
+    {
+      "case": "rls",
+      "exit_code": 0,
+      "seconds": 35.39,
+      "log": "rls.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "credits",
+      "exit_code": 0,
+      "seconds": 13.34,
+      "log": "credits.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "notification-database",
+      "exit_code": 0,
+      "seconds": 14.33,
+      "log": "notification-database.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "product-isolation",
+      "exit_code": 0,
+      "seconds": 0.13,
+      "log": "product-isolation.log",
+      "final_exit_code": 0
+    },
+    {
+      "case": "staging-setup",
+      "exit_code": 0,
+      "seconds": 0.04,
+      "log": "staging-setup.log",
+      "final_exit_code": 0
+    }
+  ],
+  "diagnostics": {
+    "tests": 21,
+    "failures": 0,
+    "log": "diagnostics.log",
+    "combined_tests": 29,
+    "combined_failures": 0,
+    "combined_log": "registration-corrected.log"
+  },
+  "network": "Mock HTTP only; disposable PostgreSQL uses --network none; no staging requests."
+}

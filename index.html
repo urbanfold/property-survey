@@ -10,7 +10,7 @@
     <script src="vendor/supabase.js"></script>
     <style>
         [hidden] { display: none !important; }
-        #additional-survey-dialog, #leica-test-dialog { width: calc(100% - 32px); max-width: 440px; max-height: 90vh; overflow-y: auto; margin: auto; padding: 24px; border: 0; border-radius: 12px; color: var(--text); box-shadow: 0 12px 40px #0004; }
+        #additional-survey-dialog, #leica-test-dialog, #newsletter-dialog { width: calc(100% - 32px); max-width: 440px; max-height: 90vh; overflow-y: auto; margin: auto; padding: 24px; border: 0; border-radius: 12px; color: var(--text); box-shadow: 0 12px 40px #0004; }
         #additional-survey-dialog::backdrop, #leica-test-dialog::backdrop { background: #0008; }
         input.leica-target { outline: 3px solid #2563eb; background: #eff6ff; }
         .review-card { margin-bottom: 16px; }
@@ -209,6 +209,7 @@
             <div id="payment-notice" class="info-box" role="status" aria-live="polite" hidden></div>
             <button type="button" class="btn btn-secondary" id="refresh-survey-credit" onclick="checkPurchasedCredit()" hidden>Check payment confirmation</button>
             <div id="dashboard-list" style="margin-top: 20px;"></div>
+            <button class="btn btn-secondary" onclick="openNewsletterPreferences()">Newsletter preferences</button>
             <button class="btn btn-secondary" onclick="handleLogout()" style="margin-top: 20px;">Log Out</button>
         </div>
 
@@ -300,6 +301,7 @@
 
         <div id="view-interior-rooms" class="view">
             <h1>Room Details</h1>
+            <p class="info-box">Use <strong>Save progress</strong> before signing out. Signing out clears private device drafts; saved cloud surveys remain available. If your session expires unexpectedly, pending work is held temporarily in this tab for same-account recovery. Do not close or refresh the tab before signing back in.</p>
             <div class="bt-status" id="bt-status-bar">
                 <div style="display:flex; align-items:center;"><div class="bt-indicator"></div><span id="bt-status-text" role="status" aria-live="polite">Manual measurement entry</span></div>
                 <button class="btn btn-leica" style="width:auto; padding:8px 15px; margin:0; font-size:12px;" onclick="connectBluetooth()">Connect Leica</button>
@@ -361,6 +363,17 @@
         <button type="button" class="btn" id="buy-additional-survey" onclick="buyAdditionalSurvey()">Buy one additional survey — £6</button>
         <button type="button" class="btn btn-secondary" onclick="closeAdditionalSurveyDialog()">Continue existing surveys</button>
         <p style="margin-top:16px; font-size:14px;">Need help? <a href="mailto:survey@urbanfold.uk">survey@urbanfold.uk</a></p>
+    </dialog>
+    <dialog id="newsletter-dialog" aria-labelledby="newsletter-dialog-title">
+        <h2 id="newsletter-dialog-title">Newsletter preferences</h2>
+        <label for="newsletter-opt-in" style="display:flex;gap:10px;margin:16px 0;align-items:flex-start">
+            <input id="newsletter-opt-in" type="checkbox" disabled>
+            <span>Email me Urbanfold newsletters and updates (optional)</span>
+        </label>
+        <p>Newsletter consent is separate from your account, surveys and service emails. You can withdraw here at any time.</p>
+        <p id="newsletter-preference-status" role="status" aria-live="polite" style="margin-top:12px"></p>
+        <button id="newsletter-save" class="btn" onclick="saveNewsletterPreferences()" disabled>Save newsletter preference</button>
+        <button class="btn btn-secondary" onclick="closeNewsletterPreferences()">Close</button>
     </dialog>
     <p class="subtitle">App version: stabilisation-1</p>
     <script src="app.js?v=stabilisation-1"></script>

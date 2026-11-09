@@ -1,0 +1,24 @@
+{
+  "publication_authority": "User authorises reviewed evidence/runner commit and development-branch push only",
+  "checks_performed_without_execution": [
+    "15 original intended files reviewed for scope, integrity and plain-text types",
+    "Sensitive credential/path patterns scanned; synthetic fixture/source reviewed",
+    "SQL03/05 and original approval placeholders compared byte-for-byte with061bff1",
+    "18 previously recorded successful checks and eight local parameter-copy records verified; tests NOT rerun"
+  ],
+  "real_credentials_or_customer_data_found": false,
+  "container_images_volumes_filesystem_archives_or_database_dumps_included": false,
+  "container_ids_or_environment_variable_dumps_included": false,
+  "retained_non_sensitive_reproducibility_metadata": [
+    "public pinned image digest/ID and image PostgreSQL version",
+    "generic Docker/inside-container socket labels",
+    "dummy database/user names",
+    "source/local snapshot hashes"
+  ],
+  "further_sql_executed": false,
+  "docker_or_database_started_for_publication": false,
+  "production_or_staging_connected": false,
+  "sql03_05_and_approval_placeholders_unchanged": true,
+  "watcher_full_body_review": "OPEN",
+  "source_review_parent": "061bff14b887fa4ba03c785ccf2c82cf84a9158e"
+}

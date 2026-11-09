@@ -1,0 +1,56 @@
+[
+  {
+    "case": "syntax",
+    "exit_code": 0,
+    "seconds": 0.09,
+    "log": "syntax.log"
+  },
+  {
+    "case": "dashboard-build",
+    "exit_code": 0,
+    "seconds": 0.03,
+    "log": "dashboard-build.log"
+  },
+  {
+    "case": "billing",
+    "exit_code": 0,
+    "seconds": 0.28,
+    "log": "billing.log"
+  },
+  {
+    "case": "survey-flow",
+    "exit_code": 0,
+    "seconds": 5.91,
+    "log": "survey-flow.log"
+  },
+  {
+    "case": "browser-integration",
+    "exit_code": 0,
+    "seconds": 12.6,
+    "log": "browser-integration.log"
+  },
+  {
+    "case": "client-allowance",
+    "exit_code": 0,
+    "seconds": 5.68,
+    "log": "client-allowance.log"
+  },
+  {
+    "case": "leica",
+    "exit_code": 0,
+    "seconds": 4.5,
+    "log": "leica.log"
+  },
+  {
+    "case": "database-policies",
+    "exit_code": 0,
+    "seconds": 15.34,
+    "log": "database-policies.log"
+  },
+  {
+    "case": "survey-purchases",
+    "exit_code": 0,
+    "seconds": 11.71,
+    "log": "survey-purchases.log"
+  }
+]

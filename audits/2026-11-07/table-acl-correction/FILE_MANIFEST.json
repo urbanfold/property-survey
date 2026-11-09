@@ -1,0 +1,15 @@
+{
+  "audits/2026-11-07/table-acl-correction/CHANGED_FILES.txt": "7c009d88939f3b77d0a44e5b8c772b8b464dd20fe8d07d7f87e6664878b54468",
+  "audits/2026-11-07/table-acl-correction/owner_supplied_findings.json": "a2eb0af2a284c25db4124241dbf7acd1793f9e23475e649fedf8bbb54a362860",
+  "audits/2026-11-07/table-acl-correction/results.json": "473037e70de668c2fd645e865bdc57d509dca85f7d57962a2ce36dcd1e46c542",
+  "audits/2026-11-07/table-acl-correction/static-checks.log": "e7addcd70f01eb986a4108017486c5bd6b1eeac99cb706a1d4c2c7e2beb66e6f",
+  "scripts/build_table_acl_review.py": "77799aab2d94c8d421a6afbfbdbf5df2a48ebec6a3f18f8ec96b5536b552e13a",
+  "supabase/production-review/2026-11-07/table-acl-correction/02_acl_preflight_readonly.sql": "6307f2028b840836807f009217db9245018a178d3828868131202824d04816fe",
+  "supabase/production-review/2026-11-07/table-acl-correction/03_revoke_excess_table_privileges.sql": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+  "supabase/production-review/2026-11-07/table-acl-correction/04_acl_postflight_readonly.sql": "025cc7efedabdd676b49a0d94d428e0129ed3acaf119f8bd6444f4ab8aa7554f",
+  "supabase/production-review/2026-11-07/table-acl-correction/05_restore_exact_previous_privileges.sql": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8",
+  "supabase/production-review/2026-11-07/table-acl-correction/README.md": "d7ddf3e490e0f900c08fe52eb6b492cac72618a583054d55870d15b539028aae",
+  "supabase/production-review/2026-11-07/table-acl-correction/SHA256SUMS.txt": "2b30ea1b32f1f9b60d033bd9ef5d86f8f95efbcb864d27f24d157b3daea4baa9",
+  "supabase/production-review/2026-11-07/table-acl-correction/SOURCE_SPEC.json": "bc62c177e74eafb4add6468646489b208fc66e874a79a3ea1046c63b8b680959",
+  "tests/test_table_acl_review_static.py": "c25da7a4e2719307e5781ab8817dd84ea7d46430de5e886a31958bf4edec6ded"
+}

@@ -1,0 +1,7 @@
+audits/2026-11-07/table-acl-preflight02/CHANGED_FILES.txt
+audits/2026-11-07/table-acl-preflight02/FILE_MANIFEST.json
+audits/2026-11-07/table-acl-preflight02/documentation_checks.json
+audits/2026-11-07/table-acl-preflight02/owner_reported_preflight02.json
+supabase/production-review/2026-11-07/table-acl-correction/PREFLIGHT02_REVIEW.md
+supabase/production-review/2026-11-07/table-acl-correction/README.md
+supabase/production-review/2026-11-07/table-acl-correction/SHA256SUMS.txt

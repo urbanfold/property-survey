@@ -1,0 +1,39 @@
+{
+  "evidence_source": "Owner reports successful read-only02 in production; not independently queried or recomputed by this development agent",
+  "reviewed_package_commit": "f4c08465fd750444a9b40ff57a6d52f96557ccaa",
+  "production_project": "arnzqizcycesukplmvuc",
+  "observed_baseline_sha256": "10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6",
+  "observed_acl_snapshot_sha256": "fd7f49766854f09d849adee619f02054612ee1014aa63cbf6bfe3a53b7e6a861",
+  "reported_results": {
+    "effective_excess_privileges_granted": 56,
+    "effective_excess_privileges_checked": 56,
+    "target_tables": 7,
+    "expected_owner_postgres": true,
+    "rls_enabled": true,
+    "existing_crud_grants": true,
+    "affected_recorded_grantors_postgres": 56,
+    "affected_grantable_false": 56,
+    "column_level_acls_found": 0,
+    "client_superuser": false,
+    "client_bypass_rls": false,
+    "billing_tables_and_storage_outside_change": true,
+    "watcher_fingerprints_unchanged": true
+  },
+  "structural_status": "SQL03 structurally ready for separate independent approval review, conditional on actual saved snapshot and outstanding gates; NOT approved for execution",
+  "still_unverified": [
+    "Private actual body/provider-definition validation for both PostgREST watchers",
+    "PostgreSQL runtime/dependency effects of new03/05 (not executed)",
+    "Full raw02 snapshot not supplied in this message; reviewer must confirm remaining runtime prerequisites from saved output, including server version/client can_login/owner-inheritance/PUBLIC or delegated grants"
+  ],
+  "watcher_review_passed": false,
+  "correction_executed": false,
+  "rollback_executed": false,
+  "sql_or_provider_calls_by_this_agent": 0,
+  "sql_files_and_source_spec_sha256": {
+    "02_acl_preflight_readonly.sql": "6307f2028b840836807f009217db9245018a178d3828868131202824d04816fe",
+    "03_revoke_excess_table_privileges.sql": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "04_acl_postflight_readonly.sql": "025cc7efedabdd676b49a0d94d428e0129ed3acaf119f8bd6444f4ab8aa7554f",
+    "05_restore_exact_previous_privileges.sql": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8",
+    "SOURCE_SPEC.json": "bc62c177e74eafb4add6468646489b208fc66e874a79a3ea1046c63b8b680959"
+  }
+}

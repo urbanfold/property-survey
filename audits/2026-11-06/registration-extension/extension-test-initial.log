@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/workspace/property-survey/tests/test_registration_capture_extension.py", line 114, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/property-survey/tests/test_registration_capture_extension.py", line 68, in main
+    sql(fn);sql(upgrade,'Capture source/owner/path/permissions differ');sql(fn_before)
+    ^^^^^^^
+  File "/workspace/property-survey/tests/test_registration_capture_extension.py", line 17, in sql
+    else:assert p.returncode==0,p.stderr
+                ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  "approved_registration" is not a known variable
+LINE 18:   approved_registration:=exists(
+           ^
+

@@ -1,0 +1,10 @@
+{
+  "status": "LOCAL_PRECHANGE_CANDIDATE_NOT_VERIFIED_DEPLOYED_EXPORT",
+  "source_commit": "ac15c68d4f9d7521744eea2f062f9eff88ad6773",
+  "project": "hexhtduvqzleoazusskh",
+  "note": "Owner reports deployed timeout branch matches, but full active deployed source was not supplied. Export/compare the active deployed source before staging deployment; this is not a verified deployed snapshot.",
+  "sha256": {
+    "staging_receiver.mjs": "bc4039bb335e740cb03771df482c4021c1bbbfd9ba9287b5a9e904e423a1131f",
+    "staging-notification-receiver.ts": "3e4601f2aab04df4d34b331c72a1bd9b5db5822f4a16fcac5681e5f2e0072cf9"
+  }
+}

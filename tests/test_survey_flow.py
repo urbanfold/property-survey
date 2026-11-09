@@ -15,6 +15,7 @@ window.fixture = {tables: {properties:[{id:'p1', address:'Initial'}], extensions
 window.fetch=async()=>{fixture.emails++; return {ok:true}};
 window.supabase={createClient:()=>({supabaseUrl:'https://arnzqizcycesukplmvuc.supabase.co',
  auth:{getSession:async()=>({data:{session:null}})},
+ functions:{invoke:async()=>{fixture.emails++;return {data:{status:'accepted'},error:null}}},
  storage:{from:bucket=>({
   upload:async(path)=>{if(fixture.fail==='upload:'+bucket)return {error:{message:'upload denied'}};
    fixture.uploads.push([bucket,path]);return {data:{path}}},

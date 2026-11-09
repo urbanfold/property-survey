@@ -1,0 +1,14 @@
+{
+  "audits/2026-11-07/watcher-manual-inspection/CHANGED_FILES.txt": "2e27f547bc11ca9279282f374721e051ff36cbc2766c25b2e115a8b4d0021ce1",
+  "audits/2026-11-07/watcher-manual-inspection/documentation_checks.json": "c9c085586aa7f88536c023e0f70ac38f47fde5aabf73e33f6140153ba54147e2",
+  "audits/2026-11-07/watcher-manual-inspection/owner_reported_manual_inspection.json": "f7c65452ce9dd8bd473ef53156925a00f5771a2bac33e6636e24a3c227931470",
+  "supabase/production-review/2026-11-07/table-acl-correction/02_acl_preflight_readonly.sql": "6307f2028b840836807f009217db9245018a178d3828868131202824d04816fe",
+  "supabase/production-review/2026-11-07/table-acl-correction/03_revoke_excess_table_privileges.sql": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+  "supabase/production-review/2026-11-07/table-acl-correction/04_acl_postflight_readonly.sql": "025cc7efedabdd676b49a0d94d428e0129ed3acaf119f8bd6444f4ab8aa7554f",
+  "supabase/production-review/2026-11-07/table-acl-correction/05_restore_exact_previous_privileges.sql": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8",
+  "supabase/production-review/2026-11-07/table-acl-correction/PREFLIGHT02_REVIEW.md": "c6fee03e4e190cf25132deb41ec36357cda014b4339bb5232055d8e64e210249",
+  "supabase/production-review/2026-11-07/table-acl-correction/README.md": "a26cce93d270954ce50b0172f8c84fa28fc4bc55e12a42e25d84be240c3e580c",
+  "supabase/production-review/2026-11-07/table-acl-correction/SHA256SUMS.txt": "0a86fc2c5f806788737611dd593b6d4601ab7050f4bbb0de51607bd5e3a2f3d9",
+  "supabase/production-review/2026-11-07/table-acl-correction/SOURCE_SPEC.json": "bc62c177e74eafb4add6468646489b208fc66e874a79a3ea1046c63b8b680959",
+  "supabase/production-review/2026-11-07/table-acl-correction/WATCHER_MANUAL_INSPECTION.md": "9dbe3bab029af7f7ea22de82356d444c423260be4f93ebe194deac76b177c3c6"
+}

@@ -1,0 +1,705 @@
+{
+  "origin": "SOURCE MODEL ONLY, isolated PostgreSQL17 fixture + pinned001/002; NOT production metadata or grant recommendations",
+  "policies": [
+    {
+      "cmd": "ALL",
+      "name": "urbanfold_manage",
+      "check": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = extension_photos.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "extension_photos",
+      "using": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = extension_photos.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "ALL",
+      "name": "urbanfold_manage",
+      "check": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = extensions.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "extensions",
+      "using": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = extensions.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "ALL",
+      "name": "urbanfold_manage",
+      "check": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = exterior_photos.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "exterior_photos",
+      "using": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = exterior_photos.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "INSERT",
+      "name": "urbanfold_properties_insert",
+      "check": "((user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "properties",
+      "using": null,
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "urbanfold_properties_select",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "properties",
+      "using": "((user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "UPDATE",
+      "name": "urbanfold_properties_update",
+      "check": "((user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "properties",
+      "using": "((user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "ALL",
+      "name": "urbanfold_manage",
+      "check": "(EXISTS ( SELECT 1\n   FROM (rooms r\n     JOIN properties p ON ((p.id = r.property_id)))\n  WHERE ((r.id = room_photos.room_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "room_photos",
+      "using": "(EXISTS ( SELECT 1\n   FROM (rooms r\n     JOIN properties p ON ((p.id = r.property_id)))\n  WHERE ((r.id = room_photos.room_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "ALL",
+      "name": "urbanfold_manage",
+      "check": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = rooms.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "rooms",
+      "using": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = rooms.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "ALL",
+      "name": "urbanfold_manage",
+      "check": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = sketch_photos.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "sketch_photos",
+      "using": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = sketch_photos.property_id) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text)))))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "urbanfold_purchase_read",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "survey_credit_purchases",
+      "using": "((user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "urbanfold_free_read",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "survey_free_allocations",
+      "using": "((user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))",
+      "schema": "public",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "INSERT",
+      "name": "urbanfold_storage_insert",
+      "check": "((bucket_id = ANY (ARRAY['exterior-photos'::text, 'sketch-photos'::text, 'room-photos'::text])) AND (EXISTS ( SELECT 1\n   FROM properties p\n  WHERE (((p.id)::text = (storage.foldername(objects.name))[1]) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "objects",
+      "using": null,
+      "schema": "storage",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "urbanfold_storage_select",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "objects",
+      "using": "((bucket_id = ANY (ARRAY['exterior-photos'::text, 'sketch-photos'::text, 'room-photos'::text])) AND (EXISTS ( SELECT 1\n   FROM properties p\n  WHERE (((p.id)::text = (storage.foldername(objects.name))[1]) AND ((p.user_id = ( SELECT auth.uid() AS uid)) OR ((( SELECT auth.jwt() AS jwt) ->> 'email'::text) = 'urbanfolduk@gmail.com'::text))))))",
+      "schema": "storage",
+      "permissive": "PERMISSIVE"
+    }
+  ],
+  "required_columns": [
+    {
+      "table": "extension_photos",
+      "column": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "extension_photos",
+      "column": "property_id",
+      "type": "uuid"
+    },
+    {
+      "table": "extension_photos",
+      "column": "photo_url",
+      "type": "text"
+    },
+    {
+      "table": "extension_photos",
+      "column": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "extensions",
+      "column": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "extensions",
+      "column": "property_id",
+      "type": "uuid"
+    },
+    {
+      "table": "extensions",
+      "column": "extension_types",
+      "type": "jsonb"
+    },
+    {
+      "table": "extensions",
+      "column": "description",
+      "type": "text"
+    },
+    {
+      "table": "extensions",
+      "column": "width",
+      "type": "numeric"
+    },
+    {
+      "table": "extensions",
+      "column": "length",
+      "type": "numeric"
+    },
+    {
+      "table": "extensions",
+      "column": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "exterior_photos",
+      "column": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "exterior_photos",
+      "column": "property_id",
+      "type": "uuid"
+    },
+    {
+      "table": "exterior_photos",
+      "column": "elevation_type",
+      "type": "text"
+    },
+    {
+      "table": "exterior_photos",
+      "column": "photo_url",
+      "type": "text"
+    },
+    {
+      "table": "exterior_photos",
+      "column": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "properties",
+      "column": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "properties",
+      "column": "user_id",
+      "type": "uuid"
+    },
+    {
+      "table": "properties",
+      "column": "surveyor_name",
+      "type": "text"
+    },
+    {
+      "table": "properties",
+      "column": "address",
+      "type": "text"
+    },
+    {
+      "table": "properties",
+      "column": "postcode",
+      "type": "text"
+    },
+    {
+      "table": "properties",
+      "column": "property_type",
+      "type": "text"
+    },
+    {
+      "table": "properties",
+      "column": "notes",
+      "type": "text"
+    },
+    {
+      "table": "properties",
+      "column": "status",
+      "type": "text"
+    },
+    {
+      "table": "properties",
+      "column": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "properties",
+      "column": "client_email",
+      "type": "text"
+    },
+    {
+      "table": "properties",
+      "column": "last_submitted_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "properties",
+      "column": "address_locked",
+      "type": "boolean"
+    },
+    {
+      "table": "room_photos",
+      "column": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "room_photos",
+      "column": "room_id",
+      "type": "uuid"
+    },
+    {
+      "table": "room_photos",
+      "column": "photo_url",
+      "type": "text"
+    },
+    {
+      "table": "room_photos",
+      "column": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "rooms",
+      "column": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "rooms",
+      "column": "property_id",
+      "type": "uuid"
+    },
+    {
+      "table": "rooms",
+      "column": "room_name",
+      "type": "text"
+    },
+    {
+      "table": "rooms",
+      "column": "shape",
+      "type": "text"
+    },
+    {
+      "table": "rooms",
+      "column": "dimensions",
+      "type": "jsonb"
+    },
+    {
+      "table": "rooms",
+      "column": "additional_measurements",
+      "type": "text"
+    },
+    {
+      "table": "rooms",
+      "column": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "sketch_photos",
+      "column": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "sketch_photos",
+      "column": "property_id",
+      "type": "uuid"
+    },
+    {
+      "table": "sketch_photos",
+      "column": "photo_url",
+      "type": "text"
+    },
+    {
+      "table": "sketch_photos",
+      "column": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "checkout_session_id",
+      "type": "text"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "payment_intent_id",
+      "type": "text"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "user_id",
+      "type": "uuid"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "amount_total",
+      "type": "integer"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "currency",
+      "type": "text"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "live_mode",
+      "type": "boolean"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "purchased_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "redeemed_property_id",
+      "type": "uuid"
+    },
+    {
+      "table": "survey_credit_purchases",
+      "column": "redeemed_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "survey_credit_revocations",
+      "column": "payment_intent_id",
+      "type": "text"
+    },
+    {
+      "table": "survey_credit_revocations",
+      "column": "reason",
+      "type": "text"
+    },
+    {
+      "table": "survey_credit_revocations",
+      "column": "recorded_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "survey_free_allocations",
+      "column": "user_id",
+      "type": "uuid"
+    },
+    {
+      "table": "survey_free_allocations",
+      "column": "property_id",
+      "type": "uuid"
+    },
+    {
+      "table": "survey_free_allocations",
+      "column": "allocated_at",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "constraint_index_model": {
+    "constraints": [
+      {
+        "name": "extension_photos_pkey",
+        "type": "p",
+        "table": "extension_photos",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "extension_photos_property_id_fkey",
+        "type": "f",
+        "table": "extension_photos",
+        "validated": true,
+        "definition": "FOREIGN KEY (property_id) REFERENCES properties(id)"
+      },
+      {
+        "name": "extensions_pkey",
+        "type": "p",
+        "table": "extensions",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "extensions_property_id_fkey",
+        "type": "f",
+        "table": "extensions",
+        "validated": true,
+        "definition": "FOREIGN KEY (property_id) REFERENCES properties(id)"
+      },
+      {
+        "name": "exterior_photos_pkey",
+        "type": "p",
+        "table": "exterior_photos",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "exterior_photos_property_id_fkey",
+        "type": "f",
+        "table": "exterior_photos",
+        "validated": true,
+        "definition": "FOREIGN KEY (property_id) REFERENCES properties(id)"
+      },
+      {
+        "name": "properties_pkey",
+        "type": "p",
+        "table": "properties",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "properties_user_id_fkey",
+        "type": "f",
+        "table": "properties",
+        "validated": true,
+        "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id)"
+      },
+      {
+        "name": "room_photos_pkey",
+        "type": "p",
+        "table": "room_photos",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "room_photos_room_id_fkey",
+        "type": "f",
+        "table": "room_photos",
+        "validated": true,
+        "definition": "FOREIGN KEY (room_id) REFERENCES rooms(id)"
+      },
+      {
+        "name": "rooms_pkey",
+        "type": "p",
+        "table": "rooms",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "rooms_property_id_fkey",
+        "type": "f",
+        "table": "rooms",
+        "validated": true,
+        "definition": "FOREIGN KEY (property_id) REFERENCES properties(id)"
+      },
+      {
+        "name": "sketch_photos_pkey",
+        "type": "p",
+        "table": "sketch_photos",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "sketch_photos_property_id_fkey",
+        "type": "f",
+        "table": "sketch_photos",
+        "validated": true,
+        "definition": "FOREIGN KEY (property_id) REFERENCES properties(id)"
+      },
+      {
+        "name": "survey_credit_purchases_amount_total_check",
+        "type": "c",
+        "table": "survey_credit_purchases",
+        "validated": true,
+        "definition": "CHECK (amount_total = 600)"
+      },
+      {
+        "name": "survey_credit_purchases_currency_check",
+        "type": "c",
+        "table": "survey_credit_purchases",
+        "validated": true,
+        "definition": "CHECK (currency = 'gbp'::text)"
+      },
+      {
+        "name": "survey_credit_purchases_payment_intent_id_key",
+        "type": "u",
+        "table": "survey_credit_purchases",
+        "validated": true,
+        "definition": "UNIQUE (payment_intent_id)"
+      },
+      {
+        "name": "survey_credit_purchases_pkey",
+        "type": "p",
+        "table": "survey_credit_purchases",
+        "validated": true,
+        "definition": "PRIMARY KEY (checkout_session_id)"
+      },
+      {
+        "name": "survey_credit_purchases_redeemed_property_id_key",
+        "type": "u",
+        "table": "survey_credit_purchases",
+        "validated": true,
+        "definition": "UNIQUE (redeemed_property_id)"
+      },
+      {
+        "name": "survey_credit_purchases_user_id_fkey",
+        "type": "f",
+        "table": "survey_credit_purchases",
+        "validated": true,
+        "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "survey_credit_revocations_pkey",
+        "type": "p",
+        "table": "survey_credit_revocations",
+        "validated": true,
+        "definition": "PRIMARY KEY (payment_intent_id)"
+      },
+      {
+        "name": "survey_free_allocations_pkey",
+        "type": "p",
+        "table": "survey_free_allocations",
+        "validated": true,
+        "definition": "PRIMARY KEY (user_id)"
+      },
+      {
+        "name": "survey_free_allocations_property_id_key",
+        "type": "u",
+        "table": "survey_free_allocations",
+        "validated": true,
+        "definition": "UNIQUE (property_id)"
+      },
+      {
+        "name": "survey_free_allocations_user_id_fkey",
+        "type": "f",
+        "table": "survey_free_allocations",
+        "validated": true,
+        "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "extension_photos_pkey",
+        "table": "extension_photos",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX extension_photos_pkey ON public.extension_photos USING btree (id)"
+      },
+      {
+        "name": "extensions_pkey",
+        "table": "extensions",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX extensions_pkey ON public.extensions USING btree (id)"
+      },
+      {
+        "name": "exterior_photos_pkey",
+        "table": "exterior_photos",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX exterior_photos_pkey ON public.exterior_photos USING btree (id)"
+      },
+      {
+        "name": "properties_pkey",
+        "table": "properties",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX properties_pkey ON public.properties USING btree (id)"
+      },
+      {
+        "name": "room_photos_pkey",
+        "table": "room_photos",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX room_photos_pkey ON public.room_photos USING btree (id)"
+      },
+      {
+        "name": "rooms_pkey",
+        "table": "rooms",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX rooms_pkey ON public.rooms USING btree (id)"
+      },
+      {
+        "name": "sketch_photos_pkey",
+        "table": "sketch_photos",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX sketch_photos_pkey ON public.sketch_photos USING btree (id)"
+      },
+      {
+        "name": "survey_credit_purchases_payment_intent_id_key",
+        "table": "survey_credit_purchases",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX survey_credit_purchases_payment_intent_id_key ON public.survey_credit_purchases USING btree (payment_intent_id)"
+      },
+      {
+        "name": "survey_credit_purchases_pkey",
+        "table": "survey_credit_purchases",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX survey_credit_purchases_pkey ON public.survey_credit_purchases USING btree (checkout_session_id)"
+      },
+      {
+        "name": "survey_credit_purchases_redeemed_property_id_key",
+        "table": "survey_credit_purchases",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX survey_credit_purchases_redeemed_property_id_key ON public.survey_credit_purchases USING btree (redeemed_property_id)"
+      },
+      {
+        "name": "survey_credit_revocations_pkey",
+        "table": "survey_credit_revocations",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX survey_credit_revocations_pkey ON public.survey_credit_revocations USING btree (payment_intent_id)"
+      },
+      {
+        "name": "survey_free_allocations_pkey",
+        "table": "survey_free_allocations",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX survey_free_allocations_pkey ON public.survey_free_allocations USING btree (user_id)"
+      },
+      {
+        "name": "survey_free_allocations_property_id_key",
+        "table": "survey_free_allocations",
+        "valid": true,
+        "definition": "CREATE UNIQUE INDEX survey_free_allocations_property_id_key ON public.survey_free_allocations USING btree (property_id)"
+      }
+    ]
+  }
+}

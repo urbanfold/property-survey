@@ -1,0 +1,18 @@
+{
+  "base_commit": "f855073",
+  "remote_pr_head_at_start": "1715020",
+  "sha256": {
+    "app.js": "4a146132c4f62ac2d6f8cc6f1f2351ee18f991b4e792d5777e9319041985049a",
+    "index.html": "b2eb0b4ff4d756716f87b15af7a96c2d743c9497d9e6668c31c15fd49881c416",
+    "supabase/003_survey_notifications.sql": "9f9b7d32477d575665fda9c0839aaa1310853a7db2802fb6364b04bfbe1f3258",
+    "supabase/004_verified_registration_notifications.sql": "69c7d4fa6fa2ba7f1e5ece577d4d9c910dabed5dde39af3b5cade7b4da18def8",
+    "supabase/staging/005_dummy_notification_receiver.sql": "8572354bb0c8cc9f78b455bb8909d2fb177e1c35fd754f1230b7da3e2864b282",
+    "supabase/staging/006_registration_dispatch_schedule.sql": "d42bd678b4c374ae3e3d442ef525d1ba97dba7fe9ec84ed1a3ed1068109f9bb9",
+    "supabase/functions/_shared/notifications.mjs": "b0fa68641edea6db0e52540ee10b44a0c2900f6d6d1f6c763abe3646bda2c507",
+    "supabase/functions/_shared/staging_receiver.mjs": "bc4039bb335e740cb03771df482c4021c1bbbfd9ba9287b5a9e904e423a1131f",
+    "supabase/functions/_shared/registration.mjs": "8471029caf87654b1a8f1e35a236d43c11ee5a7496f1bacff45133ba96de1cea",
+    "supabase/config.toml": "3099c6814a2c4df6928a59aae2e47eb092d53438681e83904038b43eac9215d4",
+    "supabase/functions/_shared/billing.mjs": "eef732e0a078d13b8376f8b737439973a009774b2753c2d23b832f7d250052ad",
+    "supabase/002_survey_purchases.sql": "740791bf6e8aa77f6a8ab16b06e284f707f4599417bdf3f21805da02b961c0bf"
+  }
+}

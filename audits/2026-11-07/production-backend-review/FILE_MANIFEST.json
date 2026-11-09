@@ -1,0 +1,20 @@
+{
+  "audits/2026-11-07/production-backend-review/CHANGED_FILES.txt": "f4caa4b5a03e1caef03021c58d1cf0ebc4c0adfcaf0a0070f83b781da9d6c8a9",
+  "audits/2026-11-07/production-backend-review/final-local-test.log": "578b9b5b54da1e217de1100110f40e1d77dce3903c184d7a228a5618cfbe6fd3",
+  "audits/2026-11-07/production-backend-review/initial-local-test.log": "078f196bf0c49911822602e6a7cd9705e70bc31496ce41d26a0cb8203ef774e2",
+  "audits/2026-11-07/production-backend-review/results.json": "b371c5977d7a412877a29ed5a6a3c639e79d48bfb4a8375470176bd0f8c35184",
+  "scripts/build_production_backend_review.py": "8d1f2feb0aea59234f0f26faf0b1019d06a0314c222fdc1b2a6974011e43a27f",
+  "supabase/production-review/2026-11-07/00_preflight_readonly.sql": "faada72c6159ca4b701a936b7bf1ecb21758fc7fd3c4bbdf592f0f6172e12c16",
+  "supabase/production-review/2026-11-07/10_install_003_fresh.sql": "e0b6bcec3e757e0f496d5523f7d18eb24cb40d8eedd85c684167e4e8ae06bc30",
+  "supabase/production-review/2026-11-07/20_install_004_fresh.sql": "2844ab6072d714d3a7171b6f418e253c3edb56640791652e2c73913e4b31a831",
+  "supabase/production-review/2026-11-07/30_postinstall_readonly.sql": "0829d04be342dd3c3352329a774648612a96f1240fc1bf4b721e788371b30f27",
+  "supabase/production-review/2026-11-07/40_disable_auth_recording.sql": "dc7e16f6b750b7475ebf94c969a982db0f8bb9adc35bdae0869d85c719647171",
+  "supabase/production-review/2026-11-07/41_enable_auth_recording.sql": "1e08a624c33f82412d4c5d077ae8d4a431f6482cbad1e2e01cd923827443288a",
+  "supabase/production-review/2026-11-07/50_registration_schedule_review.sql": "8bb9a0d8e6e060232dcac238df7f3a519b4c9712b48dfdfc21a1932c9fd195e9",
+  "supabase/production-review/2026-11-07/51_schedule_verify_readonly.sql": "adb6988cf112985d306ce5250b21e028aa16212a5c02290ace8083d50898e705",
+  "supabase/production-review/2026-11-07/README.md": "071a408666521aba0e6c122cc247174c5b7541b98c0efe2f5f34fff8f9e8d0b9",
+  "supabase/production-review/2026-11-07/SHA256SUMS.txt": "89af89d4d007953c7f916a591e0757d1f52de5f92b362b861ec843e3f6fef0ef",
+  "supabase/production-review/2026-11-07/reference_001_002.json": "4fab897829131923880d8019799cfe3c65c5ee5c657b308803c2a8207ca61b85",
+  "supabase/production-review/2026-11-07/source_spec.json": "48c83deefabac7294f184d90ef70139e7139083dcd10b7f70c29e5c8debaf182",
+  "tests/test_production_backend_review.py": "f0eb2deba29e82eccbf960eb5616d86e1e646433edafc034233b798620e65aeb"
+}

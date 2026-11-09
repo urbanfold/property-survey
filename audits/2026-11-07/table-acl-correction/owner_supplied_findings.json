@@ -1,0 +1,70 @@
+{
+  "provenance": "User/connected reviewer supplied results of previously approved production01; no new SQL executed by this agent",
+  "project": "arnzqizcycesukplmvuc",
+  "observed_original_baseline_sha256": "10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6",
+  "tables": [
+    "properties",
+    "extensions",
+    "rooms",
+    "exterior_photos",
+    "extension_photos",
+    "sketch_photos",
+    "room_photos"
+  ],
+  "roles": [
+    "anon",
+    "authenticated"
+  ],
+  "direct_privileges_each_role_each_table": [
+    "SELECT",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "TRUNCATE",
+    "REFERENCES",
+    "TRIGGER",
+    "MAINTAIN"
+  ],
+  "direct_acl_entries_grantable": false,
+  "table_owner": "postgres",
+  "rls_enabled": true,
+  "force_rls": false,
+  "client_inherits_owner": false,
+  "client_superuser": false,
+  "client_bypass_rls": false,
+  "client_can_login": "not supplied; checked by new preflight",
+  "recorded_grantors": "not supplied; original01 omitted grantor; must inspect new02",
+  "grant_history_origin": "unknown; broad defaults are possible explanation, NOT proven cause",
+  "column_acl_state": "not supplied; inspect new02; no assumed absence",
+  "credit_tables_excess_client_privileges": false,
+  "watchers": [
+    {
+      "schema": "extensions",
+      "name": "pgrst_ddl_watch",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": true,
+      "settings": [
+        "search_path=\"\""
+      ],
+      "network_name_flag": false,
+      "body_sha256": "de987df746eb39647098459e7993bd8595e592969b0cd647828a3d13d37cffe0"
+    },
+    {
+      "schema": "extensions",
+      "name": "pgrst_drop_watch",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": true,
+      "settings": [
+        "search_path=\"\""
+      ],
+      "network_name_flag": false,
+      "body_sha256": "791b41f0632fc86e0fc86a303ec0fd710c4e2ecf947a23422dae2b7a2c122f1d"
+    }
+  ],
+  "watcher_private_source_review": "not completed; metadata/keyword flags are not proof of behaviour",
+  "billing_functions_reviewed_source_matches": 5,
+  "foreign_keys_valid_cascade": 9,
+  "public_rls_auto_enable_present": false
+}

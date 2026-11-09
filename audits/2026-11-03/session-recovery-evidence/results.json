@@ -1,0 +1,86 @@
+[
+  {
+    "case": "session-recovery",
+    "exit_code": 0,
+    "seconds": 31.56,
+    "log": "session-recovery.log"
+  },
+  {
+    "case": "syntax",
+    "exit_code": 0,
+    "seconds": 0.05,
+    "log": "syntax.log"
+  },
+  {
+    "case": "dashboard",
+    "exit_code": 0,
+    "seconds": 0.03,
+    "log": "dashboard.log"
+  },
+  {
+    "case": "billing",
+    "exit_code": 0,
+    "seconds": 0.2,
+    "log": "billing.log"
+  },
+  {
+    "case": "notifications",
+    "exit_code": 0,
+    "seconds": 0.21,
+    "log": "notifications.log"
+  },
+  {
+    "case": "session-security",
+    "exit_code": 0,
+    "seconds": 4.13,
+    "log": "session-security.log"
+  },
+  {
+    "case": "survey-flow",
+    "exit_code": 0,
+    "seconds": 4.92,
+    "log": "survey-flow.log"
+  },
+  {
+    "case": "browser",
+    "exit_code": 0,
+    "seconds": 14.44,
+    "log": "browser.log"
+  },
+  {
+    "case": "allowance",
+    "exit_code": 0,
+    "seconds": 5.02,
+    "log": "allowance.log"
+  },
+  {
+    "case": "leica",
+    "exit_code": 0,
+    "seconds": 5.76,
+    "log": "leica.log"
+  },
+  {
+    "case": "rls",
+    "exit_code": 0,
+    "seconds": 8.8,
+    "log": "rls.log"
+  },
+  {
+    "case": "credits",
+    "exit_code": 0,
+    "seconds": 9.45,
+    "log": "credits.log"
+  },
+  {
+    "case": "notification-database",
+    "exit_code": 0,
+    "seconds": 9.25,
+    "log": "notification-database.log"
+  },
+  {
+    "case": "product-isolation",
+    "exit_code": 0,
+    "seconds": 0.07,
+    "log": "product-isolation.log"
+  }
+]

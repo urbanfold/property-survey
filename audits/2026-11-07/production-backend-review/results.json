@@ -1,0 +1,21 @@
+{
+  "pinned_source_commit": "5d434a78ac1f997c86b9c92646771de2018cad04",
+  "target_production_project": "arnzqizcycesukplmvuc",
+  "status": "PREPARED ONLY; actual001/002 metadata comparison and execution approval still required",
+  "local_tests_passed": [
+    "source body hashes and generator parity",
+    "SELECT-only preflight/postcheck parsed in isolated PostgreSQL17",
+    "approval, fingerprint, staging-marker, unexpected-policy and repeated-install guards",
+    "inherited-default-grant transaction rollback and privileged billing RPC denial",
+    "fresh003/004 preserves original dummy survey/free allocation/600-pence credit",
+    "named Auth trigger pause/resume guards",
+    "scheduler dependency/Vault/duplicate checks with inert local cron/net stubs; HTTP never executes"
+  ],
+  "production_sql_executed": false,
+  "production_metadata_independently_verified_here": false,
+  "supabase_or_provider_calls": 0,
+  "deployments": 0,
+  "secrets_changed": false,
+  "committed_or_pushed": false,
+  "existing_regressions": "18 previously passed at pinned source; not repeated; application/handlers/canonical migrations unchanged"
+}

@@ -1,0 +1,12 @@
+{
+  "source_commit": "061bff14b887fa4ba03c785ccf2c82cf84a9158e",
+  "unchanged_sql_and_spec_sha256": {
+    "02_acl_preflight_readonly.sql": "6307f2028b840836807f009217db9245018a178d3828868131202824d04816fe",
+    "03_revoke_excess_table_privileges.sql": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "04_acl_postflight_readonly.sql": "025cc7efedabdd676b49a0d94d428e0129ed3acaf119f8bd6444f4ab8aa7554f",
+    "05_restore_exact_previous_privileges.sql": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8",
+    "SOURCE_SPEC.json": "bc62c177e74eafb4add6468646489b208fc66e874a79a3ea1046c63b8b680959"
+  },
+  "production_approval_parameters_unfilled": true,
+  "no_production_script_correction_proposed": true
+}

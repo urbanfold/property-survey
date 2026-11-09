@@ -1,0 +1,250 @@
+[
+  {
+    "case": "normal03",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "copy_sha256": "8437b9e8cf8899fd47b5453b388905ebf6b75baba15996c54dfe9cde03ea2b82",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d';",
+      "+set local urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  },
+  {
+    "case": "normal05",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8",
+    "copy_sha256": "75e9b2d4565a32990ecd18c86354dd06cc28cdf736d69fd67ede497901c3b848",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED RESTORE56 ORIGINAL PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED RESTORE56 ORIGINAL PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d';",
+      "+set local urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  },
+  {
+    "case": "wrong_baseline",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "copy_sha256": "dda2e3c8f8b4f96f36b866df2b2118c8144effb9b26514065b85633e0c905905",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='0000000000000000000000000000000000000000000000000000000000000000'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='0000000000000000000000000000000000000000000000000000000000000000';",
+      "+set local urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  },
+  {
+    "case": "wrong_acl",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "copy_sha256": "3b7e4dd85441ce19284ca7db110b0cf871c0424ed7fa62eb4c474ad3e3e2ffc4",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='0000000000000000000000000000000000000000000000000000000000000000'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d';",
+      "+set local urbanfold.original_acl_sha256='0000000000000000000000000000000000000000000000000000000000000000';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  },
+  {
+    "case": "wrong_action",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "copy_sha256": "24138064665e26b907b9686b9704433f0293406e7036084259ccad1c0d611fe9",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED RESTORE56 ORIGINAL PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED RESTORE56 ORIGINAL PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d';",
+      "+set local urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  },
+  {
+    "case": "delegated_state",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "copy_sha256": "d88f4d796e1f83498a98fe4670040b20873dbdf375609fd250279e5f564cb2c7",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='0b9af407a85c3075eea0111af9334a15cde643427558d66fe399940806ced424'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d';",
+      "+set local urbanfold.original_acl_sha256='0b9af407a85c3075eea0111af9334a15cde643427558d66fe399940806ced424';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  },
+  {
+    "case": "synthetic_postcheck_failure",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "copy_sha256": "08ebffd8973620fbe08b72e9f00b68fa68b193be9924d0037d0f75f7b55d0b1a",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='9ee984f4cb997b93190e94c73ab061689b695ca4f8e8060e8c84a76edeed00bb'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED REMOVE56 EXCESS PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='9ee984f4cb997b93190e94c73ab061689b695ca4f8e8060e8c84a76edeed00bb';",
+      "+set local urbanfold.original_acl_sha256='a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  },
+  {
+    "case": "wrong_rollback_hash",
+    "only_four_parameter_literals_changed": true,
+    "original_sha256": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8",
+    "copy_sha256": "1ef667b0d3f2f4b37f8df44e8853c07bb1d6b810ddf92d9e4e4494c926c12678",
+    "replacement_parameters": {
+      "urbanfold.acl_ack='NOT_APPROVED'": "urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f'",
+      "urbanfold.acl_action='NOT_APPROVED'": "urbanfold.acl_action='APPROVED RESTORE56 ORIGINAL PRIVILEGES'",
+      "urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED'": "urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d'",
+      "urbanfold.original_acl_sha256='REVIEW_REQUIRED'": "urbanfold.original_acl_sha256='0000000000000000000000000000000000000000000000000000000000000000'"
+    },
+    "diff": [
+      "--- UNCHANGED_REVIEW_SOURCE",
+      "+++ ISOLATED_LOCAL_TEST_COPY",
+      "@@ -6,10 +6,10 @@",
+      " begin;",
+      " set local lock_timeout='5s';",
+      " set local statement_timeout='30s';",
+      "-set local urbanfold.acl_ack='NOT_APPROVED';",
+      "-set local urbanfold.acl_action='NOT_APPROVED';",
+      "-set local urbanfold.reviewed_baseline_sha256='REVIEW_REQUIRED';",
+      "-set local urbanfold.original_acl_sha256='REVIEW_REQUIRED';",
+      "+set local urbanfold.acl_ack='APPROVED arnzqizcycesukplmvuc TABLE ACL REVIEW 1d1c934ce39650433a58ec70640d4f3671ad018f';",
+      "+set local urbanfold.acl_action='APPROVED RESTORE56 ORIGINAL PRIVILEGES';",
+      "+set local urbanfold.reviewed_baseline_sha256='cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d';",
+      "+set local urbanfold.original_acl_sha256='0000000000000000000000000000000000000000000000000000000000000000';",
+      " do $$ declare baseline_before jsonb;baseline_after jsonb;before_acl jsonb;after_acl jsonb;expected_acl jsonb;effective jsonb;",
+      " begin",
+      " "
+    ]
+  }
+]

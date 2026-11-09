@@ -1,0 +1,25 @@
+{
+  "target": "https://hexhtduvqzleoazusskh.supabase.co",
+  "actual_staging_read_probes": [
+    {
+      "path": "/functions/v1/request-survey-notification",
+      "http_status": 404,
+      "interpretation": "not available under current dummy role; 404 indicates missing endpoint/table in API schema"
+    },
+    {
+      "path": "/rest/v1/newsletter_preferences",
+      "http_status": 404,
+      "interpretation": "not available under current dummy role; 404 indicates missing endpoint/table in API schema"
+    },
+    {
+      "path": "/rest/v1/staging_notification_receipts",
+      "http_status": 404,
+      "interpretation": "not available under current dummy role; 404 indicates missing endpoint/table in API schema"
+    },
+    {
+      "check": "dedicated F02 submission fixture still needed",
+      "passed": true
+    }
+  ],
+  "no_notifications_or_schema_changes": true
+}

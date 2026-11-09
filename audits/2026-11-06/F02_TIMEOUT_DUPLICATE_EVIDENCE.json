@@ -1,0 +1,45 @@
+{
+  "project": "hexhtduvqzleoazusskh",
+  "phase": "single exact-revision duplicate",
+  "notification_request_attempts": 1,
+  "checks": [
+    {
+      "check": "Confirmed dummy B authentication",
+      "passed": true,
+      "http_status": 200
+    },
+    {
+      "check": "Exact saved timeout revision unchanged before duplicate",
+      "passed": true
+    },
+    {
+      "check": "Original B survey still matches timeout snapshot",
+      "passed": true
+    },
+    {
+      "check": "Fixture notes timestamp and entire row unchanged after duplicate",
+      "passed": true
+    },
+    {
+      "check": "Original B survey unchanged after duplicate",
+      "passed": true
+    },
+    {
+      "check": "Duplicate returns existing uncertain status",
+      "passed": true,
+      "http_status": 202
+    }
+  ],
+  "property_id": "f0200000-0000-4000-8000-000000000006",
+  "submission_at": "2026-11-06T12:54:54.54007+00:00",
+  "saved_row_hash": "b25b1ae3ba1db8164de6b6490106f4213bda874bd47c8946cb5b4e0c86e7577b",
+  "original_B_row_hash": "f63b34970add9cea7c06af0d852aee469fc806bd3b85ca3042edd2d2e7f8bf9c",
+  "request_started_at_utc": "2026-11-06T13:01:00.492657+00:00",
+  "request_finished_at_utc": "2026-11-06T13:01:02.338158+00:00",
+  "response": {
+    "http_status": 202,
+    "status": "uncertain",
+    "elapsed_seconds": 1.844
+  },
+  "verification_boundary": "Response and exact saved revision verified directly. No receiver access/log or private receipt-count access; owner reconciliation required to prove no new capture."
+}

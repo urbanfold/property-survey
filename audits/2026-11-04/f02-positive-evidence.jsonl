@@ -1,0 +1,76 @@
+{"time": "2026-11-04T18:17:23.219872+00:00", "check": "A confirmed dummy sign-in", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:24.693785+00:00", "check": "A baseline 600-pence allowance", "passed": true}
+{"time": "2026-11-04T18:17:25.052792+00:00", "check": "B confirmed dummy sign-in", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:25.961989+00:00", "check": "B baseline 600-pence allowance", "passed": true}
+{"time": "2026-11-04T18:17:26.253812+00:00", "check": "Dedicated fixture 1 exact identity", "passed": true}
+{"time": "2026-11-04T18:17:26.519038+00:00", "check": "Dedicated fixture 2 exact identity", "passed": true}
+{"time": "2026-11-04T18:17:26.811213+00:00", "check": "Dedicated fixture 3 exact identity", "passed": true}
+{"time": "2026-11-04T18:17:27.070870+00:00", "check": "Dedicated fixture 4 exact identity", "passed": true}
+{"time": "2026-11-04T18:17:27.389724+00:00", "check": "Dedicated fixture 5 exact identity", "passed": true}
+{"time": "2026-11-04T18:17:27.630602+00:00", "check": "Dedicated fixture 6 exact identity", "passed": true}
+{"time": "2026-11-04T18:17:30.432428+00:00", "check": "First legitimate submitted notification", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:31.868108+00:00", "check": "Sequential duplicate accepted without new content", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:32.395220+00:00", "check": "Dedicated fixture update 1", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:33.731696+00:00", "check": "Changed content without new submission rejected", "passed": true, "http": 409, "response": {"error": "Notification could not be requested for this saved submission."}}
+{"time": "2026-11-04T18:17:34.046024+00:00", "check": "Dedicated fixture update 1", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:35.704819+00:00", "check": "Changed content plus new saved submission accepted", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:37.492099+00:00", "check": "Four concurrent initial requests safely acknowledged", "passed": true, "http_statuses": [202, 202, 202, 200], "responses": [{"status": "uncertain"}, {"status": "uncertain"}, {"status": "uncertain"}, {"status": "accepted"}]}
+{"time": "2026-11-04T18:17:38.094426+00:00", "check": "Concurrent fixture subsequently accepted", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:38.316769+00:00", "check": "Dedicated fixture update 1", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:39.639969+00:00", "check": "Property 1 allowed revision 3", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:39.932430+00:00", "check": "Dedicated fixture update 1", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:42.250476+00:00", "check": "Property 1 allowed revision 4", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:42.481937+00:00", "check": "Dedicated fixture update 1", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:44.506530+00:00", "check": "Property 1 allowed revision 5", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:44.988131+00:00", "check": "Dedicated fixture update 1", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:46.043186+00:00", "check": "Sixth property notification rate-limited", "passed": true, "http": 429, "response": {"error": "Notification limit reached. Do not resubmit just to retry email."}}
+{"time": "2026-11-04T18:17:46.299935+00:00", "check": "Property-limited survey edits remain saved", "passed": true}
+{"time": "2026-11-04T18:17:46.597103+00:00", "check": "Dedicated fixture update 2", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:47.799518+00:00", "check": "Account A property 2 allowed revision 2", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:48.071390+00:00", "check": "Dedicated fixture update 2", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:49.484479+00:00", "check": "Account A property 2 allowed revision 3", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:49.750225+00:00", "check": "Dedicated fixture update 2", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:51.170581+00:00", "check": "Account A property 2 allowed revision 4", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:51.455329+00:00", "check": "Dedicated fixture update 2", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:53.082549+00:00", "check": "Account A property 2 allowed revision 5", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:53.990128+00:00", "check": "Account A property 3 allowed revision 1", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:54.272301+00:00", "check": "Dedicated fixture update 3", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:55.161063+00:00", "check": "Account A property 3 allowed revision 2", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:55.437634+00:00", "check": "Dedicated fixture update 3", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:56.856177+00:00", "check": "Account A property 3 allowed revision 3", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:57.108168+00:00", "check": "Dedicated fixture update 3", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:58.004176+00:00", "check": "Account A property 3 allowed revision 4", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:17:58.257338+00:00", "check": "Dedicated fixture update 3", "passed": true, "http": 200}
+{"time": "2026-11-04T18:17:59.419414+00:00", "check": "Account A property 3 allowed revision 5", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:00.470746+00:00", "check": "Account A property 4 allowed revision 1", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:00.734743+00:00", "check": "Dedicated fixture update 4", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:02.039808+00:00", "check": "Account A property 4 allowed revision 2", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:02.333697+00:00", "check": "Dedicated fixture update 4", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:03.763011+00:00", "check": "Account A property 4 allowed revision 3", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:03.999963+00:00", "check": "Dedicated fixture update 4", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:04.913031+00:00", "check": "Account A property 4 allowed revision 4", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:05.200517+00:00", "check": "Dedicated fixture update 4", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:06.363280+00:00", "check": "Account A property 4 allowed revision 5", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:07.189431+00:00", "check": "Account A 21st event on unused property rate-limited", "passed": true, "http": 429, "response": {"error": "Notification limit reached. Do not resubmit just to retry email."}}
+{"time": "2026-11-04T18:18:07.460437+00:00", "check": "Account-limited fixture remains saved", "passed": true}
+{"time": "2026-11-04T18:18:07.737367+00:00", "check": "Dedicated fixture update 6", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:09.402028+00:00", "check": "Receiver dummy guard rejection yields uncertain", "passed": true, "http": 202, "response": {"status": "uncertain"}}
+{"time": "2026-11-04T18:18:10.627646+00:00", "check": "Uncertain delivery duplicate is not automatically retried", "passed": true, "http": 202, "response": {"status": "uncertain"}}
+{"time": "2026-11-04T18:18:11.158446+00:00", "check": "Receiver rejection preserves saved survey", "passed": true}
+{"time": "2026-11-04T18:18:11.405571+00:00", "check": "Dedicated fixture update 6", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:11.670202+00:00", "check": "Dedicated fixture update 6", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:13.256725+00:00", "check": "Changed valid dummy submission captured after rejection", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:13.582377+00:00", "check": "Dedicated fixture update 6", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:13.829732+00:00", "check": "Dedicated fixture update 6", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:15.228180+00:00", "check": "Malformed saved recipient rejected safely", "passed": true, "http": 409, "response": {"error": "Notification could not be requested for this saved submission."}}
+{"time": "2026-11-04T18:18:15.495833+00:00", "check": "Dedicated fixture update 6", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:15.741803+00:00", "check": "A original survey unchanged", "passed": true}
+{"time": "2026-11-04T18:18:16.003967+00:00", "check": "A full allowance unchanged", "passed": true}
+{"time": "2026-11-04T18:18:16.275216+00:00", "check": "B original survey unchanged", "passed": true}
+{"time": "2026-11-04T18:18:16.514335+00:00", "check": "B full allowance unchanged", "passed": true}
+{"time": "2026-11-04T18:18:16.515170+00:00", "check": "Expected ledger totals pending privileged verification", "passed": true, "expected_events": 22, "expected_accepted": 21, "expected_uncertain": 1, "expected_receipts": 21, "expected_capture_attempts": 21}
+{"time": "2026-11-04T18:18:32.976546+00:00", "check": "Account-cap dedupe fixture content matches last accepted revision", "passed": true}
+{"time": "2026-11-04T18:18:33.260667+00:00", "check": "Dedicated fixture update 4", "passed": true, "http": 200}
+{"time": "2026-11-04T18:18:33.931787+00:00", "check": "Unchanged content with new submission timestamp deduplicates even at account cap", "passed": true, "http": 200, "response": {"status": "accepted"}}
+{"time": "2026-11-04T18:18:34.720759+00:00", "check": "B cannot notify dedicated A fixture", "passed": true, "http": 403, "response": {"error": "Survey is unavailable."}}
+{"time": "2026-11-04T18:18:35.137585+00:00", "check": "A cannot notify dedicated B fixture", "passed": true, "http": 403, "response": {"error": "Survey is unavailable."}}

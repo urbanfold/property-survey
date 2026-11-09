@@ -1,0 +1,16 @@
+audits/2026-11-07/acl-runtime-rehearsal/CHANGED_FILES.txt
+audits/2026-11-07/acl-runtime-rehearsal/FILE_MANIFEST.json
+audits/2026-11-07/acl-runtime-rehearsal/LOCAL_ONLY_fixture.sql
+audits/2026-11-07/acl-runtime-rehearsal/README.md
+audits/2026-11-07/acl-runtime-rehearsal/attempt1-startup-results.json
+audits/2026-11-07/acl-runtime-rehearsal/attempt1-startup.log
+audits/2026-11-07/acl-runtime-rehearsal/original_source_integrity.json
+audits/2026-11-07/acl-runtime-rehearsal/parameterization.json
+audits/2026-11-07/acl-runtime-rehearsal/publication_review.json
+audits/2026-11-07/acl-runtime-rehearsal/results.json
+audits/2026-11-07/acl-runtime-rehearsal/run.log
+supabase/production-review/2026-11-07/table-acl-correction/PREFLIGHT02_REVIEW.md
+supabase/production-review/2026-11-07/table-acl-correction/README.md
+supabase/production-review/2026-11-07/table-acl-correction/SHA256SUMS.txt
+supabase/production-review/2026-11-07/table-acl-correction/WATCHER_MANUAL_INSPECTION.md
+tests/test_table_acl_rehearsal.py

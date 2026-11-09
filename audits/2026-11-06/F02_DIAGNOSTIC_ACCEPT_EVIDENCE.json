@@ -1,0 +1,56 @@
+{
+  "project": "hexhtduvqzleoazusskh",
+  "receiver_build_owner_confirmed": "urbanfold-staging-receiver-diag-1",
+  "phase": "single diagnostic accept request",
+  "checks": [
+    {
+      "check": "Confirmed dummy B authentication",
+      "passed": true,
+      "http_status": 200
+    },
+    {
+      "check": "Exact owned dedicated fixture 6",
+      "passed": true
+    },
+    {
+      "check": "Previous accepted submission still unchanged",
+      "passed": true
+    },
+    {
+      "check": "Only approved fixture 6 revision saved",
+      "passed": true,
+      "http_status": 200
+    },
+    {
+      "check": "Cloud readback matches approved notes and fresh timestamp",
+      "passed": true
+    },
+    {
+      "check": "Complete saved fixture row unchanged after notification",
+      "passed": true
+    },
+    {
+      "check": "Original B survey unchanged",
+      "passed": true
+    },
+    {
+      "check": "Exactly one request accepted",
+      "passed": true,
+      "http_status": 200
+    }
+  ],
+  "notification_request_attempts": 1,
+  "property_id": "f0200000-0000-4000-8000-000000000006",
+  "saved_notes": "DUMMY F02 fixture 6 diagnostics accept check diag-1",
+  "submission_at": "2026-11-06T12:27:17.576892+00:00",
+  "saved_row_hash": "4b614774942136b6e1888a9d3ff269856a01c1d9f7ae406fc5eaecc9f5491e1a",
+  "original_B_row_hash": "f63b34970add9cea7c06af0d852aee469fc806bd3b85ca3042edd2d2e7f8bf9c",
+  "request_started_at_utc": "2026-11-06T12:27:18.145403+00:00",
+  "request_finished_at_utc": "2026-11-06T12:27:20.591336+00:00",
+  "response": {
+    "http_status": 200,
+    "status": "accepted",
+    "elapsed_seconds": 2.445
+  },
+  "next_step": "Owner inspects receiver diagnostics at recorded request time and reconciles private event/receipt counts. No retry."
+}

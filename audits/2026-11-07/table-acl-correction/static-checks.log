@@ -1,0 +1,2 @@
+PASS exact seven-table/two-role/four-privilege statements, RESTRICT removal, no grant options/default changes/SQL data DML, fail-closed parameters, inverse/snapshot/role/column-ACL/Storage/credit guards, generated parity; SQL NOT executed
+PASS Python ACL-model removes exactly56 entries and restores original snapshot; unrelated changes/unsupported grantors fail inverse equality; canonical application/SQL/workflow unchanged. This is NOT a PostgreSQL runtime test.

@@ -1,0 +1,6 @@
+PASS immediate refresh, auth-screen protection, matching draft restoration
+PASS full submission, fresh-page cloud recovery of all sections and photos
+PASS stale room-screen draft cannot hide cloud data; preserved draft can be opened explicitly
+PASS reopening and resubmitting does not duplicate room/extension records or photos
+PASS 12 injected save/upload failures retain drafts, suppress success/email, and support retry
+PASS cloud read failures reported; no browser JavaScript errors

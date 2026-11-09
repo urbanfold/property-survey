@@ -1,0 +1,140 @@
+{
+  "status": "PASSED",
+  "source_commit": "061bff14b887fa4ba03c785ccf2c82cf84a9158e",
+  "original_sql_sha256": {
+    "03_revoke_excess_table_privileges.sql": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+    "05_restore_exact_previous_privileges.sql": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8"
+  },
+  "isolation": {
+    "docker_endpoint": "unix:///var/run/docker.sock",
+    "network": "none",
+    "published_ports": false,
+    "host_bind_or_volume_mounts": false,
+    "data_mount": "tmpfs",
+    "image": "postgres:17-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb",
+    "cached_image_id": "sha256:ab20e934b27ba3ff927c1b4c9ff8cf6c32f315f743efe68dd3441182a87fb085",
+    "pull_policy": "never",
+    "database": "urbanfold_acl_rehearsal",
+    "host_secrets_forwarded": false
+  },
+  "postgres_version": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "checks": [
+    {
+      "test": "isolated_local_postgresql_available",
+      "passed": true,
+      "user": "postgres",
+      "server": "170011",
+      "database": "urbanfold_acl_rehearsal",
+      "unix_socket": true
+    },
+    {
+      "test": "dummy_fixture_ready",
+      "passed": true,
+      "original_fixture_sha256": "9bd17ae5d8309484ca14e32b6fb6545bdc7db8d63694017f287825f1a4aee8ba",
+      "local_fixture_sha256": "8c9f1ec9f488e76a6d08b8176885152b7c3c8eed9cde67abbff5c85be5b39d2d",
+      "foreign_keys_valid": "9"
+    },
+    {
+      "test": "unapproved03_rejected",
+      "passed": true,
+      "expected_error": "Separate permission-change approval required",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "wrong_baseline_rejected",
+      "passed": true,
+      "expected_error": "Reviewed baseline missing/changed",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "wrong_acl_digest_rejected",
+      "passed": true,
+      "expected_error": "Original reviewed ACL fingerprint missing/changed",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "wrong_action_rejected",
+      "passed": true,
+      "expected_error": "Specific removal approval required",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "postgres_restrict_dependency_semantics",
+      "passed": true,
+      "sqlstate": "2BP01",
+      "scope": "separate local probe table; exact03 supported state forbids delegated target grants"
+    },
+    {
+      "test": "exact03_delegated_target_state_guard",
+      "passed": true,
+      "expected_error": "Need56 exact direct owner-issued non-grantable entries",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "post_revoke_invariant_failure_rolls_back_all",
+      "passed": true,
+      "expected_error": "Unrelated schema/grants/roles/CRUD/columns/Storage/credit ACL changed",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "exact03_success_removes56_and_preserves_state",
+      "passed": true,
+      "original_baseline": "cd178cea41e3e0abd063f3820b5c7d9e7a48720e383e11f97b974b1cf58f0d0d",
+      "original_acl": "a0aee07732f3a1d38aa23a7c0bbd91b7ed4756c15dd52156526cbd1224f6eff4",
+      "corrected_acl": "64acf25908c16c56e297d09f648fc49adba2ec090191dd53e631cbc42dc487f6",
+      "dummy_data_sha256": "dd3627f947221b0b264d8f0b80a32108a648647137d3e830889cc3455999d1ce"
+    },
+    {
+      "test": "repeat03_same_parameters_rejected",
+      "passed": true,
+      "expected_error": "Original reviewed ACL fingerprint missing/changed",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "unapproved05_rejected",
+      "passed": true,
+      "expected_error": "Separate permission-change approval required",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "wrong_original_rollback_digest_rejected",
+      "passed": true,
+      "expected_error": "Inverse snapshot does not match saved original ACL",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "rollback_does_not_overwrite_unrelated_storage_acl",
+      "passed": true,
+      "expected_error": "Inverse snapshot does not match saved original ACL",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "normal_authenticated_crud_rls_and_credit_trigger_preserved",
+      "passed": true,
+      "scope": "local synthetic claims only; DML rolled back, dummy data and credit ledger unchanged"
+    },
+    {
+      "test": "exact05_restores_original_grants_and_all_snapshots",
+      "passed": true
+    },
+    {
+      "test": "repeat05_rejected",
+      "passed": true,
+      "expected_error": "Rollback needs the fully corrected state",
+      "sqlstate": "P0001"
+    },
+    {
+      "test": "production_originals_byte_identical_after_rehearsal",
+      "passed": true,
+      "03_revoke_excess_table_privileges.sql": "625322c2f680faf0d0c8d2767519b71ab39fef0ed49999d7107bc99bfa5728cf",
+      "05_restore_exact_previous_privileges.sql": "a19ad6bedf6fc9f5e253ceff9c1682f471ae45bbd6be11f072f110c0d2e1f5c8"
+    }
+  ],
+  "failure": null,
+  "only_local_dummy_database_sql_executed": true,
+  "production_or_staging_connections": 0,
+  "real_customer_data_or_secrets_used": false,
+  "watcher_full_body_review": "OPEN; native managed watcher bodies not supplied or executed",
+  "production_originals_modified": false,
+  "local_container_removed": true
+}

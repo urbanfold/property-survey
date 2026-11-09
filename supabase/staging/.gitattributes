@@ -1,0 +1,2 @@
+# Preserve the exact bytes covered by static-client/SHA256SUMS.txt on Windows.
+static-client/** -text

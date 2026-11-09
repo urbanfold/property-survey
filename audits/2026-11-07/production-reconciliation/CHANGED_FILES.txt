@@ -1,0 +1,14 @@
+audits/2026-11-07/production-reconciliation/CHANGED_FILES.txt
+audits/2026-11-07/production-reconciliation/FILE_MANIFEST.json
+audits/2026-11-07/production-reconciliation/body_digest_comparison.json
+audits/2026-11-07/production-reconciliation/owner_supplied_metadata.json
+audits/2026-11-07/production-reconciliation/results.json
+audits/2026-11-07/production-reconciliation/select-only-test.log
+scripts/build_production_backend_review.py
+supabase/production-review/2026-11-07/01_reconciliation_readonly.sql
+supabase/production-review/2026-11-07/10_install_003_fresh.sql
+supabase/production-review/2026-11-07/20_install_004_fresh.sql
+supabase/production-review/2026-11-07/README.md
+supabase/production-review/2026-11-07/RECONCILIATION_REPORT.md
+supabase/production-review/2026-11-07/SHA256SUMS.txt
+tests/test_production_reconciliation.py

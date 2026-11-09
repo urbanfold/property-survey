@@ -1,0 +1,43 @@
+[
+  {
+    "function": "get_survey_allowance",
+    "pasted_raw_digest": "bc704c8996d45a4b4393a624a3627ea870516152821475eefcd0ac87e3c9d5c3",
+    "pasted_digest_valid_sha256": true,
+    "canonical_raw_sha256": "bc704c8996d45a4b4393a624a3627ea870516152821475eefcd0ac87e3c9d5c3",
+    "raw_body_matches": true
+  },
+  {
+    "function": "enforce_survey_allowance",
+    "pasted_raw_digest": "bf25e0fc09d20f5b6c8a28300c6820600098e482ede60c58cf2e07a954a317e0",
+    "pasted_digest_valid_sha256": true,
+    "canonical_raw_sha256": "bf25e0fc09d20f5b6c8a28300c6820600098e482ede60c58cf2e07a954a317e0",
+    "raw_body_matches": true
+  },
+  {
+    "function": "protect_survey_address",
+    "pasted_raw_digest": "2fe03e8d6c8fe42359c51d2c715be33ff6c4073dd5babc9eea1ce97c1749a108",
+    "pasted_digest_valid_sha256": true,
+    "canonical_raw_sha256": "2fe03e8d6c8fe42359c51d2c715be33ff6c4073dd5babc9eea1ce97c1749a108",
+    "raw_body_matches": true
+  },
+  {
+    "function": "record_survey_purchase",
+    "pasted_raw_digest": "f86621acff7ba308369e795cc672c8619be2980dc859c4f6fa63bad9081ebbae",
+    "pasted_digest_valid_sha256": true,
+    "canonical_raw_sha256": "f86621acff7ba308369e795cc672c8619be2980dc859c4f6fa63bad9081ebbae",
+    "raw_body_matches": true
+  },
+  {
+    "function": "revoke_survey_purchase",
+    "pasted_raw_digest": "c7e24897638c74ca7f9815c43091b86b0433bdad77284f8b79dc8e3c9d5c3",
+    "pasted_digest_valid_sha256": false,
+    "canonical_raw_sha256": "c7e24897638c74ca7f9815c43091b86b0433bdad77284f8b79dc8e3b9ce45380",
+    "raw_body_matches": false,
+    "correction_received": true,
+    "corrected_raw_sha256": "c7e24897638c74ca7f9815c43091b86b0433bdad77284f8b79dc8e3b9ce45380",
+    "corrected_normalized_sha256": "09d97cbf0f492925affe2eca085eebdbaa12863269c6f7751be957678b77d433",
+    "corrected_raw_matches_source": true,
+    "reported_normalized_body_matches_reviewed_source": true,
+    "status": "RESOLVED_TRANSCRIPTION_ERROR; original pasted value preserved"
+  }
+]

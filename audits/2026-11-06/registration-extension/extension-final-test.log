@@ -1,0 +1,2 @@
+PASS row-only011 exact false-choice identities; known010/schema/grant/marker guards; Test1 and all history/consent/credit/function snapshots preserved; no reinstall; private grants unchanged; captures use existing rate-limited path; rollback only disables added entries without deleting evidence
+PASS LOCAL MODEL own authenticated preference RPC withdrawal true-to-false, original true/history unchanged, one audit, repeated false idempotent, other-user scope/forged target/direct DML denial. No real Test1 staging session used.

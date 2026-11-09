@@ -1,0 +1,119 @@
+[
+  {
+    "case": "syntax",
+    "exit_code": 0,
+    "seconds": 0.07,
+    "log": "syntax.log",
+    "rerun_after_targeted_changes": "passed; related final source rechecked"
+  },
+  {
+    "case": "dashboard",
+    "exit_code": 0,
+    "seconds": 0.06,
+    "log": "dashboard.log",
+    "rerun_after_targeted_changes": "passed; related final source rechecked"
+  },
+  {
+    "case": "billing",
+    "exit_code": 0,
+    "seconds": 0.36,
+    "log": "billing.log"
+  },
+  {
+    "case": "notifications",
+    "exit_code": 0,
+    "seconds": 0.31,
+    "log": "notifications.log"
+  },
+  {
+    "case": "registration-handlers",
+    "exit_code": 0,
+    "seconds": 0.27,
+    "log": "registration-handlers.log",
+    "rerun_after_targeted_changes": "passed; related final source rechecked"
+  },
+  {
+    "case": "registration-sql",
+    "exit_code": 0,
+    "seconds": 19.36,
+    "log": "registration-sql.log",
+    "rerun_after_targeted_changes": "passed; related final source rechecked"
+  },
+  {
+    "case": "newsletter-ui",
+    "exit_code": 0,
+    "seconds": 4.66,
+    "log": "newsletter-ui.log",
+    "rerun_after_targeted_changes": "passed; related final source rechecked"
+  },
+  {
+    "case": "session-security",
+    "exit_code": 0,
+    "seconds": 7.68,
+    "log": "session-security.log"
+  },
+  {
+    "case": "session-recovery",
+    "exit_code": 0,
+    "seconds": 38.39,
+    "log": "session-recovery.log"
+  },
+  {
+    "case": "survey-flow",
+    "exit_code": 0,
+    "seconds": 7.22,
+    "log": "survey-flow.log"
+  },
+  {
+    "case": "browser",
+    "exit_code": 0,
+    "seconds": 18.97,
+    "log": "browser.log",
+    "rerun_after_targeted_changes": "passed; related final source rechecked"
+  },
+  {
+    "case": "allowance",
+    "exit_code": 0,
+    "seconds": 6.08,
+    "log": "allowance.log"
+  },
+  {
+    "case": "leica",
+    "exit_code": 0,
+    "log": "leica.log",
+    "initial_exit_code": 1,
+    "initial_log": "leica-initial-parallel-failure.log",
+    "rerun": "passed unchanged suite serially twice; parallel timeout preserved, cause not proven",
+    "initial_seconds": 36.02
+  },
+  {
+    "case": "rls",
+    "exit_code": 0,
+    "seconds": 17.36,
+    "log": "rls.log"
+  },
+  {
+    "case": "credits",
+    "exit_code": 0,
+    "seconds": 16.74,
+    "log": "credits.log"
+  },
+  {
+    "case": "notification-database",
+    "exit_code": 0,
+    "seconds": 20.66,
+    "log": "notification-database.log"
+  },
+  {
+    "case": "product-isolation",
+    "exit_code": 0,
+    "seconds": 0.2,
+    "log": "product-isolation.log"
+  },
+  {
+    "case": "staging-setup",
+    "exit_code": 0,
+    "seconds": 0.08,
+    "log": "staging-setup.log"
+  }
+]

@@ -1,0 +1,4 @@
+PASS exact eight-file static inventory, source parity/checksums, no launcher/production credentials/webhook/payment implementation/remote script references; bundled vendor parity
+PASS generated local staging key/role/project guards, key-field clearing, staging-only Auth/login/survey opening, read-only A/B isolation button, failure/no-false-pass/leak detection and cleared account results, and CSP external-backend denial; all HTTP intercepted
+No live login, SQL, API or deployment. Windows PowerShell launcher not executed on this Linux host; real-service account isolation remains unverified.
+PASS generated current app login, disabled purchase/direct SDK payment denial, foreign SDK/CSP script denial, recovery redirect/fresh-tab/reload/password form; all HTTP mocked, no actual emails or password changes

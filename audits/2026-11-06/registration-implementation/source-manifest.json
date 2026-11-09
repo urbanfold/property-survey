@@ -1,0 +1,17 @@
+{
+  "base_commit": "ac15c68d4f9d7521744eea2f062f9eff88ad6773",
+  "worker_build": "urbanfold-registration-dispatch-1",
+  "sha256": {
+    "supabase/004_verified_registration_notifications.sql": "990e4f60444379e6ea073c6f397aafcf5f2fe2b6a7220626d465c37d0eb922c2",
+    "supabase/functions/_shared/registration.mjs": "289a6a4296f734b1be9376b6ec5212c73b020952b4fff664d09b9f888af4b65d",
+    "supabase/dashboard/dispatch-registration-notifications.ts": "6a9c574868a9671c2038964a1fe86835e707f5eb6be572803672ca68e4455d80",
+    "supabase/staging/004_registration_install_fresh.sql": "68e1d215550244e00f92f8d67f88cb7f098691b4e02dc8e3510dc0318ef58f91",
+    "supabase/staging/004_registration_preflight_readonly.sql": "396a255da82d390e86163ef59a4219d3f5a3f87bd3dc5c98add31ef09b1c81ef",
+    "supabase/staging/004_registration_verify_readonly.sql": "558aaee150474f46523b4dae35d645d4576f61484f83647eb263327e6233392e",
+    "supabase/staging/004_registration_pause_auth_triggers.sql": "f09e928c0f46d7e289bf514fcec7ce40a7948f9a49c21be55d79d673a9d9c045",
+    "scripts/build_registration_staging_sql.py": "b282be58ace389a0339ff0cf65b81c9e2db544e420c461ed3a4674f0ab5efd39",
+    "tests/test_registration_handlers.mjs": "c44e4fedd9e310cea73c2cc33bbb4dfbe1f9177b4c33dbbe0f0a848e437cc0b2",
+    "tests/test_registration_notifications.py": "0f8d516c4a2e85e3d38394f8e741abd3a6c7f5de5fcef038f65f1cb7e30fad90",
+    "tests/registration_dispatch_checks.py": "557a236ff97c0ceb239f148e7bb98b7ff1ae9e2fc81dd07fc0b8cf554e2054cf"
+  }
+}

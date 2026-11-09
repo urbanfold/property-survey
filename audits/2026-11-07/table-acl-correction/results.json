@@ -1,0 +1,19 @@
+{
+  "source_review_commit": "1d1c934ce39650433a58ec70640d4f3671ad018f",
+  "scope": "56 direct privilege entries only, seven tables x two roles x four privileges",
+  "correction_executed": false,
+  "rollback_executed": false,
+  "sql_executed_by_this_agent": false,
+  "supabase_or_provider_calls": 0,
+  "global_defaults_or_settings_changed": false,
+  "production_data_or_credits_changed": false,
+  "deployed_or_merged": false,
+  "checks": "static generated-source/scope/guard checks and Python ACL-model inverse tests passed; no PostgreSQL parser/runtime test",
+  "limitations": [
+    "Grantor and column ACL snapshot/digest must be captured/reviewed in02 before approval",
+    "Actual PostgreSQL syntax/runtime and managed watcher effects not tested under no-SQL authorisation",
+    "Private watcher definition validation not completed"
+  ],
+  "publication": "authorised development-branch commit/push; execution NOT authorised",
+  "original_baseline_hash_scope": "unchanged CRUD-only legacy-table rights in original hash; new dedicated ACL digest is required"
+}

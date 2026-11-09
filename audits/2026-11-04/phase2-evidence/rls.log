@@ -1,0 +1,2 @@
+PASS owner isolation, private storage, admin access, anonymous denial, forged ownership denial
+PASS transactional, repeatable migration and fail-closed handling of unknown policies

@@ -1,0 +1,16 @@
+{
+  "source_commit": "c773345d436a35c501e9c5cceec08a26b0173434",
+  "regression_targets_passed": 18,
+  "generated_static_security_and_browser_tests": "passed",
+  "python_loopback_8794_test": "passed; server stopped",
+  "build_and_javascript_syntax_checks": "passed",
+  "windows_defender_scan": "not available; no malware-free guarantee",
+  "live_supabase_auth_or_email_tests": false,
+  "production_access": false,
+  "sql_executed_against_supabase": false,
+  "deployment": false,
+  "push_performed": false,
+  "original_runtime_changed": false,
+  "static_client_files": 8,
+  "checksum_file_sha256": "4c0fa3bb89c78101c1e8d57825eb57c942b7dfcb203a860c4e328a1e45fa5559"
+}

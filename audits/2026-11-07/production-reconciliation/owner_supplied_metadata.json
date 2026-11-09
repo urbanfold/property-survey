@@ -1,0 +1,371 @@
+{
+  "provenance": "User-pasted production preflight sections; NOT independently fetched/recomputed by this agent. Exact complete baseline metadata unavailable. The malformed pasted revoke hash is preserved verbatim.",
+  "production_project": "arnzqizcycesukplmvuc",
+  "baseline_sha256": "10fa3ce6272648b31c662735e549b2e78b032a63cceb6e5f1d862f5d5052e4f6",
+  "reviewed_preflight_commit": "d42263a8fb10e44136564a5224c956bcc47c89c7",
+  "reported_summary": {
+    "five_normalized_billing_bodies_match_source": true,
+    "policy_matches": 13,
+    "valid_indexes": 13,
+    "private_buckets": 3,
+    "new_objects_absent": true,
+    "extension_width_and_length_type": "numeric(5,2)",
+    "cascade_foreign_keys": 7,
+    "legacy_tables_with_anon_grants": 7
+  },
+  "existing_triggers": [
+    {
+      "name": "urbanfold_protect_address",
+      "table": "properties",
+      "enabled": "O",
+      "function": "protect_survey_address()",
+      "body_sha256": "2fe03e8d6c8fe42359c51d2c715be33ff6c4073dd5babc9eea1ce97c1749a108",
+      "definition_sha256": "bc9780319349d068aab51642226039f1590c640a6467c317e5abaa5d60515727"
+    },
+    {
+      "name": "urbanfold_survey_allowance",
+      "table": "properties",
+      "enabled": "O",
+      "function": "enforce_survey_allowance()",
+      "body_sha256": "bf25e0fc09d20f5b6c8a28300c6820600098e482ede60c58cf2e07a954a317e0",
+      "definition_sha256": "5a6aa23f3621c6c16dae7c29d9b11247123c31319fb1a4614cea6976ca2d1dcc"
+    }
+  ],
+  "ddl_event_triggers": [
+    {
+      "name": "issue_graphql_placeholder",
+      "tags": [
+        "DROP EXTENSION"
+      ],
+      "event": "sql_drop",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": "O",
+      "function": "set_graphql_placeholder()",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "body_sha256": "80e0c97f0a475697c1b517e0d27887bfa0c2baf138229735a58a345d2168505b"
+    },
+    {
+      "name": "issue_pg_cron_access",
+      "tags": [
+        "CREATE EXTENSION"
+      ],
+      "event": "ddl_command_end",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": "O",
+      "function": "grant_pg_cron_access()",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "body_sha256": "00db212b76cecd4b0794b2f20c414ab4988d675959747cd12d3eb4c6d6736f38"
+    },
+    {
+      "name": "issue_pg_graphql_access",
+      "tags": [
+        "CREATE EXTENSION"
+      ],
+      "event": "ddl_command_end",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": "O",
+      "function": "grant_pg_graphql_access()",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "body_sha256": "03de03bb70da1d448f7a674215d1b63a924dc7115db657dae34b1aa8977e030e"
+    },
+    {
+      "name": "issue_pg_net_access",
+      "tags": [
+        "CREATE EXTENSION"
+      ],
+      "event": "ddl_command_end",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": "O",
+      "function": "grant_pg_net_access()",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "body_sha256": "754e58111dbe32030af4d91591dfd78cb3cf8e8f4f56a5fcc199bb0cf7f4ac2b"
+    },
+    {
+      "name": "pgrst_ddl_watch",
+      "tags": null,
+      "event": "ddl_command_end",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": "O",
+      "function": "pgrst_ddl_watch()",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "body_sha256": "de987df746eb39647098459e7993bd8595e592969b0cd647828a3d13d37cffe0"
+    },
+    {
+      "name": "pgrst_drop_watch",
+      "tags": null,
+      "event": "sql_drop",
+      "owner": "supabase_admin",
+      "definer": false,
+      "enabled": "O",
+      "function": "pgrst_drop_watch()",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "body_sha256": "791b41f0632fc86e0fc86a303ec0fd710c4e2ecf947a23422dae2b7a2c122f1d"
+    }
+  ],
+  "defaults": [
+    {
+      "owner": "supabase_admin",
+      "schema": "public",
+      "type": "S",
+      "acl": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "public",
+      "type": "f",
+      "acl": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "public",
+      "type": "r",
+      "acl": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "extensions",
+      "type": "S",
+      "acl": "{postgres=r*w*U*/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "extensions",
+      "type": "f",
+      "acl": "{postgres=X*/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "extensions",
+      "type": "r",
+      "acl": "{postgres=a*r*w*d*D*x*t*m*/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "realtime",
+      "type": "S",
+      "acl": "{postgres=rwU/supabase_admin,dashboard_user=rwU/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "realtime",
+      "type": "f",
+      "acl": "{postgres=X/supabase_admin,dashboard_user=X/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "realtime",
+      "type": "r",
+      "acl": "{postgres=a*r*wdDxtm/supabase_admin,dashboard_user=arwdDxtm/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "graphql_public",
+      "type": "S",
+      "acl": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "graphql_public",
+      "type": "f",
+      "acl": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "graphql_public",
+      "type": "r",
+      "acl": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "graphql",
+      "type": "S",
+      "acl": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "graphql",
+      "type": "f",
+      "acl": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}"
+    },
+    {
+      "owner": "supabase_admin",
+      "schema": "graphql",
+      "type": "r",
+      "acl": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}"
+    },
+    {
+      "owner": "postgres",
+      "schema": "public",
+      "type": "S",
+      "acl": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}"
+    },
+    {
+      "owner": "postgres",
+      "schema": "public",
+      "type": "f",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "owner": "postgres",
+      "schema": "public",
+      "type": "r",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "owner": "postgres",
+      "schema": "storage",
+      "type": "S",
+      "acl": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}"
+    },
+    {
+      "owner": "postgres",
+      "schema": "storage",
+      "type": "f",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "owner": "postgres",
+      "schema": "storage",
+      "type": "r",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "owner": "supabase_auth_admin",
+      "schema": "auth",
+      "type": "S",
+      "acl": "{postgres=rwU/supabase_auth_admin,dashboard_user=rwU/supabase_auth_admin}"
+    },
+    {
+      "owner": "supabase_auth_admin",
+      "schema": "auth",
+      "type": "f",
+      "acl": "{postgres=X/supabase_auth_admin,dashboard_user=X/supabase_auth_admin}"
+    },
+    {
+      "owner": "supabase_auth_admin",
+      "schema": "auth",
+      "type": "r",
+      "acl": "{postgres=arwdDxtm/supabase_auth_admin,dashboard_user=arwdDxtm/supabase_auth_admin}"
+    }
+  ],
+  "existing_definer_helpers": [
+    {
+      "signature": "enforce_survey_allowance()",
+      "owner": "postgres",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "return_type": "trigger",
+      "body_sha256": "bf25e0fc09d20f5b6c8a28300c6820600098e482ede60c58cf2e07a954a317e0",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": false
+    },
+    {
+      "signature": "get_survey_allowance()",
+      "owner": "postgres",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "return_type": "jsonb",
+      "body_sha256": "bc704c8996d45a4b4393a624a3627ea870516152821475eefcd0ac87e3c9d5c3",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "signature": "protect_survey_address()",
+      "owner": "postgres",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "return_type": "trigger",
+      "body_sha256": "2fe03e8d6c8fe42359c51d2c715be33ff6c4073dd5babc9eea1ce97c1749a108",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": false
+    },
+    {
+      "signature": "record_survey_purchase(text,text,uuid,integer,text,boolean)",
+      "owner": "postgres",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "return_type": "void",
+      "body_sha256": "f86621acff7ba308369e795cc672c8619be2980dc859c4f6fa63bad9081ebbae",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": false
+    },
+    {
+      "signature": "revoke_survey_purchase(text,text)",
+      "owner": "postgres",
+      "settings": [
+        "search_path=\"\""
+      ],
+      "return_type": "void",
+      "body_sha256": "c7e24897638c74ca7f9815c43091b86b0433bdad77284f8b79dc8e3c9d5c3",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": false
+    }
+  ],
+  "client_memberships": [],
+  "existing_function_dependencies": [
+    {
+      "signature": "enforce_survey_allowance()",
+      "catalog_dependents": [
+        "trigger urbanfold_survey_allowance on table properties"
+      ],
+      "extension_membership": null
+    },
+    {
+      "signature": "get_survey_allowance()",
+      "catalog_dependents": null,
+      "extension_membership": null
+    },
+    {
+      "signature": "protect_survey_address()",
+      "catalog_dependents": [
+        "trigger urbanfold_protect_address on table properties"
+      ],
+      "extension_membership": null
+    },
+    {
+      "signature": "record_survey_purchase(text,text,uuid,integer,text,boolean)",
+      "catalog_dependents": null,
+      "extension_membership": null
+    },
+    {
+      "signature": "revoke_survey_purchase(text,text)",
+      "catalog_dependents": null,
+      "extension_membership": null
+    }
+  ],
+  "correction_revoke_survey_purchase": {
+    "provenance": "Subsequent user confirmation from connected ChatGPT read-only production verification; earlier paste had transcription error",
+    "signature": "revoke_survey_purchase(text,text)",
+    "raw_sha256": "c7e24897638c74ca7f9815c43091b86b0433bdad77284f8b79dc8e3b9ce45380",
+    "normalized_sha256": "09d97cbf0f492925affe2eca085eebdbaa12863269c6f7751be957678b77d433",
+    "raw_length": 64,
+    "body_matches_reviewed_source": true,
+    "function_changed": false
+  }
+}

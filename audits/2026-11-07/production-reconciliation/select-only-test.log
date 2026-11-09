@@ -1,0 +1,2 @@
+PASS only exact two-column type predicate changed; all canonical bodies, baseline query/reference, policy/ACL/fingerprint guards and approval placeholders preserved
+PASS 23 PostgreSQL SELECT-only type cases, numeric precision behaviour, supplemental catalog query with app-baseline stub; no application DDL/migrations, Supabase requests or payments

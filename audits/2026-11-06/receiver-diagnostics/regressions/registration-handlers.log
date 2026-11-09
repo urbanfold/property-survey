@@ -1,0 +1,94 @@
+✔ staging capture never permits production targets or a Zapier fallback (55.92184ms)
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"accept"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"capture_committed","mode":"accept"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"reject"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"capture_committed","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"timeout_wait_started","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"timeout_wait_finished","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"accept"}
+✔ F02 staging transport preserves auth/property checks and sends only to fixed server-authorised sink (16.860164ms)
+✔ dummy receiver requires exact project/server auth and never contacts an email provider (9.989254ms)
+✖ registration server-only worker captures exact admin payload once; browser body cannot override recipient (2.26174ms)
+✖ registration rejection/timeout/receipt failure records uncertainty, never automatic duplicate delivery (0.756441ms)
+✖ registration delivery disabled/missing config fails before claim; staging cannot use real email (0.642805ms)
+✖ future Brevo delivery uses fixed admin, text payload, no marketing action and no staging credentials (0.58169ms)
+✔ new dashboard wrappers register and deny requests without server configuration (15.067728ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 4
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 217.858722
+
+✖ failing tests:
+
+test at tests/test_registration_handlers.mjs:61:1
+✖ registration server-only worker captures exact admin payload once; browser body cannot override recipient (2.26174ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/test_registration_handlers.mjs:66:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/test_registration_handlers.mjs:70:1
+✖ registration rejection/timeout/receipt failure records uncertainty, never automatic duplicate delivery (0.756441ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 202
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/test_registration_handlers.mjs:71:120)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 202,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/test_registration_handlers.mjs:73:1
+✖ registration delivery disabled/missing config fails before claim; staging cannot use real email (0.642805ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 503
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/test_registration_handlers.mjs:75:165)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 503,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/test_registration_handlers.mjs:78:1
+✖ future Brevo delivery uses fixed admin, text payload, no marketing action and no staging credentials (0.58169ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/property-survey/tests/test_registration_handlers.mjs:87:9)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

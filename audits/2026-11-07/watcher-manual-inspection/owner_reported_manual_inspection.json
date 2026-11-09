@@ -1,0 +1,36 @@
+{
+  "evidence_source": "Owner/operator reports manual inspection in production Supabase SQL Editor using the approved read-only definition query; full bodies were not provided to this development agent",
+  "project": "arnzqizcycesukplmvuc",
+  "definition_query_executed_by_this_agent": false,
+  "watchers": [
+    {
+      "signature": "extensions.pgrst_ddl_watch()",
+      "reported_notify_line": 26,
+      "reported_statement": "NOTIFY pgrst, 'reload schema';",
+      "last_recorded_body_sha256": "de987df746eb39647098459e7993bd8595e592969b0cd647828a3d13d37cffe0"
+    },
+    {
+      "signature": "extensions.pgrst_drop_watch()",
+      "reported_notify_line": 24,
+      "reported_statement": "NOTIFY pgrst, 'reload schema';",
+      "last_recorded_body_sha256": "791b41f0632fc86e0fc86a303ec0fd710c4e2ecf947a23422dae2b7a2c122f1d"
+    }
+  ],
+  "operator_reported_no_occurrences": [
+    "http",
+    "webhook",
+    "email",
+    "EXECUTE",
+    "PERFORM"
+  ],
+  "keyword_search_case_sensitivity_and_method": "not supplied; not assumed comprehensive",
+  "fingerprints_reported_unchanged": true,
+  "manual_inspection_performed": true,
+  "full_independent_source_review_passed": false,
+  "trusted_provider_comparison_passed": false,
+  "watcher_requirement_status": "PARTIAL_EVIDENCE_OPEN",
+  "conclusion": "Supports expected schema-cache refresh purpose; does not prove every branch/indirect call lacks other actions",
+  "correction_executed": false,
+  "sql_executed_by_this_agent": false,
+  "production_changes_by_this_agent": false
+}

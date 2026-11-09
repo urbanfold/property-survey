@@ -1,0 +1,2 @@
+PASS static bundle/source-hash parity, 11-table reconstruction, fresh guards, grants/RLS declarations, private bucket declarations, unchanged 600-pence contract, separate dummy seeds and read-only query boundaries
+NO SQL EXECUTED. These checks do not establish PostgreSQL/Supabase semantic validity or live security.

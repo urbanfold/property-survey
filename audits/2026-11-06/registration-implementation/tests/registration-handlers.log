@@ -1,0 +1,66 @@
+✔ generated receiver matches shared source and preserves the exact dashboard entry point (11.677214ms)
+✔ shared: missing/invalid mode fails closed without capture or sleep and never logs raw values (43.388974ms)
+✔ shared: project/auth/method guards execute before diagnostic logging (1.404002ms)
+✔ shared: explicit accept captures exact original payload once without sleeping (1.42603ms)
+✔ shared: explicit reject does not capture or sleep (0.43348ms)
+✔ shared: mode is loaded on each invocation, not cached (0.949118ms)
+✔ shared: receiver SQL rejection or exception never records capture success or starts delay (1.026077ms)
+✔ shared: malformed capture metadata remains rejected before RPC (0.609506ms)
+✔ shared: logging failure cannot break successful capture (0.694683ms)
+✔ shared: timeout waits only AFTER capture and cannot complete before delay resolves (1.136988ms)
+✔ dashboard: missing/invalid mode fails closed without capture or sleep and never logs raw values (7.660915ms)
+✔ dashboard: project/auth/method guards execute before diagnostic logging (0.84664ms)
+✔ dashboard: explicit accept captures exact original payload once without sleeping (0.790572ms)
+✔ dashboard: explicit reject does not capture or sleep (0.636913ms)
+✔ dashboard: mode is loaded on each invocation, not cached (0.532482ms)
+✔ dashboard: receiver SQL rejection or exception never records capture success or starts delay (0.959786ms)
+✔ dashboard: malformed capture metadata remains rejected before RPC (0.751789ms)
+✔ dashboard: logging failure cannot break successful capture (0.400143ms)
+✔ dashboard: timeout waits only AFTER capture and cannot complete before delay resolves (0.224199ms)
+✔ actual dashboard Deno entry point reads current env and uses safe default JSON logger (0.684411ms)
+{"local_test":"dashboard","gateway_ms":10018,"receiver_ms":12003,"captures":1}
+{"local_test":"shared","gateway_ms":10020,"receiver_ms":12003,"captures":1}
+✔ real 12-second receiver delay and real 10-second gateway timeout, both source variants, capture exactly once (12020.84719ms)
+✔ staging capture never permits production targets or a Zapier fallback (5.184277ms)
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"accept"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"capture_committed","mode":"accept"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"reject"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"capture_committed","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"timeout_wait_started","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"timeout_wait_finished","mode":"timeout_after_capture"}
+{"component":"staging_notification_receiver","build":"urbanfold-staging-receiver-diag-1","event":"mode_selected","mode":"accept"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"claimed","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"accepted","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"idle","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"claimed","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"uncertain","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"idle","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"claimed","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"uncertain","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"idle","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"claimed","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"uncertain","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"idle","mode":"staging_capture"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"claimed","mode":"brevo"}
+{"component":"registration_dispatcher","build":"urbanfold-registration-dispatch-1","event":"accepted","mode":"brevo"}
+✔ F02 staging transport preserves auth/property checks and sends only to fixed server-authorised sink (4.431157ms)
+✔ dummy receiver requires exact project/server auth and never contacts an email provider (8.469988ms)
+✔ registration server-only worker captures exact admin payload once; browser body cannot override recipient (8.036754ms)
+✔ registration rejection/timeout/receipt failure records uncertainty, never automatic duplicate delivery (6.525135ms)
+✔ registration delivery disabled/missing config fails before claim; staging cannot use real email (2.523826ms)
+✔ future Brevo delivery uses fixed admin, text payload, no marketing action and no staging credentials (1.22292ms)
+✔ new dashboard wrappers register and deny requests without server configuration (8.969002ms)
+✔ registration rate limit returns 429/Retry-After without delivery or finish and never logs raw queue data (3.454579ms)
+✔ registration worker interruption reports generic failure without retrying claimed delivery or logging payloads (0.948819ms)
+✔ registration diagnostics cannot break delivery; only valid known modes are logged (1.629298ms)
+✔ registration email distinguishes true, false and unknown historical choice without asserting marketing consent (1.892163ms)
+✔ late or unacknowledged registration completion stays uncertain even after transport acceptance (1.722044ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12297.068717

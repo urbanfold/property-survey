@@ -1,0 +1,37 @@
+{
+  "target": "https://hexhtduvqzleoazusskh.supabase.co",
+  "checks": [
+    {
+      "check": "Notification access probe uses verified dummy A",
+      "passed": true,
+      "http_status": 200
+    },
+    {
+      "check": "Dummy user cannot read survey_notification_events",
+      "passed": true,
+      "http_status": 403
+    },
+    {
+      "check": "Dummy user cannot read survey_credit_revocations",
+      "passed": true,
+      "http_status": 403
+    },
+    {
+      "check": "Dummy user cannot execute purchase recorder",
+      "passed": true,
+      "http_status": 403
+    },
+    {
+      "check": "Dummy user cannot execute notification claim",
+      "passed": true,
+      "http_status": 403
+    },
+    {
+      "check": "Dummy user cannot execute notification completion",
+      "passed": true,
+      "http_status": 403
+    }
+  ],
+  "gateway_get_http_status": 404,
+  "no_notification_sent": true
+}

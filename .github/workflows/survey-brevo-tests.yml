@@ -1,0 +1,27 @@
+name: Survey Brevo notification tests
+on:
+  push:
+    branches:
+      - plan/security-remediation-2026-11-03
+    paths:
+      - 'supabase/functions/_shared/notifications.mjs'
+      - 'supabase/functions/_shared/survey_brevo.mjs'
+      - 'supabase/dashboard/request-survey-notification.ts'
+      - 'tests/test_notification_handlers.mjs'
+      - 'tests/test_survey_brevo*.mjs'
+      - 'supabase/functions/test-survey-brevo-diagnostic/**'
+      - '.github/workflows/survey-brevo-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  survey-notification-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test Brevo survey handlers and existing Zapier gateway
+        run: node --test tests/test_notification_handlers.mjs tests/test_survey_brevo.mjs tests/test_survey_brevo_gateway.mjs tests/test_survey_brevo_diagnostic.mjs
