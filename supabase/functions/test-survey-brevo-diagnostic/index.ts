@@ -30,10 +30,10 @@ export async function controlledDiagnostic(req,{env=(name)=>Deno.env.get(name),f
  const base=env('SUPABASE_URL');
  if(base!==LIVE)return json({error:'Wrong project'},503,origin);
  const authHeader=req.headers.get('authorization')||'';
- if(!/^Bearer \\S+$/.test(authHeader))return json({error:'Login required'},401,origin);
+ if(!/^Bearer \S+$/.test(authHeader))return json({error:'Login required'},401,origin);
  const anon=env('SUPABASE_ANON_KEY'),service=env('SUPABASE_SERVICE_ROLE_KEY');
  const brevoKey=env('BREVO_REGISTRATION_API_KEY'),sender=env('REGISTRATION_EMAIL_FROM');
- if(!anon||!service||!brevoKey||!sender||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(sender))
+ if(!anon||!service||!brevoKey||!sender||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sender))
    return json({error:'Configuration unavailable'},503,origin);
  try{
   const auth=await fetcher(base+'/auth/v1/user',{headers:{apikey:anon,authorization:authHeader},signal:AbortSignal.timeout(10000)});
