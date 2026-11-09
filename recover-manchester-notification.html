@@ -1,0 +1,21 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Urbanfold — recover saved Manchester road notification</title>
+<style>body{margin:0;background:#f2f3f6;color:#1b293c;font:16px/1.55 system-ui,sans-serif;padding:22px}main{max-width:690px;margin:25px auto;padding:30px;background:white;border-radius:12px;box-shadow:0 2px 14px #0001}h1{font-size:26px}button{border:0;border-radius:8px;padding:14px 18px;background:#255ee9;color:white;font-weight:700;cursor:pointer}button:disabled{background:#7c8595;cursor:default}pre{padding:15px;background:#edf0f4;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#255ee9}</style><script src="vendor/supabase.js"></script></head>
+<body><main><h1>Urbanfold — recover saved notification</h1>
+<p><strong>Manchester road only.</strong> The survey was already saved at 21:42 on 9 November 2026, but no notification was recorded. This page requests the notification for that <em>existing saved submission</em>. It does not resubmit or modify the property, or purchase a survey credit.</p>
+<p>The existing Supabase function verifies the logged-in administrator, saved submission and recipient before calling Brevo. The customer address is taken from the verified cloud record — not from this page.</p>
+<p>Approved recipients: <strong>urbanfolduk@gmail.com</strong> and <strong>tycohdesign1+urbanfoldauto@gmail.com</strong>.</p>
+<p>First <a href="./">sign in to the live Urbanfold survey</a> as the verified administrator, then return here.</p>
+<p id="login">Checking session…</p>
+<button id="run" disabled>Request Manchester road notification — once</button>
+<pre id="result" role="status" aria-live="polite"></pre><p><small>Click once only. Even if the result is uncertain, do not click again. Check the database and Brevo logs before any additional action.</small></p>
+</main><script>
+const client=window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
+const button=document.getElementById('run'),login=document.getElementById('login'),output=document.getElementById('result');
+const propertyId='f9b9393c-c094-4f3a-be96-95799a57d5f0';
+(async()=>{try{const {data,error}=await client.auth.getUser();if(error||data?.user?.email!=='urbanfolduk@gmail.com'||!data.user.email_confirmed_at){login.textContent='Sign in as verified administrator, then refresh this page.';return;}login.textContent='Administrator verified. No request has been sent from this page.';button.disabled=false;}catch{login.textContent='Could not confirm administrator session.';}})();
+button.onclick=async()=>{button.disabled=true;output.textContent='Sending the single request…';try{
+ const {data,error}=await client.functions.invoke('request-survey-notification',{body:{property_id:propertyId}});
+ if(error){output.textContent='Notification outcome unconfirmed. Do not retry. Please send this result to ChatGPT.';return;}
+ output.textContent=JSON.stringify(data,null,2)+'\nDo not request again. Delivery must be checked in Supabase and Brevo.';
+}catch{output.textContent='Notification outcome uncertain. Do not retry.';}};
+</script></body></html>
