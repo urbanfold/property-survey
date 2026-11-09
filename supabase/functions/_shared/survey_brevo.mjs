@@ -8,6 +8,9 @@ const validEmail=value=>typeof value==='string'&&value.length<=254&&EMAIL.test(v
 export function buildSurveyMessages({eventId,propertyId,address,surveyorName,clientEmail,senderEmail}){
  if(!UUID.test(eventId)||!UUID.test(propertyId)||!validEmail(clientEmail)||!validEmail(senderEmail))
   throw Error('Invalid trusted notification data.');
+ // UUIDv4 notification ID maps to two stable, distinct UUID-formatted provider keys.
+ if(eventId[14]!=='4')throw Error('Unsupported notification event identifier.');
+ const customerKey=eventId.slice(0,14)+'5'+eventId.slice(15);
  const addr=safe(address),surveyor=safe(surveyorName),client=clientEmail.trim();
  const root={sender:{email:senderEmail,name:'Urbanfold'}};
  return [
@@ -17,14 +20,14 @@ export function buildSurveyMessages({eventId,propertyId,address,surveyorName,cli
     'Property: '+addr,'Surveyor: '+surveyor,'Customer email: '+client,
     'Survey reference: '+propertyId,
     'This is an administrative notification, not permission to use the customer address for marketing.'].join('\n'),
-   headers:{idempotencyKey:eventId+'-admin'}}},
+   headers:{idempotencyKey:eventId}}},
   {kind:'customer',to:client,payload:{...root,to:[{email:client}],
    subject:'Urbanfold — your survey has been received',
    textContent:['Thank you. Your Urbanfold property survey has been received.',
     'Property: '+addr,'Survey reference: '+propertyId,
     'We will review the information supplied and contact you about the next steps.',
     'If you did not submit or authorise this survey, please contact Urbanfold.'].join('\n'),
-   headers:{idempotencyKey:eventId+'-customer'}}}
+   headers:{idempotencyKey:customerKey}}}
  ];
 }
 // The caller must first verify Auth, property ownership, saved-submission revision,
