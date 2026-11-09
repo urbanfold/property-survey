@@ -1,0 +1,13 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Urbanfold — Brevo diagnostics</title>
+<style>body{background:#f2f3f6;font:16px/1.5 system-ui,sans-serif;color:#1d2939;padding:25px}main{max-width:620px;margin:25px auto;padding:28px;background:white;border-radius:12px;box-shadow:0 2px 14px #0001}button{border:0;background:#235fee;color:white;padding:13px 16px;border-radius:7px;font-weight:700;cursor:pointer}button:disabled{background:#768194}pre{white-space:pre-wrap;background:#edf1f5;padding:15px;border-radius:8px}a{color:#235fee}</style>
+<script src="vendor/supabase.js"></script></head><body><main><h1>Urbanfold — Brevo connection check</h1>
+<p>This is a read-only test. It checks whether the existing Brevo API key works and whether the configured sender is listed as active. <strong>It will not send any emails.</strong></p>
+<p>Sign in to <a href="./">the live Urbanfold survey</a> as <strong>urbanfolduk@gmail.com</strong>, then return to this page.</p>
+<p id="login">Checking your administrator session…</p><button id="run" disabled>Check Brevo connection (no emails)</button>
+<pre id="result" role="status" aria-live="polite"></pre></main>
+<script>
+const sb=window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
+const login=document.getElementById('login'),run=document.getElementById('run'),result=document.getElementById('result');
+(async()=>{try{const {data,error}=await sb.auth.getUser();if(error||data?.user?.email!=='urbanfolduk@gmail.com'||!data.user.email_confirmed_at){login.textContent='Please sign in as the verified Urbanfold administrator and refresh this page.';return;}login.textContent='Administrator verified. No emails have been sent.';run.disabled=false;}catch{login.textContent='Unable to verify administrator session.';}})();
+run.onclick=async()=>{run.disabled=true;result.textContent='Checking…';try{const {data,error}=await sb.functions.invoke('diagnose-survey-brevo-readonly',{body:{check:true}});result.textContent=error?'Could not complete diagnostic. No emails sent.':JSON.stringify(data,null,2);}catch{result.textContent='Diagnostic unavailable. No emails sent.';}};
+</script></body></html>
