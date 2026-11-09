@@ -42,6 +42,20 @@ async function smallBody(request){
  return JSON.parse(new TextDecoder().decode(bytes));
 }
 export async function requestSurveyNotification(request,{env,fetcher=fetch}){
+ // Answer trusted browser preflight before reading activation/transport secrets.
+ // Preflight performs no user action, recipient lookup or email delivery.
+ if(request.method==='OPTIONS'){
+  let allowed;
+  try{
+   const url=new URL(env('APP_URL')||DEFAULT_APP);
+   const stage=env('SUPABASE_URL')==='https://hexhtduvqzleoazusskh.supabase.co';
+   const local=stage&&url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname);
+   if((url.protocol!=='https:'&&!local)||url.search||url.hash)throw Error('Invalid app URL');
+   allowed=url.origin;
+  }catch{return response({error:'Notification service is not configured.'},503);}
+  if(request.headers.get('origin')!==allowed)return response({error:'Origin not permitted.'},403);
+  return response({},200,allowed);
+ }
  const transport=env('NOTIFICATION_TRANSPORT')||'zapier';
  if(!['zapier','staging_capture','staging_brevo_capture','brevo'].includes(transport))return response({error:'Notification transport is not configured.'},503);
  const capture=transport==='staging_capture';
