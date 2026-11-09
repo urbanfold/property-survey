@@ -7,6 +7,9 @@ test('admin and customer receive separate, appropriately scoped messages',()=>{
  assert.equal(a.length,2);
  assert.deepEqual(a.map(x=>x.to),['urbanfolduk@gmail.com','client@example.test']);
  assert.notEqual(a[0].payload.headers.idempotencyKey,a[1].payload.headers.idempotencyKey);
+ assert.equal(a[0].payload.headers.idempotencyKey,record.eventId);
+ assert.match(a[0].payload.headers.idempotencyKey,/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+ assert.match(a[1].payload.headers.idempotencyKey,/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
  assert(a[0].payload.textContent.includes('Customer email: client@example.test'));
  assert(!a[1].payload.textContent.includes('Customer email:'));
  for(const x of a){assert.equal(x.payload.sender.email,'survey@urbanfold.uk');assert.equal(x.payload.to.length,1);}
