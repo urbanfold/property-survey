@@ -61,8 +61,8 @@ class Fixture:
                 return route.fulfill(status=404,body='Not found')
             return route.fulfill(body=path.read_bytes(),content_type=mimetypes.guess_type(str(path))[0] or 'application/octet-stream')
         if u.hostname == 'hooks.zapier.com':
-            self.emails += 1
-            return reply({'status':'success'})
+            self.unexpected.append('Legacy Zapier webhook called')
+            return route.abort()
         if u.hostname != BACKEND:
             self.unexpected.append(req.url)
             return route.abort()
@@ -89,6 +89,14 @@ class Fixture:
         signed_read = req.method == 'GET' and u.path.startswith('/storage/v1/object/sign/') and parse_qs(u.query).get('token') == ['fixture-signed']
         if not signed_read and req.headers.get('authorization') != 'Bearer '+self.token:
             return reply({'message':'not authenticated','code':'PGRST301'},401)
+        if u.path == '/functions/v1/request-survey-notification' and req.method == 'POST':
+            payload=req.post_data_json
+            if set(payload) != {'property_id'} or payload['property_id'] not in {p['id'] for p in self.tables['properties']}:
+                return reply({'message':'Invalid notification property reference'},400)
+            if not any(p['id']==payload['property_id'] and p.get('last_submitted_at') for p in self.tables['properties']):
+                return reply({'message':'No verified submission'},403)
+            self.emails += 1
+            return reply({'status':'accepted'})
         if u.path.startswith('/storage/v1/object/public/'):
             self.public_reads += 1
             return reply({'message':'Bucket is private'},403)

@@ -12,9 +12,15 @@ STUB = r"""
 window.fixture = {tables: {properties:[{id:'p1', address:'Initial'}], extensions:[],
  rooms:[], exterior_photos:[], extension_photos:[], sketch_photos:[], room_photos:[]},
  fail:null, uploads:[], emails:0};
-window.fetch=async()=>{fixture.emails++; return {ok:true}};
+window.fetch=async()=>{throw Error('Unexpected direct fetch: notifications must use authenticated Supabase');};
 window.supabase={createClient:()=>({supabaseUrl:'https://arnzqizcycesukplmvuc.supabase.co',
  auth:{getSession:async()=>({data:{session:null}})},
+ functions:{invoke:async(name,options)=>{
+  if(name!=='request-survey-notification'||Object.keys(options.body).length!==1||options.body.property_id!=='p1')
+   return {error:{message:'Unexpected notification request'}};
+  fixture.emails++;
+  return {data:{status:'accepted'},error:null};
+ }},
  storage:{from:bucket=>({
   upload:async(path)=>{if(fixture.fail==='upload:'+bucket)return {error:{message:'upload denied'}};
    fixture.uploads.push([bucket,path]);return {data:{path}}},
