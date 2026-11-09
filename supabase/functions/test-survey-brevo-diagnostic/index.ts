@@ -78,4 +78,5 @@ export async function controlledDiagnostic(req,{env=(name)=>Deno.env.get(name),f
    note:'Brevo HTTP acceptance is not proof of inbox delivery. Check Brevo logs. Do not retry.'},accepted?200:202,origin);
  }catch{return json({error:'Outcome uncertain; do not retry'},503,origin);}
 }
-if(import.meta.main)Deno.serve(req=>controlledDiagnostic(req));
+// Supabase Edge Functions load the entrypoint as a module, not a CLI main script.
+Deno.serve(req=>controlledDiagnostic(req));
