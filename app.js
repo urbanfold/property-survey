@@ -1236,30 +1236,28 @@
             } finally { savingProgress = false; setLoading(false); }
         }
 
-        async function notifySurveySaved(snapshot) {
+        async function notifySurveySaved(_snapshot) {
             const status = document.getElementById('notification-status');
             status.textContent = 'Survey data saved. Requesting the email notification...';
-            const bytes = new TextEncoder().encode(JSON.stringify(snapshot));
-            const digest = await crypto.subtle.digest('SHA-256', bytes);
-            const signature = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
-            const key = `urbanfold_notification_${currentPropertyId}_${signature}`;
+            if (!currentUser || !currentPropertyId) {
+                status.textContent = 'Your survey is saved, but the notification could not be requested. Please check your inbox.';
+                return;
+            }
+            const submittedPropertyId = currentPropertyId;
+            const submittedUserId = currentUser.id;
             try {
-                if (localStorage.getItem(key)) { status.textContent = 'An email notification was already requested for this version on this device.'; return; }
-            } catch (_) { /* A storage restriction must not block a saved survey. */ }
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 15000);
-            try {
-                const response = await fetch('https://hooks.zapier.com/hooks/catch/29202657/410hu8q/', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
-                    body: JSON.stringify({ client_email: snapshot.details.clientEmail, address: snapshot.details.address,
-                        surveyor_name: snapshot.details.name, property_id: currentPropertyId, submission_id: signature })
+                // The authenticated Edge Function derives recipients from the saved property.
+                // Do not send survey content, recipient addresses, webhook URLs or API keys from the browser.
+                const result = await sb.functions.invoke('request-survey-notification', {
+                    body: { property_id: submittedPropertyId }
                 });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                try { localStorage.setItem(key, 'requested'); } catch (_) {}
+                if (currentUser?.id !== submittedUserId || currentPropertyId !== submittedPropertyId) return;
+                if (result.error || result.data?.status !== 'accepted') throw new Error('Notification unconfirmed');
                 status.textContent = 'Email notification request accepted. Check the recipient inbox.';
-            } catch (error) {
-                status.textContent = 'Your survey is saved, but the email request could not be confirmed. Do not resubmit just to retry email; check the inbox and automation history.';
-            } finally { clearTimeout(timeout); }
+            } catch (_) {
+                if (currentUser?.id === submittedUserId && currentPropertyId === submittedPropertyId)
+                    status.textContent = 'Your survey is saved, but the email request could not be confirmed. Do not resubmit just to retry email; check the inbox and notification history.';
+            }
         }
 
         async function openSurveyReview() {
