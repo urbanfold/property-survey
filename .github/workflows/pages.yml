@@ -68,7 +68,7 @@ jobs:
           BUILD_SHA: ${{ github.sha }}
         run: |
           mkdir -p _site/vendor
-          cp index.html app.js brevo-controlled-diagnostic.html notification-config-check.html recover-manchester-notification.html _site/
+          cp index.html app.js _site/
           cp vendor/*.js vendor/README.md _site/vendor/
           touch _site/.nojekyll
           python - <<'PY'
