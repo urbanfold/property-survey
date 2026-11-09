@@ -21,7 +21,7 @@ function mockFetch({userEmail='urbanfolduk@gmail.com',claimed=true,brevoStatuses
   calls.push({url,opts});
   if(url.endsWith('/auth/v1/user'))return new Response(JSON.stringify({email:userEmail,email_confirmed_at:'2026-11-06T12:00:00Z'}),{status:200});
   if(url.endsWith('/rest/v1/survey_brevo_controlled_tests'))return new Response(JSON.stringify(claimed?[{test_key:KEY}]:{message:'duplicate'}),{status:claimed?201:409});
-  if(url.includes('/rest/v1/survey_brevo_controlled_tests?'))return new Response('',{status:204});
+  if(url.includes('/rest/v1/survey_brevo_controlled_tests?'))return new Response(null,{status:204});
   if(url==='https://api.brevo.com/v3/smtp/email')return new Response('',{status:brevoStatuses[calls.filter(c=>c.url===url).length-1]});
   throw Error('Unexpected URL '+url);
  };
