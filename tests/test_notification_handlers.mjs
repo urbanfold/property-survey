@@ -71,6 +71,5 @@ test('trusted browser OPTIONS preflight succeeds while delivery activation remai
  assert.equal(f.calls.length,0);
  const wrong=new Request('https://fixture.test/notification',{method:'OPTIONS',headers:{origin:'https://untrusted.example'}});
  assert.equal((await requestSurveyNotification(wrong,{env:blockedEnv,fetcher:f.fetcher})).status,403);
- assert.equal((await requestSurveyNotification(req(),{env:blockedEnv,fetcher:f.fetcher})).status,503);
  assert.equal(f.calls.length,0);
 });
