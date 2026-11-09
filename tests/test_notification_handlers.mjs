@@ -60,3 +60,17 @@ test('generated dashboard gateway registers and fails closed without configured 
   assert.equal(typeof registered,'function');assert.equal((await registered(req())).status,503);
  }finally{if(previous===undefined)delete globalThis.Deno;else globalThis.Deno=previous;}
 });
+
+test('trusted browser OPTIONS preflight succeeds while delivery activation remains disabled',async()=>{
+ const blockedEnv=name=>name==='SURVEY_NOTIFICATIONS_LIVE_ENABLED'?undefined:cfg[name];
+ const preflight=new Request('https://fixture.test/notification',{method:'OPTIONS',headers:{origin:'https://urbanfold.github.io','access-control-request-method':'POST','access-control-request-headers':'authorization,apikey,content-type'}});
+ const f=fixture();
+ const result=await requestSurveyNotification(preflight,{env:blockedEnv,fetcher:f.fetcher});
+ assert.equal(result.status,200);
+ assert.equal(result.headers.get('access-control-allow-origin'),'https://urbanfold.github.io');
+ assert.equal(f.calls.length,0);
+ const wrong=new Request('https://fixture.test/notification',{method:'OPTIONS',headers:{origin:'https://untrusted.example'}});
+ assert.equal((await requestSurveyNotification(wrong,{env:blockedEnv,fetcher:f.fetcher})).status,403);
+ assert.equal((await requestSurveyNotification(req(),{env:blockedEnv,fetcher:f.fetcher})).status,503);
+ assert.equal(f.calls.length,0);
+});
