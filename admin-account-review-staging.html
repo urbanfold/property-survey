@@ -29,6 +29,13 @@
 <input id="receipt-email" type="email" placeholder="staging-owner-a@example.invalid" required>
 <button type="submit" id="receipt-lookup">Find completed deletion</button></form>
 <div id="receipt-results" aria-live="polite"></div><button type="button" id="capture-emails">Capture customer and business drafts (no sending)</button><p id="capture-status" role="status" aria-live="polite"></p>
+<div style="margin-top:18px;border-top:1px solid #e2e8f0;padding-top:14px">
+  <h2>Mailtrap sandbox delivery test</h2>
+  <p class="warning">Staging only. Messages are captured inside Mailtrap, not delivered to the real addresses shown. Each captured message may be sent to the sandbox only once.</p>
+  <button id="send-sandbox-customer" type="button">Send customer draft to Mailtrap sandbox</button>
+  <button id="send-sandbox-business" type="button" class="secondary">Send business draft to Mailtrap sandbox</button>
+  <p id="sandbox-send-status" role="status" aria-live="polite"></p>
+</div>
 </section><p id="status" role="status" aria-live="polite"></p>
 </main><script>
 "use strict";
@@ -95,5 +102,26 @@ $("capture-emails").addEventListener("click",async()=>{
  }catch(e){$("capture-status").textContent=e.message||"Capture failed";status("Capture failed; no email sent.");}
  finally{button.disabled=false;}
 });
+async function sendDeletionSandboxTest(kind,buttonId){
+ const button=$(buttonId);button.disabled=true;
+ $("sandbox-send-status").textContent="Checking one-time Mailtrap sandbox delivery…";
+ try{
+  if(!session?.access_token)throw Error("Sign in to the staging administrator account.");
+  const email=$("receipt-email").value.trim().toLowerCase();
+  if(!email.endsWith("@example.invalid"))throw Error("Only staging dummy deletion records are permitted.");
+  if(!window.confirm("Send the "+kind+" completion draft to the MAILTRAP SANDBOX only? This does not contact the real email address. Each draft can be tested once.")){ $("sandbox-send-status").textContent="No message sent.";return; }
+  const response=await fetch(SUPABASE_URL+"/functions/v1/admin-survey-deletion-mailtrap-staging",{
+   method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":ANON,"Content-Type":"application/json"},body:JSON.stringify({email,kind})
+  });
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||"Sandbox delivery not confirmed.");
+  $("sandbox-send-status").textContent=result.status==="accepted"
+   ?"Mailtrap accepted the "+kind+" draft. Check My Sandbox inbox. No real customer was contacted."
+   :"Delivery uncertain. Check Mailtrap and the staging ledger; do not send again.";
+ }catch(e){$("sandbox-send-status").textContent=(e.message||"Sandbox delivery failed.")+" Do not click again until the delivery record is checked.";}
+ finally{button.disabled=false;}
+}
+$("send-sandbox-customer").addEventListener("click",()=>sendDeletionSandboxTest("customer","send-sandbox-customer"));
+$("send-sandbox-business").addEventListener("click",()=>sendDeletionSandboxTest("business","send-sandbox-business"));
 $("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;$("review-panel").hidden=true;$("receipt-panel").hidden=true;$("login-panel").hidden=false;$("results").replaceChildren();$("receipt-results").replaceChildren();status("Signed out.");});
 </script></body></html>
