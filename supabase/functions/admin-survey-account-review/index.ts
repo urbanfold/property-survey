@@ -5,8 +5,8 @@ const URL = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_UID = "8d3f6f84-8af9-4ad8-82e7-53db9850d6db";
-const origins = new Set(["https://urbanfold.github.io", "http://localhost:8000", "http://127.0.0.1:8000"]);
-const buckets = ["exterior-photos", "extension-photos", "sketch-photos", "room-photos"];
+const origins = new Set(["https://urbanfold.github.io"]);
+const buckets = ["exterior-photos", "sketch-photos", "room-photos"];
 const json = (body: unknown, status = 200, origin = "") => new Response(JSON.stringify(body), {
   status, headers: {"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store",
   "Access-Control-Allow-Origin":origin,"Access-Control-Allow-Headers":"authorization, apikey, content-type",
@@ -64,8 +64,11 @@ Deno.serve(async (req) => {
       rooms:roomPhotoReferences
     },storageFiles:storage});
   }
-  const {count:payments,error:payError}=await db.from("survey_credit_purchases").select("*",{count:"exact",head:true}).eq("user_id",matching.id);
+  const {data:purchases,error:payError}=await db.from("survey_credit_purchases").select("live_mode").eq("user_id",matching.id);
   if(payError) return json({error:"Payment lookup unavailable"},500,origin);
+  const {count:profileRows,error:profileError}=await db.from("users").select("*",{count:"exact",head:true}).eq("id",matching.id);
+  if(profileError) return json({error:"Profile lookup unavailable"},500,origin);
   return json({found:true,account:{email:matching.email,accountId:matching.id},surveys:surveyRows,
-    paymentRecords:payments||0,warning:"Review only. Payment/financial records may require separate retention. No data has been deleted."},200,origin);
+    paymentRecords:purchases?.length||0,paymentBreakdown:{sandbox:(purchases||[]).filter(p=>p.live_mode===false).length,live:(purchases||[]).filter(p=>p.live_mode===true).length},
+    profileRows:profileRows||0,warning:"Review only. Payment/financial records may require separate retention. No data has been deleted."},200,origin);
 });
