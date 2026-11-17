@@ -36,6 +36,12 @@
   <button id="send-sandbox-business" type="button" class="secondary">Send business draft to Mailtrap sandbox</button>
   <p id="sandbox-send-status" role="status" aria-live="polite"></p>
 </div>
+<div style="margin-top:18px;border-top:1px solid #e2e8f0;padding-top:14px">
+  <h2>Stripe sandbox connection check</h2>
+  <p>Staging only. Read-only test using the restricted Stripe sandbox key stored in Supabase. No payment is created, altered or refunded.</p>
+  <button id="check-stripe-sandbox" type="button">Test Stripe sandbox connection</button>
+  <p id="stripe-connection-status" role="status" aria-live="polite"></p>
+</div>
 </section><p id="status" role="status" aria-live="polite"></p>
 </main><script>
 "use strict";
@@ -123,5 +129,24 @@ async function sendDeletionSandboxTest(kind,buttonId){
 }
 $("send-sandbox-customer").addEventListener("click",()=>sendDeletionSandboxTest("customer","send-sandbox-customer"));
 $("send-sandbox-business").addEventListener("click",()=>sendDeletionSandboxTest("business","send-sandbox-business"));
+$("check-stripe-sandbox").addEventListener("click",async()=>{
+ const button=$("check-stripe-sandbox");
+ button.disabled=true;
+ $("stripe-connection-status").textContent="Checking the restricted Stripe sandbox connection…";
+ try{
+  const {data:{session:currentSession},error:sessionError}=await sb.auth.getSession();
+  if(sessionError||!currentSession?.access_token)throw Error("Sign in to staging administrator account first.");
+  const response=await fetch(SUPABASE_URL+"/functions/v1/staging-stripe-payment-verify-readonly",{
+   method:"POST",
+   headers:{"Authorization":"Bearer "+currentSession.access_token,"apikey":ANON,"Content-Type":"application/json"},
+   body:JSON.stringify({action:"connection_test"})
+  });
+  const result=await response.json();
+  if(!response.ok||result.connected!==true)throw Error(result.error||"Stripe connection not confirmed");
+  $("stripe-connection-status").textContent="Connected: Stripe sandbox Checkout Sessions read succeeded. No payment changes made.";
+ }catch(error){
+  $("stripe-connection-status").textContent="Connection not confirmed: "+String(error?.message||error)+". No payment changes made.";
+ }finally{button.disabled=false;}
+});
 $("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;$("review-panel").hidden=true;$("receipt-panel").hidden=true;$("login-panel").hidden=false;$("results").replaceChildren();$("receipt-results").replaceChildren();status("Signed out.");});
 </script></body></html>
