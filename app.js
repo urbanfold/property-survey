@@ -86,6 +86,27 @@
             finally { setLoading(false); }
         }
 
+        function requestSurveyAccountClosure() {
+            if (!currentUser?.email) {
+                alert('Please sign in before requesting account closure.');
+                return;
+            }
+            const confirmed = window.confirm('Request closure of your Urbanfold Survey account and deletion of its associated survey information? This opens your email app to send a request. Nothing will be deleted automatically. Urbanfold will confirm your request and explain any records that must be retained.');
+            if (!confirmed) return;
+            const subject = 'Urbanfold Survey — account closure and data deletion request';
+            const body = [
+                'Please close my Urbanfold Property Survey account and delete the survey information associated with it, subject to any lawful record-keeping obligations.',
+                '',
+                'Account email: ' + currentUser.email,
+                '',
+                'Please confirm receipt, any identity checks needed, the proposed deletion date, and when deletion is completed.',
+                '',
+                'I understand my account and survey data will not be deleted just by opening this email; I must send it.'
+            ].join('\\n');
+            const mailto = 'mailto:survey@urbanfold.uk?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+            window.location.href = mailto;
+        }
+
         async function handleLogout() {
             saveDraft();
             try {
