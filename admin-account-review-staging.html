@@ -47,6 +47,12 @@
   <input id="stripe-checkout-session" type="text" placeholder="cs_test_..." autocomplete="off" spellcheck="false">
   <button type="button" id="verify-stripe-checkout">Verify £6 test payment</button>
   <p id="stripe-payment-verification-status" role="status" aria-live="polite"></p>
+  <div style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">
+    <h3>Preserve verified Stripe test payment evidence</h3>
+    <p>This saves only verified £6 sandbox transaction details in a separate protected staging table. It will not refund, charge, or delete any accounts. Duplicate requests must match the existing record.</p>
+    <button type="button" id="retain-stripe-checkout" class="secondary">Save verified £6 test evidence</button>
+    <p id="stripe-retention-status" role="status" aria-live="polite"></p>
+  </div>
 </div>
 </section><p id="status" role="status" aria-live="polite"></p>
 </main><script>
@@ -180,6 +186,30 @@ $("verify-stripe-checkout").addEventListener("click",async()=>{
  }catch(error){
   output.textContent="Verification not completed: "+String(error?.message||error)+". No payment or account changes made.";
  }finally{button.disabled=false;}
+});
+$("retain-stripe-checkout").addEventListener("click",async()=>{
+ const button=$("retain-stripe-checkout");
+ const output=$("stripe-retention-status");
+ const checkoutId=$("stripe-checkout-session").value.trim();
+ if(!/^cs_test_[A-Za-z0-9]+$/.test(checkoutId)){
+  output.textContent="Enter the full sandbox Checkout Session ID in the field above.";
+  return;
+ }
+ if(!window.confirm("Store independently verified £6 Stripe SANDBOX payment evidence in the protected staging retention table? This does not change Stripe or delete any account."))return;
+ button.disabled=true;output.textContent="Rechecking payment with Stripe before secure retention…";
+ try{
+  const {data:{session:active},error:sessionError}=await sb.auth.getSession();
+  if(sessionError||!active?.access_token)throw Error("Staging administrator login required");
+  const response=await fetch(SUPABASE_URL+"/functions/v1/staging-stripe-payment-retain",{
+   method:"POST",headers:{"Authorization":"Bearer "+active.access_token,"apikey":ANON,"Content-Type":"application/json"},
+   body:JSON.stringify({checkout_session_id:checkoutId})
+  });
+  const result=await response.json();
+  if(!response.ok||result.retained!==true||result.matched!==true)
+   throw Error(result.error||"Preservation not verified");
+  output.textContent=(result.new_record===true?"Saved":"Already saved")+" and matched: £6.00 Stripe sandbox evidence retained independently. No accounts deleted.";
+ }catch(err){output.textContent="NOT SAVED/NOT CONFIRMED: "+String(err?.message||err)+". No deletion authorised.";}
+ finally{button.disabled=false;}
 });
 $("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;$("review-panel").hidden=true;$("receipt-panel").hidden=true;$("login-panel").hidden=false;$("results").replaceChildren();$("receipt-results").replaceChildren();status("Signed out.");});
 </script></body></html>
