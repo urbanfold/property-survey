@@ -70,5 +70,5 @@ Deno.serve(async (req) => {
   if(profileError) return json({error:"Profile lookup unavailable"},500,origin);
   return json({found:true,account:{email:matching.email,accountId:matching.id},surveys:surveyRows,
     paymentRecords:purchases?.length||0,paymentBreakdown:{sandbox:(purchases||[]).filter(p=>p.live_mode===false).length,live:(purchases||[]).filter(p=>p.live_mode===true).length},
-    profileRows:profileRows||0,warning:"Review only. Payment/financial records may require separate retention. No data has been deleted."},200,origin);
+    profileRows:profileRows||0,accountClosure:{enabled:false,blockers:[...((purchases?.length||0)>0?["Payment records linked to Auth will cascade-delete; review and preserve lawful financial records before closure."]:[]),"Production deletion has not been implemented or authorised."]},warning:"Review only. Account closure and deletion are disabled. No data has been deleted."},200,origin);
 });
