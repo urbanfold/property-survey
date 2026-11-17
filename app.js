@@ -102,7 +102,7 @@
                 'Please confirm receipt, any identity checks needed, the proposed deletion date, and when deletion is completed.',
                 '',
                 'I understand my account and survey data will not be deleted just by opening this email; I must send it.'
-            ].join('\\n');
+            ].join('\n');
             const mailto = 'mailto:survey@urbanfold.uk?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
             window.location.href = mailto;
         }
