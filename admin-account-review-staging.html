@@ -57,6 +57,10 @@
     <p>Checks Account C against fresh Stripe sandbox data and the preserved financial record. This test logs a blocked decision only; it cannot delete the account or its purchase.</p>
     <button type="button" id="paid-deletion-preflight" class="secondary">Check Account C payment safeguards</button>
     <p id="paid-deletion-preflight-status" role="status" aria-live="polite"></p>
+    <p><strong>Step 344 — Request-bound review (no deletion)</strong></p>
+    <p>Creates a short-lived review-only request for Account C, checks its saved payment against fresh Stripe sandbox data, and records an audit linked to that review. This cannot prepare or perform an account deletion.</p>
+    <button type="button" id="paid-request-review" class="secondary">Run request-bound Account C check</button>
+    <p id="paid-request-review-status" role="status" aria-live="polite"></p>
   </div>
   </div>
 </div>
@@ -235,6 +239,34 @@ $("paid-deletion-preflight").addEventListener("click",async()=>{
    "; decision: "+result.decision+"; audit recorded. No account changes.";
  }catch(error){
   output.textContent="Check incomplete: "+String(error?.message||error)+". No deletion performed.";
+ }finally{button.disabled=false;}
+});
+$("paid-request-review").addEventListener("click",async()=>{
+ const button=$("paid-request-review"), output=$("paid-request-review-status");
+ button.disabled=true;output.textContent="Preparing review-only staging request…";
+ try{
+  const {data:{session:active},error:sessionError}=await sb.auth.getSession();
+  if(sessionError||!active?.access_token)throw Error("Staging administrator sign-in required.");
+  const url=SUPABASE_URL+"/functions/v1/staging-paid-review-request";
+  const headers={"Authorization":"Bearer "+active.access_token,"apikey":ANON,"Content-Type":"application/json"};
+  const email="staging-owner-c@example.invalid";
+  const prepareRes=await fetch(url,{method:"POST",headers,body:JSON.stringify({action:"prepare",email})});
+  const prep=await prepareRes.json();
+  if(!prepareRes.ok||prep.prepared!==true||prep.review_only!==true||
+     prep.deletion_allowed!==false||!prep.review_request_id)
+   throw Error(prep.error||"Review-only preparation failed.");
+  output.textContent="Review request created. Verifying Stripe payment and audit link…";
+  const verifyRes=await fetch(url,{method:"POST",headers,
+   body:JSON.stringify({action:"verify",email,review_request_id:prep.review_request_id})});
+  const result=await verifyRes.json();
+  if(!verifyRes.ok||result.audit_recorded!==true||result.review_only!==true||
+     result.review_request_id!==prep.review_request_id||result.deletion_allowed!==false)
+    throw Error(result.error||"Request-bound verification incomplete.");
+  output.textContent="Review completed: Stripe checked "+(result.stripe_checked?"yes":"no")+
+    "; payment evidence matched "+(result.finance_matched?"yes":"no")+
+    "; decision "+result.decision+"; linked audit recorded. Deletion remains blocked.";
+ }catch(error){
+  output.textContent="Review incomplete: "+String(error?.message||error)+". No deletion performed.";
  }finally{button.disabled=false;}
 });
 $("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;$("review-panel").hidden=true;$("receipt-panel").hidden=true;$("login-panel").hidden=false;$("results").replaceChildren();$("receipt-results").replaceChildren();status("Signed out.");});
