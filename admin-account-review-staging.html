@@ -41,6 +41,12 @@
   <p>Staging only. Read-only test using the restricted Stripe sandbox key stored in Supabase. No payment is created, altered or refunded.</p>
   <button id="check-stripe-sandbox" type="button">Test Stripe sandbox connection</button>
   <p id="stripe-connection-status" role="status" aria-live="polite"></p>
+  <h3>Verify a £6 Stripe sandbox payment</h3>
+  <p>Paste the complete Checkout Session ID from Stripe Inspector. This checks the payment, amount, refund and dispute status without changing any records.</p>
+  <label for="stripe-checkout-session">Checkout Session ID (starts with cs_test_)</label>
+  <input id="stripe-checkout-session" type="text" placeholder="cs_test_..." autocomplete="off" spellcheck="false">
+  <button type="button" id="verify-stripe-checkout">Verify £6 test payment</button>
+  <p id="stripe-payment-verification-status" role="status" aria-live="polite"></p>
 </div>
 </section><p id="status" role="status" aria-live="polite"></p>
 </main><script>
@@ -146,6 +152,33 @@ $("check-stripe-sandbox").addEventListener("click",async()=>{
   $("stripe-connection-status").textContent="Connected: Stripe sandbox Checkout Sessions read succeeded. No payment changes made.";
  }catch(error){
   $("stripe-connection-status").textContent="Connection not confirmed: "+String(error?.message||error)+". No payment changes made.";
+ }finally{button.disabled=false;}
+});
+$("verify-stripe-checkout").addEventListener("click",async()=>{
+ const button=$("verify-stripe-checkout");
+ const output=$("stripe-payment-verification-status");
+ const checkoutId=$("stripe-checkout-session").value.trim();
+ if(!/^cs_test_[A-Za-z0-9]+$/.test(checkoutId)){
+  output.textContent="Enter the complete cs_test_ Checkout Session ID from Stripe. No changes made.";
+  return;
+ }
+ button.disabled=true;
+ output.textContent="Verifying payment directly against Stripe sandbox…";
+ try{
+  const {data:{session:currentSession},error:sessionError}=await sb.auth.getSession();
+  if(sessionError||!currentSession?.access_token)throw Error("Staging administrator sign-in required.");
+  const response=await fetch(SUPABASE_URL+"/functions/v1/staging-stripe-payment-verify-readonly",{
+   method:"POST",
+   headers:{"Authorization":"Bearer "+currentSession.access_token,"apikey":ANON,"Content-Type":"application/json"},
+   body:JSON.stringify({checkout_session_id:checkoutId})
+  });
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||result.reason||"Payment verification could not complete");
+  output.textContent=result.verified===true
+   ?"PASS: Stripe test payment verified: £"+(Number(result.amount_minor)/100).toFixed(2)+" "+String(result.currency||"").toUpperCase()+". No refund/dispute detected. Read-only: nothing retained or deleted."
+   :"NOT VERIFIED: "+String(result.reason||"Manual review required")+". No changes made.";
+ }catch(error){
+  output.textContent="Verification not completed: "+String(error?.message||error)+". No payment or account changes made.";
  }finally{button.disabled=false;}
 });
 $("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;$("review-panel").hidden=true;$("receipt-panel").hidden=true;$("login-panel").hidden=false;$("results").replaceChildren();$("receipt-results").replaceChildren();status("Signed out.");});
