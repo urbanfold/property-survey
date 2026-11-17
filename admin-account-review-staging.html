@@ -52,6 +52,12 @@
     <p>This saves only verified £6 sandbox transaction details in a separate protected staging table. It will not refund, charge, or delete any accounts. Duplicate requests must match the existing record.</p>
     <button type="button" id="retain-stripe-checkout" class="secondary">Save verified £6 test evidence</button>
     <p id="stripe-retention-status" role="status" aria-live="polite"></p>
+  <div style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">
+    <h3>Paid-account deletion preflight (blocked test)</h3>
+    <p>Checks Account C against fresh Stripe sandbox data and the preserved financial record. This test logs a blocked decision only; it cannot delete the account or its purchase.</p>
+    <button type="button" id="paid-deletion-preflight" class="secondary">Check Account C payment safeguards</button>
+    <p id="paid-deletion-preflight-status" role="status" aria-live="polite"></p>
+  </div>
   </div>
 </div>
 </section><p id="status" role="status" aria-live="polite"></p>
@@ -210,6 +216,26 @@ $("retain-stripe-checkout").addEventListener("click",async()=>{
   output.textContent=(result.new_record===true?"Saved":"Already saved")+" and matched: £6.00 Stripe sandbox evidence retained independently. No accounts deleted.";
  }catch(err){output.textContent="NOT SAVED/NOT CONFIRMED: "+String(err?.message||err)+". No deletion authorised.";}
  finally{button.disabled=false;}
+});
+$("paid-deletion-preflight").addEventListener("click",async()=>{
+ const button=$("paid-deletion-preflight"),output=$("paid-deletion-preflight-status");
+ button.disabled=true;output.textContent="Checking Account C payment and audit safeguards…";
+ try {
+  const {data:{session:active},error:sessionError}=await sb.auth.getSession();
+  if(sessionError||!active?.access_token)throw Error("Staging administrator sign-in required.");
+  const res=await fetch(SUPABASE_URL+"/functions/v1/staging-paid-deletion-preflight",{
+   method:"POST",headers:{"Authorization":"Bearer "+active.access_token,"apikey":ANON,"Content-Type":"application/json"},
+   body:JSON.stringify({email:"staging-owner-c@example.invalid"})
+  });
+  const result=await res.json();
+  if(!res.ok||result.deletion_allowed!==false||result.audit_recorded!==true)
+   throw Error(result.error||"Preflight could not be verified");
+  output.textContent="Deletion blocked as intended. Stripe checked: "+(result.stripe_checked?"yes":"no")+
+   "; evidence matched: "+(result.finance_matched?"yes":"no")+
+   "; decision: "+result.decision+"; audit recorded. No account changes.";
+ }catch(error){
+  output.textContent="Check incomplete: "+String(error?.message||error)+". No deletion performed.";
+ }finally{button.disabled=false;}
 });
 $("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;$("review-panel").hidden=true;$("receipt-panel").hidden=true;$("login-panel").hidden=false;$("results").replaceChildren();$("receipt-results").replaceChildren();status("Signed out.");});
 </script></body></html>
