@@ -26,6 +26,7 @@ Deno.serve(async request=>{
  // Limit this test tool to reserved non-deliverable test addresses only.
  if(!email.endsWith("@example.invalid")||email.length>254)return reply({error:"Staging dummy accounts only"},403);
  const db=client();
+ let processingAuditId: string | null = null;
  try{
   const candidates=await db.auth.admin.listUsers({page:1,perPage:100});
   const users=await insistOk(candidates,"List Auth accounts");
@@ -57,6 +58,7 @@ Deno.serve(async request=>{
    .eq("status","pending").gte("created_at",expiry).select("id,property_count").maybeSingle();
   if(claimError)throw claimError;
   if(!claim)return reply({error:"Confirmation expired, already used or does not match account"},409);
+  processingAuditId=requestId;
   if(claim.property_count!==properties.length)throw Error("Survey count changed. Stop and review.");
   let removedFiles=0;
   for(const property of properties){
@@ -87,7 +89,12 @@ Deno.serve(async request=>{
   return reply({completed:true,email,propertyCount:properties.length,removedStorageFiles:removedFiles,
     message:"Staging dummy deletion completed. No confirmation email was sent automatically."});
  }catch(e){
-   // A partial failure needs manual investigation. Do not report success or auto-retry.
+   // A partial failure needs manual investigation. Never automatically resume irreversible steps.
+   if(processingAuditId){
+     try {
+       await db.from("staging_account_deletion_audit").update({status:"failed"}).eq("id",processingAuditId).eq("status","processing");
+     } catch { /* Preserve original error; audit requires human review if unavailable. */ }
+   }
    return reply({error:"Deletion stopped: "+String((e as Error).message||e)+". Check audit and remaining records before retry."},500);
  }
 });
