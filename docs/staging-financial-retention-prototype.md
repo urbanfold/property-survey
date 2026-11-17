@@ -21,3 +21,11 @@ No real payment information has been copied, and no synthetic payment evidence h
 
 ## Current safety position
 Live administrator lookup is read-only, live deletion remains disabled, and `SURVEY_PAYMENTS_MODE` remains test.
+
+## Synthetic separation test result (17 Nov 2026)
+- Added a strict `synthetic_fixture = true` guard in staging. This test record is **not** a real Stripe transaction or accounting record.
+- Inserted one artificial £6 / GBP payment-evidence row with `FAKE_ONLY_` identifiers, referencing the **previously completed** deletion audit for `staging-owner-a@example.invalid`.
+- Verified: retained synthetic record = 1; deleted Auth account = 0; deleted account's properties = 0; unrelated owner B remains = 1; actual staging purchase rows = 0.
+- RLS/access: `anon` and `authenticated` SELECT denied; `service_role` SELECT allowed.
+- **Scope limit:** This only proves the ledger is independent of Auth and access-restricted. It does **NOT** demonstrate a real purchase being preserved before an Auth deletion, Stripe reconciliation, transaction durability, refund handling, or a fully automated retention-before-deletion procedure.
+- Live project untouched, no actual payment created, live deletion remains disabled.
