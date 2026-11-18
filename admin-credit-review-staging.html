@@ -29,10 +29,10 @@ table{border-collapse:collapse;width:100%;min-width:640px}td,th{border-bottom:1p
 </section><p id="status" role="status" aria-live="polite"></p>
 </main><script>
 "use strict";
-const URL="https://hexhtduvqzleoazusskh.supabase.co";
+const SUPABASE_URL="https://hexhtduvqzleoazusskh.supabase.co";
 const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhleGh0ZHV2cXpsZW9henVzc2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MjAyMTUsImV4cCI6MjEwOTI5NjIxNX0.T3qVJgnGLSmaKMJKfqZCYLcsH1QXKYf7JScBbUdkNwk";
 const ADMIN_UID="b83f87d8-abf2-4800-beab-8279917804c7";
-const sb=supabase.createClient(URL,ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"urbanfold-staging-admin-review-session"}});
+const sb=supabase.createClient(SUPABASE_URL,ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"urbanfold-staging-admin-review-session"}});
 const $=id=>document.getElementById(id);
 let currentSession=null;
 function status(message){$("status").textContent=message;if(!$("login-panel").hidden)$("login-status").textContent=message}
@@ -52,7 +52,7 @@ async function load(){
 if(!currentSession?.access_token)throw Error("Sign in to staging first");
 $("refresh").disabled=true;status("Loading protected review records…");
 try{
-const response=await fetch(URL+"/functions/v1/staging-credit-hold-admin-dashboard",{
+const response=await fetch(SUPABASE_URL+"/functions/v1/staging-credit-hold-admin-dashboard",{
 method:"POST",headers:{"authorization":"Bearer "+currentSession.access_token,"apikey":ANON,"content-type":"application/json"},body:"{}"});
 const data=await response.json();
 if(!response.ok)throw Error(data.error||"Review unavailable");
