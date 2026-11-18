@@ -19,7 +19,7 @@ table{border-collapse:collapse;width:100%;min-width:640px}td,th{border-bottom:1p
 <p>Use the Urbanfold staging administrator credentials. The password goes directly to Supabase Auth.</p>
 <form id="login-form"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
 <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
-<button type="submit">Sign in</button></form></section>
+<button id="sign-in-button" type="submit">Sign in</button><p id="login-status" role="status" aria-live="polite" style="min-height:1.5em;color:#126b76;font-weight:650"></p></form></section>
 <section id="dashboard" hidden>
 <div class="card"><p id="signed-in"></p><button id="refresh" type="button">Refresh review</button><button id="logout" type="button" class="secondary">Sign out</button>
 <p class="muted">No changes are made when this information is refreshed.</p></div>
@@ -35,7 +35,7 @@ const ADMIN_UID="b83f87d8-abf2-4800-beab-8279917804c7";
 const sb=supabase.createClient(URL,ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"urbanfold-staging-admin-review-session"}});
 const $=id=>document.getElementById(id);
 let currentSession=null;
-function status(message){$("status").textContent=message}
+function status(message){$("status").textContent=message;if(!$("login-panel").hidden)$("login-status").textContent=message}
 function add(tag,text,parent){const node=document.createElement(tag);node.textContent=String(text);parent.append(node);return node}
 function renderTable(target,rows,columns,empty){
 const root=$(target);root.replaceChildren();
@@ -67,10 +67,9 @@ status("Review loaded. No records changed.");
 }catch(e){status(e.message||"Review unavailable");}finally{$("refresh").disabled=false;}
 }
 async function signedIn(session){const {data:{user},error}=await sb.auth.getUser();if(error||user?.id!==ADMIN_UID||!user.email_confirmed_at){await sb.auth.signOut();currentSession=null;throw Error("Staging administrator access required");}
-currentSession=session;$("login-panel").hidden=true;$("dashboard").hidden=false;
-$("signed-in").textContent="Signed in as "+(user.email||"staging administrator");await load();}
-$("login-form").addEventListener("submit",async e=>{e.preventDefault();try{status("Signing in…");const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});$("password").value="";if(error)throw error;await signedIn(data.session);}catch(e){status(e.message||"Sign-in failed");}});
+currentSession=session;$("signed-in").textContent="Signed in as "+(user.email||"staging administrator");$("login-panel").hidden=true;$("dashboard").hidden=false;await load();}
+$("login-form").addEventListener("submit",async e=>{e.preventDefault();const btn=$("sign-in-button");btn.disabled=true;try{status("Checking staging administrator sign-in…");const email=$("email").value.trim();const password=$("password").value;if(!email||!password)throw Error("Enter both the staging email and password.");const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;if(!data.session)throw Error("No staging session was returned.");await signedIn(data.session);$("password").value="";}catch(err){status("Sign-in problem: "+(err.message||"Unknown issue")+". Your password has not been changed.");}finally{btn.disabled=false;}});
 $("refresh").addEventListener("click",()=>load());
 $("logout").addEventListener("click",async()=>{await sb.auth.signOut();currentSession=null;$("dashboard").hidden=true;$("login-panel").hidden=false;status("Signed out.");});
-sb.auth.getSession().then(async({data})=>{if(data.session){try{await signedIn(data.session);}catch(e){status(e.message||"Please sign in.");}}});
+sb.auth.getSession().then(async({data})=>{if(data.session&&!currentSession){try{await signedIn(data.session);}catch(e){status(e.message||"Please sign in.");}}}).catch(e=>status("Session check: "+(e.message||"Please sign in.")));
 </script></body></html>
