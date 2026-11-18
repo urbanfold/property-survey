@@ -31,6 +31,11 @@ table{border-collapse:collapse;width:100%;min-width:640px}td,th{border-bottom:1p
 <p class="warn"><strong>SIMULATED DISPLAY ONLY — NOT AN AUDIT RECORD.</strong> This example is not connected to a Stripe payment, customer, or approval. It demonstrates wording only; no financial evidence has been verified.</p>
 <div class="scroll"><table><thead><tr><th>Example decision</th><th>Illustrative reason</th><th>Can execute?</th></tr></thead><tbody><tr><td><strong>REVIEW_SUPPORTED_NOT_APPROVED</strong><p class="muted">Review supported — not authorised</p></td><td>Example only: a fully verified payment and matching signed event would be eligible for further independent administrator review. No hold or release is approved.</td><td><strong>No</strong></td></tr></tbody></table></div>
 </section>
+<section class="card"><h2>Current Stripe refund status — verified staging buyer</h2>
+<p class="muted">Compare the original immutable payment evidence with a fresh Stripe sandbox lookup. This panel is read-only; it never issues refunds or changes survey credits.</p>
+<button id="check-current-refund" type="button">Check current Stripe status (read only)</button>
+<p id="current-refund-status" role="status" aria-live="polite">Not checked in this session. Historical evidence alone cannot confirm current refund status.</p>
+<div id="current-refund-data"></div></section>
 <section class="card"><h2>Signed Stripe sandbox refund and dispute events</h2><p class="muted">Shows event deliveries and reconciliation classifications; financial details are not displayed.</p><div id="events"></div></section>
 </section><p id="status" role="status" aria-live="polite"></p>
 </main><script>
@@ -54,6 +59,32 @@ const body=add("tbody","",table);
 for(const row of rows){const tr=add("tr","",body);for(const [,key] of columns)add("td",row[key]??"—",tr);}
 }
 function when(value){return value?new Date(value).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}):"—"}
+async function checkCurrentRefund(){
+ const btn=$("check-current-refund");
+ $("current-refund-data").replaceChildren();
+ if(!currentSession?.access_token){$("current-refund-status").textContent="Administrator sign-in required.";return;}
+ btn.disabled=true;$("current-refund-status").textContent="Fetching current Stripe sandbox status without changing records…";
+ try{
+ const response=await fetch(SUPABASE_URL+"/functions/v1/staging-admin-current-stripe-refund-review",{
+ method:"POST",headers:{"authorization":"Bearer "+currentSession.access_token,"apikey":ANON,"content-type":"application/json"},
+ body:JSON.stringify({action:"check_current_refund_status",payment_intent_id:"pi_3UdEQGPMXWbKHeOv1JxQfaWQ"})});
+ const data=await response.json();
+ if(!response.ok)throw Error((data.error||"Fresh Stripe review unavailable")+(data.diagnostic?" — "+data.diagnostic:""));
+ if(data.environment!=="STAGING"||data.review_only!==true||data.credit_changes_authorised!==false||data.verified_buyer!==true)
+   throw Error("Unexpected review security result");
+ $("current-refund-status").textContent="Fresh Stripe lookup completed at "+when(data.checked_at)+". No financial records changed.";
+ renderTable("current-refund-data",[{
+  original:"PAID at original verification (historical evidence)",
+  current:data.current_stripe_status,
+  refunded:"£"+(data.refunded_amount_minor/100).toFixed(2)+" of £6.00",
+  disputed:data.disputed?"Yes":"No",
+  redeemed:data.credit_redeemed?"Yes":"No",
+  advice:data.recommendation,
+  executed:"No"
+ }],[["Original evidence","original"],["Current Stripe","current"],["Refund total","refunded"],["Disputed","disputed"],["Credit redeemed","redeemed"],["Review recommendation","advice"],["Change executed","executed"]],"Current payment status unavailable.");
+ }catch(e){$("current-refund-status").textContent="Current Stripe status unavailable: "+(e.message||"Unknown error")+". Original evidence was not changed."; }
+ finally{btn.disabled=false;}
+}
 async function load(){
 if(!currentSession?.access_token)throw Error("Sign in to staging first");
 $("refresh").disabled=true;status("Loading protected review records…");
@@ -76,6 +107,7 @@ async function signedIn(session){const {data:{user},error}=await sb.auth.getUser
 currentSession=session;$("signed-in").textContent="Signed in as "+(user.email||"staging administrator");$("login-panel").hidden=true;$("dashboard").hidden=false;await load();}
 $("login-form").addEventListener("submit",async e=>{e.preventDefault();const btn=$("sign-in-button");btn.disabled=true;try{status("Checking staging administrator sign-in…");const email=$("email").value.trim();const password=$("password").value;if(!email||!password)throw Error("Enter both the staging email and password.");const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;if(!data.session)throw Error("No staging session was returned.");await signedIn(data.session);$("password").value="";}catch(err){status("Sign-in problem: "+(err.message||"Unknown issue")+". Your password has not been changed.");}finally{btn.disabled=false;}});
 $("refresh").addEventListener("click",()=>load());
-$("logout").addEventListener("click",async()=>{await sb.auth.signOut();currentSession=null;$("dashboard").hidden=true;$("login-panel").hidden=false;status("Signed out.");});
+$("check-current-refund").addEventListener("click",()=>checkCurrentRefund());
+$("logout").addEventListener("click",async()=>{await sb.auth.signOut();currentSession=null;$("current-refund-data").replaceChildren();$("current-refund-status").textContent="Not checked in this session."; $("dashboard").hidden=true;$("login-panel").hidden=false;status("Signed out.");});
 sb.auth.getSession().then(async({data})=>{if(data.session&&!currentSession){try{await signedIn(data.session);}catch(e){status(e.message||"Please sign in.");}}}).catch(e=>status("Session check: "+(e.message||"Please sign in.")));
 </script></body></html>
