@@ -9,10 +9,11 @@ function settings(env) {
   const app = new URL(env('APP_URL') || DEFAULT_APP_URL);
   if (app.protocol !== 'https:' || app.search || app.hash || !app.pathname.endsWith('/')) throw new Error('Invalid application URL');
   const mode = env('SURVEY_PAYMENTS_MODE') || 'disabled';
-  const key = env('STRIPE_SECRET_KEY') || '';
-  const enabled = (mode === 'test' && key.startsWith('sk_test_')) || (mode === 'live' && key.startsWith('sk_live_'));
+  const key = (mode === 'live' ? env('STRIPE_LIVE_SECRET_KEY') : env('STRIPE_SECRET_KEY')) || '';
+  const enabled = (mode === 'test' && key.startsWith('sk_test_')) || (mode === 'live' && (key.startsWith('rk_live_') || key.startsWith('sk_live_')));
   return { app, mode, key, enabled, url: env('SUPABASE_URL'), anon: env('SUPABASE_ANON_KEY'),
-    service: env('SUPABASE_SERVICE_ROLE_KEY'), webhook: env('STRIPE_WEBHOOK_SECRET') };
+    service: env('SUPABASE_SERVICE_ROLE_KEY'),
+    webhook: mode === 'live' ? env('STRIPE_LIVE_WEBHOOK_SECRET') : env('STRIPE_WEBHOOK_SECRET') };
 }
 function json(body, status = 200, origin = null) {
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
