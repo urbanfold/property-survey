@@ -34,6 +34,9 @@ table{border-collapse:collapse;width:100%;min-width:640px}td,th{border-bottom:1p
 <section class="card"><h2>Current Stripe refund status — verified staging buyer</h2>
 <p class="muted">Compare the original immutable payment evidence with a fresh Stripe sandbox lookup. This panel is read-only; it never issues refunds or changes survey credits.</p>
 <button id="check-current-refund" type="button">Check current Stripe status (read only)</button>
+<button id="record-refund-audit" type="button" disabled>Record verified refund audit (STAGING)</button>
+<p class="muted">Recording saves a private review-only audit entry after a fresh Stripe check. It does not revoke a credit, activate a hold or issue a refund.</p>
+<p id="refund-audit-status" role="status" aria-live="polite">Verify the current fully refunded status before recording an audit.</p>
 <p id="current-refund-status" role="status" aria-live="polite">Not checked in this session. Historical evidence alone cannot confirm current refund status.</p>
 <div id="current-refund-data"></div></section>
 <section class="card"><h2>Signed Stripe sandbox refund and dispute events</h2><p class="muted">Shows event deliveries and reconciliation classifications; financial details are not displayed.</p><div id="events"></div></section>
@@ -59,8 +62,10 @@ const body=add("tbody","",table);
 for(const row of rows){const tr=add("tr","",body);for(const [,key] of columns)add("td",row[key]??"—",tr);}
 }
 function when(value){return value?new Date(value).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}):"—"}
+let eligibleRefundAudit=false;
 async function checkCurrentRefund(){
  const btn=$("check-current-refund");
+ eligibleRefundAudit=false;$("record-refund-audit").disabled=true;
  $("current-refund-data").replaceChildren();
  if(!currentSession?.access_token){$("current-refund-status").textContent="Administrator sign-in required.";return;}
  btn.disabled=true;$("current-refund-status").textContent="Fetching current Stripe sandbox status without changing records…";
@@ -73,6 +78,12 @@ async function checkCurrentRefund(){
  if(data.environment!=="STAGING"||data.review_only!==true||data.credit_changes_authorised!==false||data.verified_buyer!==true)
    throw Error("Unexpected review security result");
  $("current-refund-status").textContent="Fresh Stripe lookup completed at "+when(data.checked_at)+". No financial records changed.";
+ eligibleRefundAudit=data.current_stripe_status==="FULLY_REFUNDED" &&
+ data.refunded_amount_minor===600&&data.disputed===false&&data.credit_redeemed===false;
+ $("record-refund-audit").disabled=!eligibleRefundAudit;
+ $("refund-audit-status").textContent=eligibleRefundAudit?
+ "Confirmed full £6 refund. You can record a private review-only audit entry.":
+ "Refund audit action unavailable without a verified full refund and unredeemed purchase.";
  renderTable("current-refund-data",[{
   original:"PAID at original verification (historical evidence)",
   current:data.current_stripe_status,
@@ -108,6 +119,27 @@ currentSession=session;$("signed-in").textContent="Signed in as "+(user.email||"
 $("login-form").addEventListener("submit",async e=>{e.preventDefault();const btn=$("sign-in-button");btn.disabled=true;try{status("Checking staging administrator sign-in…");const email=$("email").value.trim();const password=$("password").value;if(!email||!password)throw Error("Enter both the staging email and password.");const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;if(!data.session)throw Error("No staging session was returned.");await signedIn(data.session);$("password").value="";}catch(err){status("Sign-in problem: "+(err.message||"Unknown issue")+". Your password has not been changed.");}finally{btn.disabled=false;}});
 $("refresh").addEventListener("click",()=>load());
 $("check-current-refund").addEventListener("click",()=>checkCurrentRefund());
-$("logout").addEventListener("click",async()=>{await sb.auth.signOut();currentSession=null;$("current-refund-data").replaceChildren();$("current-refund-status").textContent="Not checked in this session."; $("dashboard").hidden=true;$("login-panel").hidden=false;status("Signed out.");});
+$("record-refund-audit").addEventListener("click",async()=>{
+ const button=$("record-refund-audit");button.disabled=true;
+ if(!eligibleRefundAudit||!currentSession?.access_token){
+ $("refund-audit-status").textContent="Refresh the Stripe status before recording.";return;}
+ $("refund-audit-status").textContent="Independently checking Stripe again and saving review-only audit…";
+ try{
+ const response=await fetch(SUPABASE_URL+"/functions/v1/staging-admin-record-refund-audit",{
+ method:"POST",headers:{"authorization":"Bearer "+currentSession.access_token,"apikey":ANON,"content-type":"application/json"},
+ body:JSON.stringify({action:"record_refund_reconciliation_audit",payment_intent_id:"pi_3UdEQGPMXWbKHeOv1JxQfaWQ"})
+ });
+ const data=await response.json();
+ if(!response.ok)throw Error(data.error||"Refund audit unavailable");
+ if(data.recorded!==true||data.review_only!==true||data.matched_signed_event!==true||
+ data.credit_changed!==false||data.refund_issued!==false||data.hold_activated!==false)
+ throw Error("Unexpected audit security result");
+ $("refund-audit-status").textContent=(data.new_audit===true?
+ "Private refund reconciliation audit SAVED.":"Existing refund reconciliation audit confirmed; no duplicate added.")+
+ " £6 fully refunded. Historical evidence preserved. No credit, hold or refund changes executed.";
+ eligibleRefundAudit=false;
+ }catch(e){$("refund-audit-status").textContent="Audit not recorded: "+(e.message||"Unknown error")+". No credit changes.";eligibleRefundAudit=false}
+});
+$("logout").addEventListener("click",async()=>{await sb.auth.signOut();currentSession=null;eligibleRefundAudit=false;$("record-refund-audit").disabled=true;$("refund-audit-status").textContent="Verify the current Stripe status before recording an audit.";$("current-refund-data").replaceChildren();$("current-refund-status").textContent="Not checked in this session."; $("dashboard").hidden=true;$("login-panel").hidden=false;status("Signed out.");});
 sb.auth.getSession().then(async({data})=>{if(data.session&&!currentSession){try{await signedIn(data.session);}catch(e){status(e.message||"Please sign in.");}}}).catch(e=>status("Session check: "+(e.message||"Please sign in.")));
 </script></body></html>
