@@ -12,6 +12,7 @@ button{background:#167f84;color:white;border:0;border-radius:6px;padding:12px 17
 button.secondary{background:#64748b}button:disabled{opacity:.5}
 table{border-collapse:collapse;width:100%;min-width:640px}td,th{border-bottom:1px solid #dde5eb;text-align:left;padding:9px;vertical-align:top;overflow-wrap:anywhere}th{background:#f5f8fa}.scroll{overflow-x:auto}
 .muted{color:#526477}code{overflow-wrap:anywhere}#status{white-space:pre-wrap}
+.card{padding:24px}.scroll{margin-top:12px;border:1px solid #dbe5eb;border-radius:8px;overflow-x:auto}.scroll table{min-width:1040px;font-size:.93rem}.scroll th{white-space:nowrap;font-size:.86rem;background:#edf4f7}.scroll td{line-height:1.5;overflow-wrap:break-word}.scroll td:nth-child(4){min-width:190px}.scroll tbody tr:nth-child(even){background:#f8fafc}@media(max-width:640px){body{padding:12px}.card{padding:16px}}
 </style></head><body><main class="wrap">
 <h1>Urbanfold — STAGING Credit Review</h1>
 <p class="warn"><strong>STAGING TEST — READ ONLY.</strong> This screen cannot approve or activate holds, release credits, issue refunds, change balances or delete accounts.</p>
@@ -24,7 +25,7 @@ table{border-collapse:collapse;width:100%;min-width:640px}td,th{border-bottom:1p
 <div class="card"><p id="signed-in"></p><button id="refresh" type="button">Refresh review</button><button id="logout" type="button" class="secondary">Sign out</button>
 <p class="muted">No changes are made when this information is refreshed.</p></div>
 <section class="card"><h2>Proposed hold and release reviews</h2><p class="muted">Drafts only; no holds can become active.</p><div id="reviews"></div></section>
-<section class="card"><h2>Administrator decisions</h2><p class="muted">Rejected, deferred, and supported-for-review decisions. No decision authorises execution.</p><div id="decisions"></div></section>
+<section class="card"><h2>Administrator decisions</h2><p class="muted">Rejected, deferred, and supported-for-review decisions. No decision authorises execution.</p><p class="muted">Table scrolls horizontally on smaller screens. Rejected and deferred statuses are for review only.</p><div id="decisions"></div></section>
 <section class="card"><h2>Signed Stripe sandbox refund and dispute events</h2><p class="muted">Shows event deliveries and reconciliation classifications; financial details are not displayed.</p><div id="events"></div></section>
 </section><p id="status" role="status" aria-live="polite"></p>
 </main><script>
