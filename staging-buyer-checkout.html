@@ -1,4 +1,4 @@
-<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Urbanfold — STAGING Buyer Checkout</title><script src="vendor/supabase.js"></script><style>:root{font:16px/1.6 system-ui,sans-serif;background:#f1f5f9;color:#17303e}*{box-sizing:border-box}body{margin:0;padding:24px}.wrap{max-width:720px;margin:auto}.card{background:white;padding:24px;border-radius:12px;margin:16px 0;box-shadow:0 1px 6px #0001}h1{font-size:1.6rem;color:#126b76}h2{font-size:1.2rem}.warning{background:#fff7e6;border-left:4px solid #bf830b;padding:12px}input{width:100%;padding:12px;font:inherit;border:1px solid #9eb3bf;border-radius:6px;margin:5px 0 12px}label{font-weight:700}button{border:0;border-radius:7px;padding:12px 18px;background:#167f84;color:white;font-weight:700;cursor:pointer;margin-right:8px}button:disabled{opacity:.5}.secondary{background:#64748b}#message{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#576b78}</style></head><body><main class="wrap"><h1>Urbanfold — STAGING £6 Buyer Test</h1><p class="warning"><strong>SANDBOX TEST ONLY.</strong> No real card charge. Do not use this page for live purchases. Paying in Stripe test mode does not create or grant a live survey credit.</p><section id="login" class="card"><h2>Sign in as the dedicated test buyer</h2><form id="form"><label for="email">Test buyer email</label><input id="email" type="email" autocomplete="username" required value="urbanfolduk+staging-buyer-01@gmail.com"><label for="password">Test buyer password</label><input id="password" type="password" autocomplete="current-password" required><button type="submit" id="sign-in">Sign in</button></form><p><small>Use the password you gave this new test buyer in Supabase Authentication. It is not the administrator password.</small></p></section><section id="buyer" class="card" hidden><h2>Verified staging buyer</h2><p id="buyer-details"></p><p>One £6 sandbox Checkout session can be created here. We will inspect its Stripe references before associating any credit with the account.</p><button id="checkout" type="button">Prepare £6 sandbox checkout</button><button class="secondary" type="button" id="logout">Sign out</button></section><section class="card"><h2>Test status</h2><p id="message" role="status" aria-live="polite">Not signed in.</p><p id="return-result" hidden></p></section></main><script>
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Urbanfold — STAGING Buyer Checkout</title><script src="vendor/supabase.js"></script><style>:root{font:16px/1.6 system-ui,sans-serif;background:#f1f5f9;color:#17303e}*{box-sizing:border-box}body{margin:0;padding:24px}.wrap{max-width:720px;margin:auto}.card{background:white;padding:24px;border-radius:12px;margin:16px 0;box-shadow:0 1px 6px #0001}h1{font-size:1.6rem;color:#126b76}h2{font-size:1.2rem}.warning{background:#fff7e6;border-left:4px solid #bf830b;padding:12px}input{width:100%;padding:12px;font:inherit;border:1px solid #9eb3bf;border-radius:6px;margin:5px 0 12px}label{font-weight:700}button{border:0;border-radius:7px;padding:12px 18px;background:#167f84;color:white;font-weight:700;cursor:pointer;margin-right:8px}button:disabled{opacity:.5}.secondary{background:#64748b}#message,#verification-result{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#576b78}</style></head><body><main class="wrap"><h1>Urbanfold — STAGING £6 Buyer Test</h1><p class="warning"><strong>SANDBOX TEST ONLY.</strong> No real card charge. Do not use this page for live purchases. Paying in Stripe test mode does not create or grant a live survey credit.</p><section id="login" class="card"><h2>Sign in as the dedicated test buyer</h2><form id="form"><label for="email">Test buyer email</label><input id="email" type="email" autocomplete="username" required value="urbanfolduk+staging-buyer-01@gmail.com"><label for="password">Test buyer password</label><input id="password" type="password" autocomplete="current-password" required><button type="submit" id="sign-in">Sign in</button></form><p><small>Use the password you gave this new test buyer in Supabase Authentication. It is not the administrator password.</small></p></section><section id="buyer" class="card" hidden><h2>Verified staging buyer</h2><p id="buyer-details"></p><p>One £6 sandbox Checkout session can be created here. We will inspect its Stripe references before associating any credit with the account.</p><button id="checkout" type="button">Prepare £6 sandbox checkout</button><button class="secondary" type="button" id="logout">Sign out</button></section><section class="card" id="verification" hidden><h2>Verify the returned Stripe test payment</h2><p>This checks Stripe directly and makes no credit changes.</p><label for="verify-session">Stripe Checkout Session ID</label><input id="verify-session" type="text" autocomplete="off" spellcheck="false" placeholder="cs_test_..."><button id="verify-payment" type="button">Verify sandbox payment (read only)</button><p id="verification-result" role="status" aria-live="polite"></p></section><section class="card"><h2>Test status</h2><p id="message" role="status" aria-live="polite">Not signed in.</p><p id="return-result" hidden></p></section></main><script>
 "use strict";
 const PROJECT_URL="https://hexhtduvqzleoazusskh.supabase.co";
 const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhleGh0ZHV2cXpsZW9henVzc2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MjAyMTUsImV4cCI6MjEwOTI5NjIxNX0.T3qVJgnGLSmaKMJKfqZCYLcsH1QXKYf7JScBbUdkNwk";
@@ -13,7 +13,7 @@ const {data:{user},error}=await sb.auth.getUser();
 if(error||!user||user.id!==BUYER_UID||user.email?.toLowerCase()!==BUYER_EMAIL||!user.email_confirmed_at){
  await sb.auth.signOut();throw Error("Only the dedicated staging buyer can use this page.");
 }
-session=s;el("login").hidden=true;el("buyer").hidden=false;el("buyer-details").textContent="Signed in: "+user.email;report("Buyer verified. No payment or credit created.");
+session=s;el("login").hidden=true;el("buyer").hidden=false;el("verification").hidden=false;el("buyer-details").textContent="Signed in: "+user.email;report("Buyer verified. No payment or credit created.");
 }
 el("form").addEventListener("submit",async e=>{e.preventDefault();el("sign-in").disabled=true;try{
 report("Checking staging buyer login…");
@@ -39,13 +39,37 @@ report("Stripe test checkout prepared; redirecting to secure sandbox…");
 location.assign(link.href);
 }catch(e){report("Checkout setup: "+(e.message||"Unavailable")+". No payment confirmation.");}finally{btn.disabled=false}
 });
-el("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;el("buyer").hidden=true;el("login").hidden=false;report("Signed out.")});
+el("verify-payment").addEventListener("click",async()=>{
+if(!session?.access_token)return report("Sign in as the staging buyer first.");
+const id=el("verify-session").value.trim();
+if(!/^cs_test_[A-Za-z0-9]+$/.test(id)){el("verification-result").textContent="Enter the Stripe sandbox Checkout Session ID shown in Test status.";return;}
+const btn=el("verify-payment");btn.disabled=true;
+el("verification-result").textContent="Checking original Stripe Checkout Session, buyer ownership and test charge…";
+try{
+const res=await fetch(PROJECT_URL+"/functions/v1/staging-buyer-verify-payment-readonly",{
+method:"POST",headers:{"authorization":"Bearer "+session.access_token,"apikey":ANON,"content-type":"application/json"},
+body:JSON.stringify({checkout_session_id:id})});
+const data=await res.json();if(!res.ok)throw Error(data.reason||data.error||"Stripe verification failed");
+el("verification-result").textContent=[
+"Verified paid test payment: "+(data.verified===true?"YES":"NO"),
+"Correct staging buyer: "+(data.buyer_matched===true?"YES":"NO"),
+"Amount: "+(data.amount_minor===600&&data.currency==="gbp"?"£6.00":"Not confirmed"),
+"Status: "+(data.payment_status||"Unknown"),
+"Refunded: "+(data.refunded_amount_minor||0)+" pence",
+"Disputed: "+(data.disputed===true?"YES":"NO"),
+"PaymentIntent: "+(data.payment_intent_id||"Not available"),
+"No survey credit has been granted by this verification."
+].join("\n");
+}catch(e){el("verification-result").textContent="Verification unavailable: "+(e.message||"Unknown error")+". No credit changed."}
+finally{btn.disabled=false}
+});
+el("logout").addEventListener("click",async()=>{await sb.auth.signOut();session=null;el("buyer").hidden=true;el("login").hidden=false;el("verification").hidden=true;report("Signed out.")});
 const qs=new URLSearchParams(location.search);const result=qs.get("result");
 if(result==="success"||result==="cancelled"){
 const id=qs.get("session_id")||"";
 const msg=result==="success"&&/^cs_test_[A-Za-z0-9]+$/.test(id)
 ?"Returned from Stripe sandbox. Session ID: "+id+" — this is not proof of payment and no credit has been granted.":"Stripe sandbox checkout cancelled. No credit granted.";
-el("return-result").textContent=msg;el("return-result").hidden=false;report(msg);
+el("return-result").textContent=msg;el("return-result").hidden=false;report(msg);if(/^cs_test_[A-Za-z0-9]+$/.test(id))el("verify-session").value=id;
 if(result==="success")sessionStorage.removeItem("urbanfold-staging-buyer-checkout-attempt-v3");
 history.replaceState(null,"",location.pathname);
 }
