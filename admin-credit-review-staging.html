@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Urbanfold — STAGING Credit Review (Read Only)</title>
+<script src="vendor/supabase.js"></script>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#172c38;background:#f1f5f9}
+*{box-sizing:border-box}body{margin:0;padding:20px}.wrap{max-width:1100px;margin:auto}
+h1{color:#126b76;font-size:1.65rem}h2{font-size:1.15rem}.card{background:white;padding:22px;border-radius:12px;margin:16px 0;box-shadow:0 1px 6px #0001}
+.warn{border-left:4px solid #b7791f;background:#fff9e9;padding:12px}
+input{display:block;width:100%;padding:12px;border:1px solid #aebec7;border-radius:6px;margin:6px 0 12px;font:inherit}label{font-weight:650}
+button{background:#167f84;color:white;border:0;border-radius:6px;padding:12px 17px;font-weight:650;cursor:pointer;margin-right:8px}
+button.secondary{background:#64748b}button:disabled{opacity:.5}
+table{border-collapse:collapse;width:100%;min-width:640px}td,th{border-bottom:1px solid #dde5eb;text-align:left;padding:9px;vertical-align:top;overflow-wrap:anywhere}th{background:#f5f8fa}.scroll{overflow-x:auto}
+.muted{color:#526477}code{overflow-wrap:anywhere}#status{white-space:pre-wrap}
+</style></head><body><main class="wrap">
+<h1>Urbanfold — STAGING Credit Review</h1>
+<p class="warn"><strong>STAGING TEST — READ ONLY.</strong> This screen cannot approve or activate holds, release credits, issue refunds, change balances or delete accounts.</p>
+<section class="card" id="login-panel"><h2>Administrator sign in</h2>
+<p>Use the Urbanfold staging administrator credentials. The password goes directly to Supabase Auth.</p>
+<form id="login-form"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+<button type="submit">Sign in</button></form></section>
+<section id="dashboard" hidden>
+<div class="card"><p id="signed-in"></p><button id="refresh" type="button">Refresh review</button><button id="logout" type="button" class="secondary">Sign out</button>
+<p class="muted">No changes are made when this information is refreshed.</p></div>
+<section class="card"><h2>Proposed hold and release reviews</h2><p class="muted">Drafts only; no holds can become active.</p><div id="reviews"></div></section>
+<section class="card"><h2>Administrator decisions</h2><p class="muted">Rejected, deferred, and supported-for-review decisions. No decision authorises execution.</p><div id="decisions"></div></section>
+<section class="card"><h2>Signed Stripe sandbox refund and dispute events</h2><p class="muted">Shows event deliveries and reconciliation classifications; financial details are not displayed.</p><div id="events"></div></section>
+</section><p id="status" role="status" aria-live="polite"></p>
+</main><script>
+"use strict";
+const URL="https://hexhtduvqzleoazusskh.supabase.co";
+const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhleGh0ZHV2cXpsZW9henVzc2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MjAyMTUsImV4cCI6MjEwOTI5NjIxNX0.T3qVJgnGLSmaKMJKfqZCYLcsH1QXKYf7JScBbUdkNwk";
+const ADMIN_UID="b83f87d8-abf2-4800-beab-8279917804c7";
+const sb=supabase.createClient(URL,ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"urbanfold-staging-admin-review-session"}});
+const $=id=>document.getElementById(id);
+let currentSession=null;
+function status(message){$("status").textContent=message}
+function add(tag,text,parent){const node=document.createElement(tag);node.textContent=String(text);parent.append(node);return node}
+function renderTable(target,rows,columns,empty){
+const root=$(target);root.replaceChildren();
+if(!Array.isArray(rows)||rows.length===0){add("p",empty,root);return;}
+const scroll=add("div","",root);scroll.className="scroll";
+const table=document.createElement("table");scroll.append(table);
+const head=add("thead","",table),top=add("tr","",head);
+for(const [label] of columns)add("th",label,top);
+const body=add("tbody","",table);
+for(const row of rows){const tr=add("tr","",body);for(const [,key] of columns)add("td",row[key]??"—",tr);}
+}
+function when(value){return value?new Date(value).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}):"—"}
+async function load(){
+if(!currentSession?.access_token)throw Error("Sign in to staging first");
+$("refresh").disabled=true;status("Loading protected review records…");
+try{
+const response=await fetch(URL+"/functions/v1/staging-credit-hold-admin-dashboard",{
+method:"POST",headers:{"authorization":"Bearer "+currentSession.access_token,"apikey":ANON,"content-type":"application/json"},body:"{}"});
+const data=await response.json();
+if(!response.ok)throw Error(data.error||"Review unavailable");
+if(data.environment!=="STAGING"||data.review_only!==true)throw Error("Unexpected environment");
+renderTable("reviews",(data.reviews||[]).map(x=>({created:when(x.requested_at),action:x.action,reason:x.reason,status:x.status,evidence:x.signed_event_matched?"Matched":"Missing",executed:"No"})),
+[["Requested","created"],["Action","action"],["Reason","reason"],["Status","status"],["Stripe event","evidence"],["Executed","executed"]],"No pending draft hold or release reviews.");
+renderTable("decisions",(data.decisions||[]).map(x=>({date:when(x.reviewed_at),decision:x.decision,action:x.action,reason:x.reason,event:x.signed_event_matched?"Matched":"Missing",evidence:x.financial_evidence_matched?"Matched":"Missing",fixture:x.manual_fixture_blocked?"Blocked test purchaser":"No",executed:"No"})),
+[["Reviewed","date"],["Decision","decision"],["Action","action"],["Reason","reason"],["Stripe event","event"],["Financial evidence","evidence"],["Buyer","fixture"],["Executed","executed"]],"No administrator decisions have been recorded.");
+renderTable("events",(data.webhook_events||[]).map(x=>({date:when(x.last_received_at),type:x.type,deliveries:x.deliveries,match:x.payment_match_decision,linked:x.matched_purchases,decision:x.review_decision})),
+[["Received","date"],["Event","type"],["Deliveries","deliveries"],["Payment classification","match"],["Matched purchases","linked"],["Audit status","decision"]],"No signed refund or dispute events have been recorded.");
+status("Review loaded. No records changed.");
+}catch(e){status(e.message||"Review unavailable");}finally{$("refresh").disabled=false;}
+}
+async function signedIn(session){const {data:{user},error}=await sb.auth.getUser();if(error||user?.id!==ADMIN_UID||!user.email_confirmed_at){await sb.auth.signOut();currentSession=null;throw Error("Staging administrator access required");}
+currentSession=session;$("login-panel").hidden=true;$("dashboard").hidden=false;
+$("signed-in").textContent="Signed in as "+(user.email||"staging administrator");await load();}
+$("login-form").addEventListener("submit",async e=>{e.preventDefault();try{status("Signing in…");const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});$("password").value="";if(error)throw error;await signedIn(data.session);}catch(e){status(e.message||"Sign-in failed");}});
+$("refresh").addEventListener("click",()=>load());
+$("logout").addEventListener("click",async()=>{await sb.auth.signOut();currentSession=null;$("dashboard").hidden=true;$("login-panel").hidden=false;status("Signed out.");});
+sb.auth.getSession().then(async({data})=>{if(data.session){try{await signedIn(data.session);}catch(e){status(e.message||"Please sign in.");}}});
+</script></body></html>
