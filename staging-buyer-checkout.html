@@ -25,7 +25,7 @@ el("checkout").addEventListener("click",async()=>{
 if(!session?.access_token)return report("Sign in first.");
 const btn=el("checkout");btn.disabled=true;report("Requesting verified £6 sandbox checkout…");
 try{
-const key="urbanfold-staging-buyer-checkout-attempt-v2";
+const key="urbanfold-staging-buyer-checkout-attempt-v3";
 let attempt=sessionStorage.getItem(key);
 if(!attempt){attempt=crypto.randomUUID();sessionStorage.setItem(key,attempt)}
 const res=await fetch(PROJECT_URL+"/functions/v1/staging-buyer-create-checkout",{
@@ -46,7 +46,7 @@ const id=qs.get("session_id")||"";
 const msg=result==="success"&&/^cs_test_[A-Za-z0-9]+$/.test(id)
 ?"Returned from Stripe sandbox. Session ID: "+id+" — this is not proof of payment and no credit has been granted.":"Stripe sandbox checkout cancelled. No credit granted.";
 el("return-result").textContent=msg;el("return-result").hidden=false;report(msg);
-if(result==="success")sessionStorage.removeItem("urbanfold-staging-buyer-checkout-attempt-v2");
+if(result==="success")sessionStorage.removeItem("urbanfold-staging-buyer-checkout-attempt-v3");
 history.replaceState(null,"",location.pathname);
 }
 sb.auth.getSession().then(async({data})=>{if(data.session){try{await startBuyer(data.session)}catch(e){report(e.message)}}}).catch(e=>report(e.message||"Sign in required"));
