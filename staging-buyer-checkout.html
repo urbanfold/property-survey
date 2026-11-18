@@ -31,7 +31,7 @@ if(!attempt){attempt=crypto.randomUUID();sessionStorage.setItem(key,attempt)}
 const res=await fetch(PROJECT_URL+"/functions/v1/staging-buyer-create-checkout",{
 method:"POST",headers:{"authorization":"Bearer "+session.access_token,"apikey":ANON,"content-type":"application/json"},
 body:JSON.stringify({action:"create_test_checkout",attempt_id:attempt})});
-const data=await res.json();if(!res.ok)throw Error(data.error||"Checkout unavailable");
+const data=await res.json();if(!res.ok){const details=[data.http_status?"HTTP "+data.http_status:null,data.stripe_error_type,data.stripe_error_code,data.stripe_error_param?"Field: "+data.stripe_error_param:null].filter(Boolean).join(" / ");throw Error((data.error||"Checkout unavailable")+(details?" Details: "+details:""));}
 if(!data.test_mode||data.amount_minor!==600||data.currency!=="gbp"||data.buyer_user_id!==BUYER_UID||data.credit_granted!==false)throw Error("Unexpected checkout identity or amount");
 const link=new URL(data.url);
 if(link.protocol!=="https:"||link.hostname!=="checkout.stripe.com")throw Error("Unverified checkout host");
