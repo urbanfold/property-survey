@@ -9,7 +9,8 @@
         });
         let passwordRecoveryActive = false;
         let recoveryUserId = null;
-        const sb = window.supabase.createClient('https://arnzqizcycesukplmvuc.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFybnpxaXpjeWNlc3VrcGxtdnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTc5MTAsImV4cCI6MjEwNzczMzkxMH0.yj80dlDvAhNBBi6nTWu3bWWQMBt_ZaqmxkYKLnlnFLA');
+        // STAGING BUILD ONLY: this branch must never be merged or published as the live app.
+        const sb = window.supabase.createClient('https://hexhtduvqzleoazusskh.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhleGh0ZHV2cXpsZW9henVzc2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MjAyMTUsImV4cCI6MjEwOTI5NjIxNX0.T3qVJgnGLSmaKMJKfqZCYLcsH1QXKYf7JScBbUdkNwk');
         const ADMIN_EMAIL = 'urbanfolduk@gmail.com';
         let currentUser = null;
         let currentPropertyId = null;
