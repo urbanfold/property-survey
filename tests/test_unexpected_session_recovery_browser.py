@@ -59,7 +59,6 @@ def main():
         assert 'Pending edits recovered' in page.locator('#survey-source').inner_text()
         page.get_by_role('button',name='Save progress',exact=True).click()
         expect(page.locator('#loading')).to_be_hidden(timeout=15000)
-        assert page.evaluate("!!localStorage.getItem('urbanfold_draft')") is False or True # draft may be discarded after cloud save
         assert not errors,errors
         assert not fixture.unexpected,fixture.unexpected
         print('PASS isolated browser: expired session hides private data; denied same-user access blocks; reverified same-user recovers latest measurement')
