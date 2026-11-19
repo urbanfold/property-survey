@@ -86,6 +86,84 @@
             finally { setLoading(false); }
         }
 
+        // Recovery exists only in this tab's memory. No private snapshot is persisted
+        // while signed out; cloud access is rechecked using the next signed-in user.
+        let lockedSessionSurvey = null;
+        let recoveringSessionSurvey = false;
+        let intentionalSignOut = false;
+        const logoutChannel = typeof BroadcastChannel === 'function'
+            ? new BroadcastChannel('urbanfold-logout-privacy') : null;
+        logoutChannel?.addEventListener('message', event => {
+            if (event.data?.type !== 'deliberate-signout') return;
+            const id = event.data.userId;
+            if (currentUser?.id === id || lockedSessionSurvey?.userId === id) {
+                lockedSessionSurvey = null;
+                clearSignedOutSurveyData();
+            }
+        });
+
+        function lockUnexpectedSession() {
+            if (currentUser && currentPropertyId) {
+                try {
+                    lockedSessionSurvey = {
+                        userId: currentUser.id,
+                        draft: structuredClone(captureSurvey()),
+                        cloudVersion: activeCloudVersion
+                    };
+                } catch (_) { lockedSessionSurvey = null; }
+            }
+            clearSignedOutSurveyData();
+            if (lockedSessionSurvey) {
+                document.getElementById('login-notice').textContent =
+                    'Your session ended. Sign in to the same account to recover pending edits in this tab. Do not refresh or close this tab before recovery.';
+            }
+        }
+
+        async function restoreUnexpectedSession() {
+            if (!lockedSessionSurvey || !currentUser) return false;
+            const snapshot = lockedSessionSurvey;
+            if (snapshot.userId !== currentUser.id) {
+                lockedSessionSurvey = null;
+                return false;
+            }
+            if (recoveringSessionSurvey) return true;
+            recoveringSessionSurvey = true;
+            const expectedUser = currentUser.id;
+            try {
+                const {data: verified, error: authError} = await sb.auth.getUser();
+                if (authError || verified?.user?.id !== expectedUser) throw Error('Account verification failed');
+                const {data: property, error: propertyError} = await sb.from('properties')
+                    .select('id').eq('id', snapshot.draft.propertyId).single();
+                if (propertyError || property?.id !== snapshot.draft.propertyId) throw Error('Property access was denied');
+                if (!currentUser || currentUser.id !== expectedUser || lockedSessionSurvey !== snapshot) return true;
+                draftWritesEnabled = false;
+                if (!loadDraft(JSON.stringify({...snapshot.draft, userId: expectedUser}))) {
+                    throw Error('Unable to load temporary survey');
+                }
+                activeCloudVersion = snapshot.cloudVersion;
+                lockedSessionSurvey = null;
+                draftWritesEnabled = true;
+                saveDraft();
+                showSurveySource('Pending edits recovered in this tab. Select Save progress to confirm cloud storage.');
+                return true;
+            } catch (_) {
+                if (currentUser?.id === expectedUser && lockedSessionSurvey === snapshot) {
+                    showView('view-dashboard');
+                    const list = document.getElementById('dashboard-list');
+                    list.textContent = 'Your pending edits are locked until we can verify access to your survey.';
+                    const retry = document.createElement('button');
+                    retry.type = 'button';
+                    retry.className = 'btn';
+                    retry.textContent = 'Retry pending-work recovery';
+                    retry.onclick = () => loadDashboard();
+                    list.appendChild(retry);
+                }
+                return true;
+            } finally {
+                recoveringSessionSurvey = false;
+            }
+        }
+
         // A deliberate logout must not retain measurements, client data or photos in
         // browser storage or the still-open page. Cloud-saved records are untouched.
         function hasPrivateDeviceDrafts() {
@@ -149,10 +227,15 @@
             // Warn even if browser storage is unavailable but an active survey is open.
             if ((currentPropertyId || hasPrivateDeviceDrafts()) &&
                 !confirm('Signing out removes private survey drafts stored on this device. Save progress to the cloud first if you need to keep unsaved work. Sign out now?')) return;
+            const signedOutUserId = currentUser?.id || lockedSessionSurvey?.userId;
+            intentionalSignOut = true;
             try {
                 await requireResult(sb.auth.signOut(), 'Sign out');
+                lockedSessionSurvey = null;
                 clearSignedOutSurveyData();
+                logoutChannel?.postMessage({type:'deliberate-signout',userId:signedOutUserId});
             } catch (error) { alert(error.message); }
+            finally { intentionalSignOut = false; }
         }
 
         function activatePasswordRecovery(session) {
@@ -315,6 +398,7 @@
 
         async function loadDashboard() {
             if (!currentUser) { showView('view-auth'); return; }
+            if (await restoreUnexpectedSession()) return;
             const dashboardUserId = currentUser.id;
             saveDraft();
             showView('view-dashboard');
@@ -1400,6 +1484,29 @@
         // The callback does not await auth operations, avoiding the auth client's lock.
         if (typeof sb.auth.onAuthStateChange === 'function') {
             sb.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT' && currentUser) {
+                    if (intentionalSignOut) {
+                        lockedSessionSurvey = null;
+                        clearSignedOutSurveyData();
+                    } else {
+                        lockUnexpectedSession();
+                    }
+                }
+                if (['SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event) && session?.user) {
+                    if (lockedSessionSurvey && lockedSessionSurvey.userId !== session.user.id) {
+                        lockedSessionSurvey = null;
+                    }
+                    // Switching accounts cannot leave another user's data visible.
+                    if (currentUser && currentUser.id !== session.user.id) {
+                        clearSignedOutSurveyData();
+                        currentUser = session.user;
+                        queueMicrotask(() => {
+                            if (currentUser?.id === session.user.id && !passwordRecoveryActive) void loadDashboard();
+                        });
+                    } else if (currentUser?.id === session.user.id) {
+                        currentUser = session.user;
+                    }
+                }
                 if (event === 'PASSWORD_RECOVERY' && (recoveryLinkRequested || passwordRecoveryActive)) activatePasswordRecovery(session);
             });
         }
