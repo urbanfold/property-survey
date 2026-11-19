@@ -23,16 +23,19 @@ def main():
             page.locator('#detail-'+field).fill(value)
         page.get_by_role('button',name='Save & Continue',exact=True).click()
         expect(page.locator('#view-type')).to_be_visible(timeout=15000)
-        page.get_by_role('button',name='Back to Dashboard',exact=True).click()
+        # The survey creation wizard has no Back to Dashboard button on this view.
+        # Save the actual fixture property ID, then use the app's dashboard function.
+        property_id=page.evaluate('currentPropertyId')
+        page.evaluate('loadDashboard()')
         expect(page.locator('#view-dashboard')).to_be_visible(timeout=15000)
 
         # Suspend the cloud snapshot resolution while the original user signs out.
-        page.evaluate("""() => {
+        page.evaluate("""propertyId => {
             window._oldFetchSnapshot = fetchSurveySnapshot;
             window._resolveStaleSurvey = null;
             fetchSurveySnapshot = () => new Promise(resolve => { window._resolveStaleSurvey=resolve; });
-            window._staleResume = resumeSurvey(currentPropertyId || document.querySelector('.survey-item')?.dataset?.id || 'fake-property');
-        }""")
+            window._staleResume = resumeSurvey(propertyId);
+        }""",property_id)
         page.wait_for_function('typeof window._resolveStaleSurvey === "function"')
         page.evaluate('handleLogout()')
         expect(page.locator('#view-auth')).to_be_visible(timeout=12000)
