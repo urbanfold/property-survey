@@ -27,6 +27,7 @@ def main():
         expect(page.locator('#view-type')).to_be_visible()
         page.locator('#prop-type').select_option('detached')
         page.evaluate("showView('view-interior-rooms')")
+        page.locator('.room-header').first.click()
         page.locator('#len-Porch').fill('7.321')
         property_id=page.evaluate('currentPropertyId')
         assert page.evaluate("!!localStorage.getItem('urbanfold_draft')")
