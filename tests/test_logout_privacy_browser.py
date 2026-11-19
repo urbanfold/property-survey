@@ -14,13 +14,23 @@ def main():
         page=context.new_page()
         errors=[]
         decisions={"accept":False}
+        dialogs=[]
         page.on("pageerror",lambda error:errors.append(str(error)))
-        page.on("dialog",lambda dialog:dialog.accept() if decisions["accept"] else dialog.dismiss())
+        def respond_to_dialog(dialog):
+            dialogs.append({"type":dialog.type,"message":dialog.message})
+            print("Browser dialog:",dialog.type,dialog.message,flush=True)
+            if decisions["accept"]: dialog.accept()
+            else: dialog.dismiss()
+        page.on("dialog",respond_to_dialog)
         page.goto(ORIGIN)
         page.locator("#login-email").fill("urbanfolduk@gmail.com")
         page.locator("#login-password").fill("fixture-password-not-a-real-account")
         page.get_by_role("button",name="Log In",exact=True).click()
-        expect(page.locator("#view-dashboard")).to_be_visible()
+        try:
+            expect(page.locator("#view-dashboard")).to_be_visible()
+        except AssertionError:
+            print("Login diagnostic: current user:",page.evaluate("currentUser?.id ?? null"),"loading:",page.locator("#loading").is_visible(),"dialogs:",dialogs,"unexpected routes:",fixture.unexpected,flush=True)
+            raise
         page.get_by_role("button",name="+ Start New Survey").click()
         page.locator("#detail-name").fill("Offline logout security case")
         page.locator("#detail-client-email").fill("fixture@example.test")
