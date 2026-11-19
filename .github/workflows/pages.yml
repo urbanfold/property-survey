@@ -2,7 +2,7 @@ name: Verify and publish survey app
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging/f01-isolated-acceptance-2026-11-19]
   pull_request:
     branches: [main]
   workflow_dispatch:
