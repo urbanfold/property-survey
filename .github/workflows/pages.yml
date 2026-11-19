@@ -29,6 +29,9 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Check application JavaScript
         run: node --input-type=module --check < app.js
+      - name: Verify staging-only Supabase project and browser keys
+        if: startsWith(github.ref, 'refs/heads/staging/f01-isolated-acceptance-')
+        run: python scripts/check_staging_acceptance_bundle.py
       - name: Test sign-out privacy and stale account dashboard protection
         run: node --test tests/test_logout_privacy.mjs
       - name: Test deliberate logout in isolated Chromium browser
