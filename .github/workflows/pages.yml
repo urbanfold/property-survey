@@ -35,6 +35,8 @@ jobs:
         run: python tests/test_logout_privacy_browser.py
       - name: Test unexpected session expiry and same-user recovery in isolated Chromium
         run: python tests/test_unexpected_session_recovery_browser.py
+      - name: Test late survey response is ignored after logout
+        run: python tests/test_logout_async_race_browser.py
       - name: Check secure survey notification cutover
         run: node --test tests/test_notification_cutover.mjs
       - name: Check dashboard payment deployment files
