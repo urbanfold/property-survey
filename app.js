@@ -86,14 +86,72 @@
             finally { setLoading(false); }
         }
 
+        // A deliberate logout must not retain measurements, client data or photos in
+        // browser storage or the still-open page. Cloud-saved records are untouched.
+        function hasPrivateDeviceDrafts() {
+            try {
+                return Object.keys(localStorage).some(key =>
+                    key === 'urbanfold_draft' || key.startsWith('urbanfold_draft_'));
+            } catch (_) { return true; } // Fail safely when browser storage cannot be inspected.
+        }
+
+        function clearPrivateDeviceDrafts() {
+            try {
+                for (const key of Object.keys(localStorage)) {
+                    if (key === 'urbanfold_draft' || key.startsWith('urbanfold_draft_')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                return true;
+            } catch (_) { return false; }
+        }
+
+        function clearSignedOutSurveyData() {
+            // Disable writes before switching views: showView() otherwise saves drafts.
+            draftWritesEnabled = false;
+            currentUser = null;
+            currentPropertyId = null;
+            newPropertyId = null;
+            activeCloudVersion = null;
+            appState = { photos: {}, roomPhotos: {} };
+            pendingPhotoDeletions = [];
+            signedPhotoUrls.clear();
+            photoJobs.clear();
+            clearRecoveryState();
+            hidePasswords();
+            document.querySelectorAll('#view-details input, #view-details textarea, #view-type select, #view-extension input, #view-extension textarea, #view-auth input, #view-interior-sketch textarea, #view-interior-sketch input, #view-interior-rooms input, #view-interior-rooms textarea').forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') input.checked = false;
+                else input.value = '';
+            });
+            document.querySelectorAll('.preview-gallery').forEach(gallery => gallery.replaceChildren());
+            for (const id of ['dashboard-list', 'survey-review-content', 'pdf-rooms-list',
+                'pdf-address', 'pdf-postcode', 'pdf-name', 'pdf-date', 'pdf-type',
+                'pdf-ext-type', 'pdf-ext-dims', 'pdf-ext-desc', 'notification-status']) {
+                document.getElementById(id)?.replaceChildren();
+            }
+            document.getElementById('exterior-grid')?.replaceChildren();
+            const pdf = document.getElementById('pdf-content');
+            if (pdf) pdf.style.display = 'none';
+            const adminPdf = document.getElementById('admin-pdf-section');
+            if (adminPdf) adminPdf.style.display = 'none';
+            renderRoomsList();
+            const draftsCleared = clearPrivateDeviceDrafts();
+            showView('view-auth');
+            const notice = document.getElementById('login-notice');
+            if (notice) notice.textContent = draftsCleared ?
+                'Signed out. Private device drafts were cleared; cloud-saved surveys remain available.' :
+                'Signed out. Browser storage could not be fully cleared; avoid this device for private work.';
+        }
+
         async function handleLogout() {
+            // Give the user an opportunity to save current work to the cloud first.
             saveDraft();
+            // Warn even if browser storage is unavailable but an active survey is open.
+            if ((currentPropertyId || hasPrivateDeviceDrafts()) &&
+                !confirm('Signing out removes private survey drafts stored on this device. Save progress to the cloud first if you need to keep unsaved work. Sign out now?')) return;
             try {
                 await requireResult(sb.auth.signOut(), 'Sign out');
-                currentUser = null;
-                currentPropertyId = null;
-                signedPhotoUrls.clear();
-                showView('view-auth');
+                clearSignedOutSurveyData();
             } catch (error) { alert(error.message); }
         }
 
@@ -257,6 +315,7 @@
 
         async function loadDashboard() {
             if (!currentUser) { showView('view-auth'); return; }
+            const dashboardUserId = currentUser.id;
             saveDraft();
             showView('view-dashboard');
             handlePaymentReturn();
@@ -266,6 +325,8 @@
                 let query = sb.from('properties').select('*').order('created_at', { ascending: false });
                 if (currentUser.email !== ADMIN_EMAIL) query = query.eq('user_id', currentUser.id);
                 const data = await requireResult(query, 'Load surveys');
+                // Do not resurrect a previous customer's survey after signing out or switching users.
+                if (!currentUser || currentUser.id !== dashboardUserId) return;
                 list.replaceChildren();
                 if (!data?.length) { list.textContent = 'No surveys yet. Start a new one above!'; return; }
                 for (const prop of data) {

@@ -29,6 +29,10 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Check application JavaScript
         run: node --input-type=module --check < app.js
+      - name: Test sign-out privacy and stale account dashboard protection
+        run: node --test tests/test_logout_privacy.mjs
+      - name: Test deliberate logout in isolated Chromium browser
+        run: python tests/test_logout_privacy_browser.py
       - name: Check secure survey notification cutover
         run: node --test tests/test_notification_cutover.mjs
       - name: Check dashboard payment deployment files
