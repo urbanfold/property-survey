@@ -146,7 +146,8 @@
         async function handleLogout() {
             // Give the user an opportunity to save current work to the cloud first.
             saveDraft();
-            if (hasPrivateDeviceDrafts() &&
+            // Warn even if browser storage is unavailable but an active survey is open.
+            if ((currentPropertyId || hasPrivateDeviceDrafts()) &&
                 !confirm('Signing out removes private survey drafts stored on this device. Save progress to the cloud first if you need to keep unsaved work. Sign out now?')) return;
             try {
                 await requireResult(sb.auth.signOut(), 'Sign out');
