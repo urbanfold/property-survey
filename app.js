@@ -89,6 +89,10 @@
         // Recovery exists only in this tab's memory. No private snapshot is persisted
         // while signed out; cloud access is rechecked using the next signed-in user.
         let lockedSessionSurvey = null;
+        let privateSessionGeneration = 0;
+        function privateSessionToken() { return { userId: currentUser?.id, generation: privateSessionGeneration }; }
+        function isPrivateSessionCurrent(token) { return !!token.userId && currentUser?.id === token.userId && privateSessionGeneration === token.generation; }
+        function requirePrivateSession(token) { if (!isPrivateSessionCurrent(token)) throw Error('Session changed. Sign in and reopen the survey.'); }
         let recoveringSessionSurvey = false;
         let intentionalSignOut = false;
         const logoutChannel = typeof BroadcastChannel === 'function'
@@ -129,13 +133,14 @@
             if (recoveringSessionSurvey) return true;
             recoveringSessionSurvey = true;
             const expectedUser = currentUser.id;
+            const token = privateSessionToken();
             try {
                 const {data: verified, error: authError} = await sb.auth.getUser();
                 if (authError || verified?.user?.id !== expectedUser) throw Error('Account verification failed');
                 const {data: property, error: propertyError} = await sb.from('properties')
                     .select('id').eq('id', snapshot.draft.propertyId).single();
                 if (propertyError || property?.id !== snapshot.draft.propertyId) throw Error('Property access was denied');
-                if (!currentUser || currentUser.id !== expectedUser || lockedSessionSurvey !== snapshot) return true;
+                if (!isPrivateSessionCurrent(token) || lockedSessionSurvey !== snapshot) return true;
                 draftWritesEnabled = false;
                 if (!loadDraft(JSON.stringify({...snapshot.draft, userId: expectedUser}))) {
                     throw Error('Unable to load temporary survey');
@@ -147,7 +152,7 @@
                 showSurveySource('Pending edits recovered in this tab. Select Save progress to confirm cloud storage.');
                 return true;
             } catch (_) {
-                if (currentUser?.id === expectedUser && lockedSessionSurvey === snapshot) {
+                if (isPrivateSessionCurrent(token) && lockedSessionSurvey === snapshot) {
                     showView('view-dashboard');
                     const list = document.getElementById('dashboard-list');
                     list.textContent = 'Your pending edits are locked until we can verify access to your survey.';
@@ -185,6 +190,7 @@
         }
 
         function clearSignedOutSurveyData() {
+            privateSessionGeneration++;
             // Disable writes before switching views: showView() otherwise saves drafts.
             draftWritesEnabled = false;
             currentUser = null;
@@ -437,7 +443,7 @@
                     }
                     list.appendChild(item);
                 }
-            } catch (error) { list.textContent = 'Unable to load surveys: ' + error.message; }
+            } catch (error) { if (currentUser?.id === dashboardUserId) list.textContent = 'Unable to load surveys: ' + error.message; }
         }
 
         function readableRooms(rooms, photos = {}) {
@@ -649,7 +655,8 @@
             return { bucket: match[1], path: decodeURIComponent(match[2]) };
         }
 
-        async function preparePhotoLinks(snapshot) {
+        async function preparePhotoLinks(snapshot, token = privateSessionToken()) {
+            requirePrivateSession(token);
             const references = [...new Set(['photos', 'roomPhotos'].flatMap(group =>
                 Object.values(snapshot.appState[group]).flat()))].filter(reference => !reference.startsWith('data:'));
             const groups = new Map();
@@ -662,6 +669,7 @@
             }
             await Promise.all(Array.from(groups, async ([bucket, entries]) => {
                 const data = await requireResult(sb.storage.from(bucket).createSignedUrls(entries.map(entry => entry.path), 3600), `Open private ${bucket}`);
+                requirePrivateSession(token);
                 for (const entry of entries) {
                     const result = data?.find(item => item.path === entry.path);
                     if (!result?.signedUrl || result.error) throw new Error(`A private photo in ${bucket} could not be opened. Check its storage permissions.`);
@@ -671,18 +679,24 @@
         }
 
         async function photoDisplayUrl(reference) {
+            const token = privateSessionToken();
+            requirePrivateSession(token);
             if (reference.startsWith('data:')) return reference;
-            await preparePhotoLinks({ appState: { photos: { photo: [reference] }, roomPhotos: {} } });
+            await preparePhotoLinks({ appState: { photos: { photo: [reference] }, roomPhotos: {} } }, token);
+            requirePrivateSession(token);
             return signedPhotoUrls.get(reference).url;
         }
 
-        async function fetchSurveySnapshot(id) {
+        async function fetchSurveySnapshot(id, token = privateSessionToken()) {
+                requirePrivateSession(token);
                 const { data, error } = await sb.from('properties').select('*').eq('id', id).single();
+                requirePrivateSession(token);
                 if (error) throw error;
                 if (!data) throw new Error('Survey could not be found.');
                 const readRows = async (table) => {
                     const result = await sb.from(table).select('*').eq('property_id', id)
                         .order('created_at', { ascending: true, nullsFirst: true }).order('id', { ascending: true });
+                    requirePrivateSession(token);
                     if (result.error) throw new Error(`${table}: ${result.error.message}`);
                     return result.data || [];
                 };
@@ -690,9 +704,11 @@
                     readRows('extensions'), readRows('rooms'), readRows('exterior_photos'),
                     readRows('extension_photos'), readRows('sketch_photos')
                 ]);
+                requirePrivateSession(token);
                 let roomPhotos = [];
                 if (rooms.length) {
                     const result = await sb.from('room_photos').select('*').in('room_id', rooms.map(room => room.id));
+                    requirePrivateSession(token);
                     if (result.error) throw new Error(`room_photos: ${result.error.message}`);
                     roomPhotos = result.data || [];
                 }
@@ -727,7 +743,8 @@
                         if (!photos.includes(photo.photo_url)) photos.push(photo.photo_url);
                     }
                 }
-            await preparePhotoLinks(restored);
+            await preparePhotoLinks(restored, token);
+            requirePrivateSession(token);
             return { snapshot: restored, hasCloudProgress: Boolean(hasSubmittedData) };
         }
 
@@ -751,6 +768,8 @@
         }
 
         async function resumeSurvey(id) {
+            const token = privateSessionToken();
+            if (!isPrivateSessionCurrent(token)) return;
             if (photoJobs.size || savingProgress || submittingSurvey || savingDetails) return alert('Please wait for the current operation to finish.');
             setLoading(true, "Opening survey...");
             draftWritesEnabled = false;
@@ -770,7 +789,8 @@
                     activeCloudVersion = draft.baseCloudVersion || activeCloudVersion;
                     showSurveySource('Draft from this device. Changes have not been submitted.');
                 };
-                const { snapshot: restored, hasCloudProgress } = await fetchSurveySnapshot(id);
+                const { snapshot: restored, hasCloudProgress } = await fetchSurveySnapshot(id, token);
+                requirePrivateSession(token);
                 activeCloudVersion = surveyVersion(restored);
                 const currentDeviceEdits = matchingDraft && draft.unsaved === true && draft.baseCloudVersion === activeCloudVersion;
                 if (matchingDraft && (!hasCloudProgress || currentDeviceEdits)) {
@@ -785,8 +805,8 @@
                     ? 'Saved survey loaded from the database. A separate draft on this device is also available.'
                     : 'Saved survey loaded from the database.', matchingDraft ? openDeviceDraft : null);
             } catch (error) {
-                alert('Unable to open survey: ' + error.message);
-            } finally { setLoading(false); }
+                if (isPrivateSessionCurrent(token)) alert('Unable to open survey: ' + error.message);
+            } finally { if (isPrivateSessionCurrent(token)) setLoading(false); }
         }
         function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
 
