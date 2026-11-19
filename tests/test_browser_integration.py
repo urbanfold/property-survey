@@ -19,7 +19,8 @@ from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'https://survey.test/property-survey/'
-BACKEND = 'arnzqizcycesukplmvuc.supabase.co'
+# Isolated request interceptor for the staging build; no calls leave this fixture.
+BACKEND = 'hexhtduvqzleoazusskh.supabase.co'
 USER_ID = '00000000-0000-4000-8000-000000000001'
 PHOTO = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=')
 
