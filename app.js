@@ -947,8 +947,14 @@
                 const image = document.createElement('img');
                 if (src.startsWith('data:')) image.src = src;
                 else {
-                    photoDisplayUrl(src).then(url => { if (image.isConnected) image.src = url; })
-                        .catch(error => { image.alt = 'Photo unavailable'; setSaveStatus(error.message, 'error'); });
+                    const photoSession = privateSessionToken();
+                    photoDisplayUrl(src).then(url => {
+                        if (isPrivateSessionCurrent(photoSession) && image.isConnected) image.src = url;
+                    }).catch(error => {
+                        if (!isPrivateSessionCurrent(photoSession)) return;
+                        image.alt = 'Photo unavailable';
+                        setSaveStatus(error.message, 'error');
+                    });
                 }
                 image.alt = `${id} photo ${index + 1}`;
                 const button = document.createElement('button');
