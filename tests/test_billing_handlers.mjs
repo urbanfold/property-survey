@@ -55,6 +55,53 @@ test('checkout authenticates the buyer, checks allowance, and fixes price/curren
   assert.equal((await result.json()).test_mode, true);
 });
 
+test('matching restricted Stripe keys work in test and live modes; mismatched keys are denied', async () => {
+  const requests = [];
+  const mock = async (url, options) => {
+    if (url.endsWith('/auth/v1/user')) return response({ id: USER });
+    if (url.includes('get_survey_allowance')) return response({ can_create: false });
+    requests.push(options);
+    return response({ id: 'cs_live_Fixture', url: 'https://checkout.stripe.com/c/pay/cs_live_Fixture' });
+  };
+  const modeEnv = values => name => ({ ...config, ...values })[name];
+  const live = await createCheckout(checkout(), { env: modeEnv({
+    SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'rk_live_fixture'
+  }), fetcher: mock });
+  assert.equal(live.status, 200);
+  assert.equal((await live.json()).test_mode, false);
+  assert.equal(requests[0].headers.Authorization, 'Bearer rk_live_fixture');
+  const dedicatedKey = await createCheckout(checkout(), { env: modeEnv({
+    SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'sk_test_fixture',
+    STRIPE_LIVE_SECRET_KEY: 'rk_live_separate_fixture'
+  }), fetcher: mock });
+  assert.equal(dedicatedKey.status, 200);
+  assert.equal(requests.at(-1).headers.Authorization, 'Bearer rk_live_separate_fixture');
+  const missingLive = await createCheckout(checkout(), { env: modeEnv({
+    SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'sk_test_fixture',
+    STRIPE_LIVE_SECRET_KEY: ''
+  }), fetcher: () => { throw Error('Must not call Stripe with a test key'); } });
+  assert.equal(missingLive.status, 503);
+  const blocked = [
+    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'rk_test_fixture' },
+    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'sk_test_fixture' },
+    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'invalid_key' },
+    { SURVEY_PAYMENTS_MODE: 'test', STRIPE_SECRET_KEY: 'rk_live_fixture' },
+    { SURVEY_PAYMENTS_MODE: 'disabled', STRIPE_SECRET_KEY: 'rk_live_fixture' },
+    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'not_a_stripe_key' }
+  ];
+  for (const values of blocked) {
+    const res = await createCheckout(checkout(), { env: modeEnv(values), fetcher: () => { throw Error('Must not call Stripe'); } });
+    assert.equal(res.status, 503);
+  }
+  const testMode = await createCheckout(checkout(), { env: modeEnv({
+    SURVEY_PAYMENTS_MODE: 'test', STRIPE_SECRET_KEY: 'rk_test_fixture'
+  }), fetcher: async (url, options) => url.endsWith('/auth/v1/user')
+    ? response({ id: USER }) : url.includes('get_survey_allowance')
+    ? response({ can_create: false })
+    : response({ id: 'cs_test_Fixture', url: 'https://checkout.stripe.com/c/pay/cs_test_Fixture' }) });
+  assert.equal(testMode.status, 200);
+});
+
 test('checkout blocks disabled payments, missing authentication, hostile origins, unused allowances, and unsafe Stripe responses', async () => {
   assert.equal((await createCheckout(checkout(), { env: () => undefined })).status, 503);
   assert.equal((await createCheckout(checkout({}, { authorization: '' }), { env })).status, 401);

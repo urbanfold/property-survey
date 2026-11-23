@@ -29,6 +29,22 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Check application JavaScript
         run: node --input-type=module --check < app.js
+      - name: Check saved-survey PDF export
+        run: node --test tests/test_saved_survey_pdf.mjs
+      - name: Check branded client report inside ZIP
+        run: node --test tests/test_branded_survey_pack.mjs
+      - name: Test sign-out privacy and stale account dashboard protection
+        run: node --test tests/test_logout_privacy.mjs
+      - name: Test deliberate logout in isolated Chromium browser
+        run: python tests/test_logout_privacy_browser.py
+      - name: Test unexpected session expiry and same-user recovery in isolated Chromium
+        run: python tests/test_unexpected_session_recovery_browser.py
+      - name: Test late private photo callbacks respect signed-out sessions
+        run: node --test tests/test_signed_photo_session.mjs
+      - name: Test late survey response is ignored after logout
+        run: python tests/test_logout_async_race_browser.py
+      - name: Test different-account and cross-tab signout privacy
+        run: python tests/test_session_account_switch_browser.py
       - name: Check secure survey notification cutover
         run: node --test tests/test_notification_cutover.mjs
       - name: Check dashboard payment deployment files
@@ -39,6 +55,8 @@ jobs:
         run: python tests/test_survey_flow.py
       - name: Test real browser client, private photos, and exports
         run: python tests/test_browser_integration.py
+      - name: Test administrator read-only customer survey screen in isolated Chromium
+        run: python tests/test_admin_readonly_browser.py
       - name: Test client allowance and review on mobile
         run: python tests/test_client_allowance.py
       - name: Test Leica room entry, measurement validation, and safe cleanup
@@ -68,7 +86,7 @@ jobs:
           BUILD_SHA: ${{ github.sha }}
         run: |
           mkdir -p _site/vendor
-          cp index.html app.js stripe-test-account-check.html admin-account-review-staging.html admin-account-review-live.html admin-credit-review-staging.html staging-buyer-checkout.html _site/
+          cp index.html app.js stripe-test-account-check.html admin-account-review-live.html _site/
           cp vendor/*.js vendor/README.md _site/vendor/
           touch _site/.nojekyll
           python - <<'PY'

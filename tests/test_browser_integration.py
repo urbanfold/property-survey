@@ -291,7 +291,7 @@ def main():
         page.locator('#len-Porch').fill('4.5')
         page.reload()
         expect(page.locator('#view-dashboard')).to_be_visible()
-        page.locator('.survey-item').first.click()
+        page.locator('.survey-item').first.locator('h3').click()
         expect(page.locator('#view-details')).to_be_visible(timeout=15000)
         assert page.locator('#len-Porch').input_value()=='4.5'
         assert 'Draft from this device' in page.locator('#survey-source').inner_text()
@@ -308,7 +308,7 @@ def main():
         page.locator('#login-password').fill('fixture-password-not-a-real-account')
         page.get_by_role('button',name='Log In',exact=True).click()
         expect(page.locator('#view-dashboard')).to_be_visible()
-        page.locator('.survey-item').first.click()
+        page.locator('.survey-item').first.locator('h3').click()
         expect(page.locator('#view-details')).to_be_visible(timeout=15000)
         assert page.locator('#detail-address').input_value()=='TEST - automated fixture'
         assert page.locator('#ext-description').input_value()=='Test extension'
@@ -331,7 +331,7 @@ def main():
         bucket,path=saved_reference.removeprefix('storage://').split('/',1)
         row['photo_url']=f'https://{BACKEND}/storage/v1/object/public/{bucket}/{path}'
         page.get_by_role('button',name='Back to Dashboard',exact=True).click()
-        page.locator('.survey-item').first.click()
+        page.locator('.survey-item').first.locator('h3').click()
         expect(page.locator('#view-details')).to_be_visible(timeout=15000)
         page.wait_for_function('document.querySelector("#preview-front img").naturalWidth>0')
         assert fixture.public_reads==0
