@@ -440,6 +440,11 @@
                         button.textContent = 'Download Survey Pack (ZIP)';
                         button.onclick = event => { event.stopPropagation(); downloadSurveyPack(prop.id, prop.address); };
                         item.appendChild(button);
+                        const pdfButton = document.createElement('button');
+                        pdfButton.className = 'btn btn-pdf';
+                        pdfButton.textContent = 'Download Measurements PDF';
+                        pdfButton.onclick = event => { event.stopPropagation(); downloadSavedSurveyPDF(prop.id); };
+                        item.appendChild(pdfButton);
                     }
                     list.appendChild(item);
                 }
@@ -463,7 +468,7 @@
         // Staging administrator only: render a saved cloud snapshot without resubmitting
         // or altering the survey currently open in the editor.
         async function downloadSavedSurveyPDF(propertyId) {
-            if (!currentUser?.email === ADMIN_EMAIL || !currentUser) return;
+            if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
             const context = privateSessionToken();
             setLoading(true, 'Preparing saved survey PDF...');
             try {
@@ -501,7 +506,7 @@
         }
 
         async function downloadSurveyPack(propertyId, address) {
-            if (!currentUser?.email === ADMIN_EMAIL || !currentUser) return;
+            if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
             const context = privateSessionToken();
             setLoading(true, 'Gathering saved survey data and photos...');
             try {
