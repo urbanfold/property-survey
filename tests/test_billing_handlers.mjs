@@ -65,7 +65,7 @@ test('matching restricted Stripe keys work in test and live modes; mismatched ke
   };
   const modeEnv = values => name => ({ ...config, ...values })[name];
   const live = await createCheckout(checkout(), { env: modeEnv({
-    SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'rk_live_fixture'
+    SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'rk_live_fixture'
   }), fetcher: mock });
   assert.equal(live.status, 200);
   assert.equal((await live.json()).test_mode, false);
@@ -82,7 +82,9 @@ test('matching restricted Stripe keys work in test and live modes; mismatched ke
   }), fetcher: () => { throw Error('Must not call Stripe with a test key'); } });
   assert.equal(missingLive.status, 503);
   const blocked = [
-    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'rk_test_fixture' },
+    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'rk_test_fixture' },
+    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'sk_test_fixture' },
+    { SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'invalid_key' },
     { SURVEY_PAYMENTS_MODE: 'test', STRIPE_SECRET_KEY: 'rk_live_fixture' },
     { SURVEY_PAYMENTS_MODE: 'disabled', STRIPE_SECRET_KEY: 'rk_live_fixture' },
     { SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'not_a_stripe_key' }
