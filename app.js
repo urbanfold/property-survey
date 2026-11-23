@@ -1471,12 +1471,29 @@
                     requirePrivateSession(context);
                 }
                 photoSection.hidden = !photos.length;
-                const pdf = await html2pdf().set({
+                const pdfWorker = html2pdf().set({
                     margin: 12, filename: `Urbanfold_Survey_${survey.details.postcode || 'report'}.pdf`,
                     image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 1.5 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                     pagebreak: { mode: ['css', 'legacy'], avoid: ['.room-item', '.urbanfold-photo-card', '.urbanfold-report-footer'] }
-                }).from(element).outputPdf('blob');
+                }).from(element).toCanvas();
+                // A syntactically valid PDF may still contain entirely white pages.
+                // Inspect the actual html2pdf canvas before offering a file download.
+                const canvas = await pdfWorker.get('canvas');
+                const ctx = canvas?.getContext('2d', { willReadFrequently: true });
+                if (!ctx || !canvas.width || !canvas.height) {
+                    throw new Error('Report rendering failed before PDF creation.');
+                }
+                let visible = false;
+                const sample = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                for (let i = 0; i < sample.length; i += 4 * 17) {
+                    if (sample[i + 3] > 8 && (sample[i] < 245 || sample[i + 1] < 245 || sample[i + 2] < 245)) {
+                        visible = true;
+                        break;
+                    }
+                }
+                if (!visible) throw new Error('Report rendered blank. No PDF was downloaded; the saved survey is unchanged.');
+                const pdf = await pdfWorker.toPdf().outputPdf('blob');
                 requirePrivateSession(context);
                 if (options.download !== false) {
                     const link = document.createElement('a');
