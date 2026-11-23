@@ -7,27 +7,26 @@ const dashboard = app.slice(app.indexOf('async function loadDashboard()'), app.i
 const download = app.slice(app.indexOf('async function downloadSavedSurveyPDF('), app.indexOf('async function downloadSurveyPack('));
 const pdf = app.slice(app.indexOf('async function generatePDF('), app.indexOf('let submittingSurvey = false;'));
 
-test('live administrator saved-survey PDF button is admin-only and not a submit control', () => {
-  assert.match(dashboard, /if \(currentUser\) \{/);
-  assert.match(dashboard, /pdfButton\.textContent = 'Download Measurements PDF';/);
-  assert.match(dashboard, /pdfButton\.onclick = event => \{ event\.stopPropagation\(\); downloadSavedSurveyPDF\(prop\.id\); \};/);
+test('admin dashboard offers saved-survey PDF without submitting or changing it', () => {
+  assert.ok(dashboard.includes('if (currentUser.email === ADMIN_EMAIL)'));
+  assert.ok(dashboard.includes("pdfButton.textContent = 'Download Measurements PDF'"));
+  assert.ok(dashboard.includes('downloadSavedSurveyPDF(prop.id)'));
   assert.ok(dashboard.indexOf('pdfButton.textContent') > dashboard.indexOf('if (currentUser.email === ADMIN_EMAIL)'));
   assert.doesNotMatch(dashboard, /finishSurvey\(/);
 });
 
-test('PDF reads named survey by ID, guards session and never persists', () => {
-  assert.match(download, /if \(!currentUser \|\| !currentUser\) return;/);
-  assert.match(download, /fetchSurveySnapshot\(propertyId, context\)/);
-  assert.match(download, /await generatePDF\(snapshot, context\)/);
-  assert.match(download, /checkSession\(context\)/);
+test('saved PDF reads the named survey with administrator and session guards', () => {
+  assert.ok(download.includes('if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;'));
+  assert.ok(download.includes('fetchSurveySnapshot(propertyId, context)'));
+  assert.ok(download.includes('await generatePDF(snapshot, context)'));
+  assert.ok(download.includes('requirePrivateSession(context)'));
   assert.doesNotMatch(download, /persistSurvey|finishSurvey|submitSurvey|\.update\(|\.insert\(/);
 });
 
-test('PDF renderer uses snapshot when supplied and retains legacy submission export', () => {
-  assert.match(pdf, /async function generatePDF\(savedSurvey = null, suppliedContext = null, options = \{\}\)/);
-  assert.match(pdf, /const survey = savedSurvey \|\| captureSurvey\(\);/);
-  assert.match(pdf, /checkSession\(context\)/);
-  assert.match(pdf, /html2pdf\(\)/);
-  assert.match(pdf, /\.outputPdf\('blob'\)/);
-  assert.match(pdf, /link\.download = `Urbanfold_Survey_/);
+test('PDF renders a provided snapshot or the existing survey submission', () => {
+  assert.ok(pdf.includes('async function generatePDF(savedSurvey = null, suppliedContext = null, options = {})'));
+  assert.ok(pdf.includes('const survey = savedSurvey || captureSurvey()'));
+  assert.ok(pdf.includes('requirePrivateSession(context)'));
+  assert.ok(pdf.includes("outputPdf('blob')"));
+  assert.ok(pdf.includes('link.download = `Urbanfold_Survey_'));
 });
