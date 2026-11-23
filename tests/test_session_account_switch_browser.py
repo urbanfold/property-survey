@@ -49,7 +49,8 @@ def main():
         expect(page.locator('#view-auth')).to_be_visible(timeout=15000)
         fixture.user=original
         login()
-        page.locator('.survey-item').first.click()
+        # The survey card contains nested export buttons; select its heading.
+        page.locator('.survey-item').first.locator('h3').click()
         expect(page.locator('#view-details')).to_be_visible(timeout=15000)
         page.evaluate("showView('view-interior-rooms')")
         page.locator('.room-header').first.click()
