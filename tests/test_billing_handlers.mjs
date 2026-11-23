@@ -70,6 +70,17 @@ test('matching restricted Stripe keys work in test and live modes; mismatched ke
   assert.equal(live.status, 200);
   assert.equal((await live.json()).test_mode, false);
   assert.equal(requests[0].headers.Authorization, 'Bearer rk_live_fixture');
+  const dedicatedKey = await createCheckout(checkout(), { env: modeEnv({
+    SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'sk_test_fixture',
+    STRIPE_LIVE_SECRET_KEY: 'rk_live_separate_fixture'
+  }), fetcher: mock });
+  assert.equal(dedicatedKey.status, 200);
+  assert.equal(requests.at(-1).headers.Authorization, 'Bearer rk_live_separate_fixture');
+  const missingLive = await createCheckout(checkout(), { env: modeEnv({
+    SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'sk_test_fixture',
+    STRIPE_LIVE_SECRET_KEY: ''
+  }), fetcher: () => { throw Error('Must not call Stripe with a test key'); } });
+  assert.equal(missingLive.status, 503);
   const blocked = [
     { SURVEY_PAYMENTS_MODE: 'live', STRIPE_SECRET_KEY: 'rk_test_fixture' },
     { SURVEY_PAYMENTS_MODE: 'test', STRIPE_SECRET_KEY: 'rk_live_fixture' },
