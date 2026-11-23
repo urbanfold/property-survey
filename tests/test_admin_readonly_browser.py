@@ -59,7 +59,9 @@ def main():
         assert json.dumps(fixture.tables,sort_keys=True) == before
         # Previously a six-page all-white file passed merely because it was a PDF.
         # The application's canvas guard must reject a blank render before download.
-        with page.expect_download(timeout=45000) as download:
+        dialogs = []
+        page.on('dialog', lambda dialog: (dialogs.append(dialog.message), dialog.accept()))
+        with page.expect_download(timeout=12000) as download:
             page.locator('#admin-readonly-pdf').click()
         pdf_bytes = Path(download.value.path()).read_bytes()
         assert pdf_bytes.startswith(b'%PDF-')
