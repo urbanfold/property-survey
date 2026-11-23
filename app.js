@@ -462,6 +462,8 @@
             // Do not store someone else's ID in currentPropertyId or browser drafts.
             currentPropertyId = null;
             content.replaceChildren();
+            document.getElementById('admin-readonly-pdf').disabled = true;
+            document.getElementById('admin-readonly-zip').disabled = true;
             content.textContent = 'Loading saved survey for read-only review...';
             showView('view-admin-readonly');
             try {
@@ -536,6 +538,8 @@
                 const exportZip = document.getElementById('admin-readonly-zip');
                 exportPdf.onclick = () => downloadSavedSurveyPDF(propertyId);
                 exportZip.onclick = () => downloadSurveyPack(propertyId, snapshot.details.address);
+                exportPdf.disabled = false;
+                exportZip.disabled = false;
             } catch (error) {
                 if (isPrivateSessionCurrent(token)) content.textContent =
                     'Unable to review this survey: ' + error.message;
