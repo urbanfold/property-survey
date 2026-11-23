@@ -61,9 +61,15 @@ def main():
         # The application's canvas guard must reject a blank render before download.
         dialogs = []
         page.on('dialog', lambda dialog: (dialogs.append(dialog.message), dialog.accept()))
-        with page.expect_download(timeout=12000) as download:
-            page.locator('#admin-readonly-pdf').click()
-        pdf_bytes = Path(download.value.path()).read_bytes()
+        print('PRE-PDF:', page.evaluate("({css: getComputedStyle(document.getElementById('pdf-content')).display, width:document.getElementById('pdf-content').offsetWidth, exists:!!window.html2pdf})"), flush=True)
+        try:
+            with page.expect_download(timeout=12000) as download:
+                page.locator('#admin-readonly-pdf').click()
+            pdf_bytes = Path(download.value.path()).read_bytes()
+        except Exception:
+            print('PDF DIAGNOSTIC DIALOGS:', dialogs, flush=True)
+            print('PDF PREVIEW:', page.evaluate("({display:getComputedStyle(document.getElementById('pdf-content')).display, text:document.getElementById('pdf-content').innerText.slice(0,140)})"), flush=True)
+            raise
         assert pdf_bytes.startswith(b'%PDF-')
         assert len(pdf_bytes) > 25000, 'Suspiciously small PDF report'
         assert json.dumps(fixture.tables,sort_keys=True) == before
