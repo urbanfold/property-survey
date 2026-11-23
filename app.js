@@ -208,7 +208,7 @@
                 else input.value = '';
             });
             document.querySelectorAll('.preview-gallery').forEach(gallery => gallery.replaceChildren());
-            for (const id of ['dashboard-list', 'survey-review-content', 'pdf-rooms-list',
+            for (const id of ['dashboard-list', 'survey-review-content', 'admin-readonly-content', 'pdf-rooms-list',
                 'pdf-address', 'pdf-postcode', 'pdf-name', 'pdf-date', 'pdf-type',
                 'pdf-ext-type', 'pdf-ext-dims', 'pdf-ext-desc', 'notification-status']) {
                 document.getElementById(id)?.replaceChildren();
@@ -424,10 +424,11 @@
                     item.className = 'survey-item';
                     item.tabIndex = 0;
                     item.setAttribute('role', 'button');
-                    item.onclick = () => resumeSurvey(prop.id);
+                    item.onclick = () => currentUser?.email === ADMIN_EMAIL && prop.user_id !== currentUser.id
+                        ? openAdminReadonlySurvey(prop.id) : resumeSurvey(prop.id);
                     item.onkeydown = event => {
                         if (event.target !== item) return;
-                        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); resumeSurvey(prop.id); }
+                        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); item.click(); }
                     };
                     const title = document.createElement('h3');
                     title.textContent = prop.address || 'Untitled Property';
@@ -449,6 +450,96 @@
                     list.appendChild(item);
                 }
             } catch (error) { if (currentUser?.id === dashboardUserId) list.textContent = 'Unable to load surveys: ' + error.message; }
+        }
+
+        // Administrator review must never enter the editable customer survey form.
+        // Build this view solely from saved database records and temporary private photo URLs.
+        async function openAdminReadonlySurvey(propertyId) {
+            if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+            const token = privateSessionToken();
+            const content = document.getElementById('admin-readonly-content');
+            draftWritesEnabled = false;
+            // Do not store someone else's ID in currentPropertyId or browser drafts.
+            currentPropertyId = null;
+            content.replaceChildren();
+            content.textContent = 'Loading saved survey for read-only review...';
+            showView('view-admin-readonly');
+            try {
+                const { snapshot } = await fetchSurveySnapshot(propertyId, token);
+                requirePrivateSession(token);
+                if (!document.getElementById('view-admin-readonly').classList.contains('active')) return;
+                content.replaceChildren();
+                const section = (heading, fields) => {
+                    const card = document.createElement('section');
+                    card.className = 'card review-card';
+                    const h = document.createElement('h2');
+                    h.textContent = heading;
+                    card.appendChild(h);
+                    for (const [label, value] of fields) {
+                        const p = document.createElement('p');
+                        p.textContent = label + ': ' + (value === null || value === undefined ||
+                            String(value).trim() === '' ? 'Not recorded' : String(value));
+                        card.appendChild(p);
+                    }
+                    content.appendChild(card);
+                };
+                section('Property details', [
+                    ['Address', snapshot.details.address], ['Postcode', snapshot.details.postcode],
+                    ['Surveyor / client', snapshot.details.name], ['Client email', snapshot.details.clientEmail],
+                    ['Property type', snapshot.propType], ['Notes', snapshot.details.notes]
+                ]);
+                section('Proposed extension', [
+                    ['Types', (snapshot.extension.types || []).join(', ')],
+                    ['Description', snapshot.extension.description],
+                    ['Width (m)', snapshot.extension.width], ['Length (m)', snapshot.extension.length]
+                ]);
+                for (const room of readableRooms(snapshot.rooms, snapshot.appState.roomPhotos)) {
+                    section('Room: ' + room.name, [
+                        ['Shape', room.shape], ['Measurements', room.measurements.join(' · ')],
+                        ['Notes', room.notes]
+                    ]);
+                }
+                const photoGroup = document.createElement('section');
+                photoGroup.className = 'card review-card';
+                const h = document.createElement('h2');
+                h.textContent = 'Saved survey photographs';
+                photoGroup.appendChild(h);
+                const photos = surveyPhotoEntries(snapshot);
+                if (!photos.length) {
+                    const p = document.createElement('p'); p.textContent = 'No photographs recorded.';
+                    photoGroup.appendChild(p);
+                }
+                content.appendChild(photoGroup);
+                for (const { reference, caption } of photos) {
+                    requirePrivateSession(token);
+                    if (!document.getElementById('view-admin-readonly').classList.contains('active')) return;
+                    const card = document.createElement('div');
+                    card.className = 'urbanfold-readonly-photo';
+                    const label = document.createElement('p'); label.textContent = caption;
+                    const img = document.createElement('img');
+                    img.alt = caption;
+                    img.loading = 'lazy';
+                    img.style.cssText = 'max-width:100%;max-height:300px;object-fit:contain;';
+                    card.append(label, img);
+                    photoGroup.appendChild(card);
+                    try {
+                        const url = await photoDisplayUrl(reference);
+                        requirePrivateSession(token);
+                        if (!document.getElementById('view-admin-readonly').classList.contains('active')) return;
+                        img.src = url;
+                    } catch (_) {
+                        if (!isPrivateSessionCurrent(token)) return;
+                        label.textContent += ' — Unable to display photograph; try the ZIP export.';
+                    }
+                }
+                const exportPdf = document.getElementById('admin-readonly-pdf');
+                const exportZip = document.getElementById('admin-readonly-zip');
+                exportPdf.onclick = () => downloadSavedSurveyPDF(propertyId);
+                exportZip.onclick = () => downloadSurveyPack(propertyId, snapshot.details.address);
+            } catch (error) {
+                if (isPrivateSessionCurrent(token)) content.textContent =
+                    'Unable to review this survey: ' + error.message;
+            }
         }
 
         function readableRooms(rooms, photos = {}) {
@@ -833,6 +924,24 @@
         }
 
         async function resumeSurvey(id) {
+            // The dashboard links administrators to read-only customer reviews.
+            // Protect direct calls to this function as well.
+            if (currentUser?.email === ADMIN_EMAIL) {
+                const token = privateSessionToken();
+                try {
+                    const property = await requireResult(
+                        sb.from('properties').select('user_id').eq('id', id).single(),
+                        'Check survey ownership');
+                    requirePrivateSession(token);
+                    if (property.user_id !== currentUser.id) {
+                        await openAdminReadonlySurvey(id);
+                        return;
+                    }
+                } catch (error) {
+                    if (isPrivateSessionCurrent(token)) alert('Unable to open survey: ' + error.message);
+                    return;
+                }
+            }
             const token = privateSessionToken();
             if (!isPrivateSessionCurrent(token)) return;
             if (photoJobs.size || savingProgress || submittingSurvey || savingDetails) return alert('Please wait for the current operation to finish.');
@@ -916,6 +1025,7 @@
         async function saveDetails() {
             if (savingDetails) return;
             if (!currentUser) return alert('Please log in before saving.');
+            if (document.getElementById('view-admin-readonly').classList.contains('active')) return alert('Customer surveys are read-only for the administrator.');
             const address = document.getElementById('detail-address').value.trim();
             const postcode = document.getElementById('detail-postcode').value.trim();
             if (!address || !postcode) return alert('Address and postcode are required.');
