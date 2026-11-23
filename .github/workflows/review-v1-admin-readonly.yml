@@ -1,0 +1,19 @@
+name: Review V1 administrator read-only RLS proposal
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-admin-rls:
+    if: github.head_ref == 'release/v1-review-2026-11-23' || github.ref == 'refs/heads/release/v1-review-2026-11-23'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Test proposed owner/admin/customer/anonymous permissions in isolated PostgreSQL
+        run: python tests/test_v1_admin_readonly_proposal.py
