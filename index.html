@@ -249,6 +249,15 @@
             <button class="btn btn-secondary" onclick="handleLogout()" style="margin-top: 20px;">Log Out</button>
         </div>
 
+        <div id="view-admin-readonly" class="view">
+            <h1>Customer Survey — Read-Only Review</h1>
+            <p class="subtitle">This customer survey is available for viewing and export only. Changes must be made by the survey owner.</p>
+            <div id="admin-readonly-content" aria-live="polite"></div>
+            <button type="button" class="btn btn-pdf" id="admin-readonly-pdf" onclick="return false;">Download Measurements PDF</button>
+            <button type="button" class="btn btn-download" id="admin-readonly-zip" onclick="return false;">Download Survey Pack (ZIP)</button>
+            <button type="button" class="btn btn-secondary" onclick="loadDashboard()">Return to My Surveys</button>
+        </div>
+
         <div id="view-details" class="view">
             <h1>Property Details</h1>
             <p class="subtitle">Enter the details of the property.</p>
