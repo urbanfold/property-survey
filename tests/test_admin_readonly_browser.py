@@ -100,7 +100,7 @@ def main():
         colors = first_page.getcolors(maxcolors=1000000)
         assert colors is None or len(colors) > 2, 'PDF first page has no visible report content'
         # A photo should be included as an image in the final PDF, not just a text caption.
-        assert any(len(page.get_objects(filter=(pdfium.raw.FPDF_PAGEOBJ_IMAGE,))) > 0 for page in document), 'PDF has no embedded survey photograph'
+        assert any(any(True for _ in page.get_objects(filter=(pdfium.raw.FPDF_PAGEOBJ_IMAGE,))) for page in document), 'PDF has no embedded survey photograph'
         assert json.dumps(fixture.tables,sort_keys=True) == before
         assert not errors, errors
         assert not fixture.unexpected,fixture.unexpected
