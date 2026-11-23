@@ -1,3 +1,5 @@
 playwright==1.62.0
 pyee==13.0.1
 greenlet==3.5.5
+pypdfium2==5.8.0
+Pillow==12.3.0

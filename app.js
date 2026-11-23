@@ -1471,12 +1471,115 @@
                     requirePrivateSession(context);
                 }
                 photoSection.hidden = !photos.length;
-                const pdf = await html2pdf().set({
+                const pdfWorker = html2pdf().set({
                     margin: 12, filename: `Urbanfold_Survey_${survey.details.postcode || 'report'}.pdf`,
                     image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 1.5 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                     pagebreak: { mode: ['css', 'legacy'], avoid: ['.room-item', '.urbanfold-photo-card', '.urbanfold-report-footer'] }
-                }).from(element).outputPdf('blob');
+                }).from(element).toCanvas();
+                // A syntactically valid PDF may still contain entirely white pages.
+                // Inspect the actual html2pdf canvas before offering a file download.
+                const canvas = await pdfWorker.get('canvas');
+                const ctx = canvas?.getContext('2d', { willReadFrequently: true });
+                if (!ctx || !canvas.width || !canvas.height) {
+                    throw new Error('Report rendering failed before PDF creation.');
+                }
+                let visible = false;
+                const sample = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                for (let i = 0; i < sample.length; i += 4 * 17) {
+                    if (sample[i + 3] > 8 && (sample[i] < 245 || sample[i + 1] < 245 || sample[i + 2] < 245)) {
+                        visible = true;
+                        break;
+                    }
+                }
+                await pdfWorker.toPdf();
+                if (!visible) {
+                    // Some browsers generate a white canvas despite the report being
+                    // populated. Fall back to jsPDF's native text/image drawing, which
+                    // cannot silently turn six text pages into empty raster pages.
+                    const doc = await pdfWorker.get('pdf');
+                    while (doc.getNumberOfPages() > 1) doc.deletePage(doc.getNumberOfPages());
+                    doc.setPage(1);
+                    let y = 23;
+                    const pageWidth = 210;
+                    const pageHeight = 297;
+                    const left = 17;
+                    const availableWidth = pageWidth - left * 2;
+                    const ensureSpace = height => {
+                        if (y + height <= pageHeight - 20) return;
+                        doc.addPage();
+                        y = 22;
+                    };
+                    const textLine = (value, { size = 10, bold = false, gap = 5 } = {}) => {
+                        const clean = String(value ?? 'Not recorded');
+                        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+                        doc.setFontSize(size);
+                        const lines = doc.splitTextToSize(clean, availableWidth);
+                        const lineHeight = Math.max(4.5, size * 0.42);
+                        for (const line of lines) {
+                            ensureSpace(lineHeight);
+                            doc.text(line, left, y);
+                            y += lineHeight;
+                        }
+                        y += gap;
+                    };
+                    const section = heading => {
+                        ensureSpace(16);
+                        y += 3;
+                        textLine(heading, { size: 13, bold: true, gap: 4 });
+                    };
+                    textLine('URBANFOLD', { size: 23, bold: true, gap: 1 });
+                    textLine('Architectural Planning & Design Services', { size: 10, gap: 6 });
+                    textLine('PROPERTY SURVEY REPORT', { size: 17, bold: true, gap: 8 });
+                    textLine('Report generated: ' + new Date().toLocaleDateString('en-GB'));
+                    section('Property details');
+                    for (const [label, value] of [
+                        ['Address', survey.details.address], ['Postcode', survey.details.postcode],
+                        ['Client / surveyor', survey.details.name], ['Email', survey.details.clientEmail],
+                        ['Property type', survey.propType], ['Notes', survey.details.notes]
+                    ]) textLine(label + ': ' + (value || 'Not recorded'));
+                    section('Extension details');
+                    for (const [label, value] of [
+                        ['Types', (survey.extension.types || []).join(', ')],
+                        ['Description', survey.extension.description],
+                        ['Width (m)', survey.extension.width], ['Length (m)', survey.extension.length]
+                    ]) textLine(label + ': ' + (value || 'Not recorded'));
+                    section('Room measurements');
+                    if (!rooms.length) textLine('No room measurements or notes recorded.');
+                    for (const room of rooms) {
+                        ensureSpace(24);
+                        textLine(room.name, { size: 11, bold: true, gap: 2 });
+                        textLine('Shape: ' + room.shape, { gap: 2 });
+                        for (const measurement of room.measurements) textLine(measurement, { gap: 2 });
+                        if (room.notes) textLine('Notes: ' + room.notes);
+                    }
+                    if (photos.length) section('Survey photographs');
+                    for (const photo of photos) {
+                        ensureSpace(35);
+                        textLine(photo.caption, { size: 10, bold: true, gap: 3 });
+                        const photoImg = new Image();
+                        photoImg.src = photo.dataUrl;
+                        await photoImg.decode();
+                        requirePrivateSession(context);
+                        const ratio = photoImg.naturalHeight / photoImg.naturalWidth;
+                        const width = Math.min(availableWidth, 145);
+                        const height = width * ratio;
+                        const factor = Math.min(1, (pageHeight - 55) / height);
+                        const w = width * factor, h = height * factor;
+                        ensureSpace(h + 7);
+                        const pictureCanvas = document.createElement('canvas');
+                        pictureCanvas.width = photoImg.naturalWidth;
+                        pictureCanvas.height = photoImg.naturalHeight;
+                        pictureCanvas.getContext('2d').drawImage(photoImg, 0, 0);
+                        doc.addImage(pictureCanvas.toDataURL('image/jpeg', 0.88), 'JPEG', left, y, w, h);
+                        y += h + 9;
+                    }
+                    ensureSpace(30);
+                    textLine('URBANFOLD | Architectural Planning & Design Services', { size: 9, bold: true });
+                    textLine('survey@urbanfold.uk | 07762 238271 | www.urbanfold.uk', { size: 9 });
+                    textLine('This survey records information supplied by the client; it does not constitute planning permission or approval.', { size: 8 });
+                }
+                const pdf = await pdfWorker.outputPdf('blob');
                 requirePrivateSession(context);
                 if (options.download !== false) {
                     const link = document.createElement('a');
