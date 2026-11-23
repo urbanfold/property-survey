@@ -86,15 +86,162 @@
             finally { setLoading(false); }
         }
 
+        // Recovery exists only in this tab's memory. No private snapshot is persisted
+        // while signed out; cloud access is rechecked using the next signed-in user.
+        let lockedSessionSurvey = null;
+        let privateSessionGeneration = 0;
+        function privateSessionToken() { return { userId: currentUser?.id, generation: privateSessionGeneration }; }
+        function isPrivateSessionCurrent(token) { return !!token.userId && currentUser?.id === token.userId && privateSessionGeneration === token.generation; }
+        function requirePrivateSession(token) { if (!isPrivateSessionCurrent(token)) throw Error('Session changed. Sign in and reopen the survey.'); }
+        let recoveringSessionSurvey = false;
+        let intentionalSignOut = false;
+        const logoutChannel = typeof BroadcastChannel === 'function'
+            ? new BroadcastChannel('urbanfold-logout-privacy') : null;
+        logoutChannel?.addEventListener('message', event => {
+            if (event.data?.type !== 'deliberate-signout') return;
+            const id = event.data.userId;
+            if (currentUser?.id === id || lockedSessionSurvey?.userId === id) {
+                lockedSessionSurvey = null;
+                clearSignedOutSurveyData();
+            }
+        });
+
+        function lockUnexpectedSession() {
+            if (currentUser && currentPropertyId) {
+                try {
+                    lockedSessionSurvey = {
+                        userId: currentUser.id,
+                        draft: structuredClone(captureSurvey()),
+                        cloudVersion: activeCloudVersion
+                    };
+                } catch (_) { lockedSessionSurvey = null; }
+            }
+            clearSignedOutSurveyData();
+            if (lockedSessionSurvey) {
+                document.getElementById('login-notice').textContent =
+                    'Your session ended. Sign in to the same account to recover pending edits in this tab. Do not refresh or close this tab before recovery.';
+            }
+        }
+
+        async function restoreUnexpectedSession() {
+            if (!lockedSessionSurvey || !currentUser) return false;
+            const snapshot = lockedSessionSurvey;
+            if (snapshot.userId !== currentUser.id) {
+                lockedSessionSurvey = null;
+                return false;
+            }
+            if (recoveringSessionSurvey) return true;
+            recoveringSessionSurvey = true;
+            const expectedUser = currentUser.id;
+            const token = privateSessionToken();
+            try {
+                const {data: verified, error: authError} = await sb.auth.getUser();
+                if (authError || verified?.user?.id !== expectedUser) throw Error('Account verification failed');
+                const {data: property, error: propertyError} = await sb.from('properties')
+                    .select('id').eq('id', snapshot.draft.propertyId).single();
+                if (propertyError || property?.id !== snapshot.draft.propertyId) throw Error('Property access was denied');
+                if (!isPrivateSessionCurrent(token) || lockedSessionSurvey !== snapshot) return true;
+                draftWritesEnabled = false;
+                if (!loadDraft(JSON.stringify({...snapshot.draft, userId: expectedUser}))) {
+                    throw Error('Unable to load temporary survey');
+                }
+                activeCloudVersion = snapshot.cloudVersion;
+                lockedSessionSurvey = null;
+                draftWritesEnabled = true;
+                saveDraft();
+                showSurveySource('Pending edits recovered in this tab. Select Save progress to confirm cloud storage.');
+                return true;
+            } catch (_) {
+                if (isPrivateSessionCurrent(token) && lockedSessionSurvey === snapshot) {
+                    showView('view-dashboard');
+                    const list = document.getElementById('dashboard-list');
+                    list.textContent = 'Your pending edits are locked until we can verify access to your survey.';
+                    const retry = document.createElement('button');
+                    retry.type = 'button';
+                    retry.className = 'btn';
+                    retry.textContent = 'Retry pending-work recovery';
+                    retry.onclick = () => loadDashboard();
+                    list.appendChild(retry);
+                }
+                return true;
+            } finally {
+                recoveringSessionSurvey = false;
+            }
+        }
+
+        // A deliberate logout must not retain measurements, client data or photos in
+        // browser storage or the still-open page. Cloud-saved records are untouched.
+        function hasPrivateDeviceDrafts() {
+            try {
+                return Object.keys(localStorage).some(key =>
+                    key === 'urbanfold_draft' || key.startsWith('urbanfold_draft_'));
+            } catch (_) { return true; } // Fail safely when browser storage cannot be inspected.
+        }
+
+        function clearPrivateDeviceDrafts() {
+            try {
+                for (const key of Object.keys(localStorage)) {
+                    if (key === 'urbanfold_draft' || key.startsWith('urbanfold_draft_')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                return true;
+            } catch (_) { return false; }
+        }
+
+        function clearSignedOutSurveyData() {
+            privateSessionGeneration++;
+            // Disable writes before switching views: showView() otherwise saves drafts.
+            draftWritesEnabled = false;
+            currentUser = null;
+            currentPropertyId = null;
+            newPropertyId = null;
+            activeCloudVersion = null;
+            appState = { photos: {}, roomPhotos: {} };
+            pendingPhotoDeletions = [];
+            signedPhotoUrls.clear();
+            photoJobs.clear();
+            clearRecoveryState();
+            hidePasswords();
+            document.querySelectorAll('#view-details input, #view-details textarea, #view-type select, #view-extension input, #view-extension textarea, #view-auth input, #view-interior-sketch textarea, #view-interior-sketch input, #view-interior-rooms input, #view-interior-rooms textarea').forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') input.checked = false;
+                else input.value = '';
+            });
+            document.querySelectorAll('.preview-gallery').forEach(gallery => gallery.replaceChildren());
+            for (const id of ['dashboard-list', 'survey-review-content', 'pdf-rooms-list',
+                'pdf-address', 'pdf-postcode', 'pdf-name', 'pdf-date', 'pdf-type',
+                'pdf-ext-type', 'pdf-ext-dims', 'pdf-ext-desc', 'notification-status']) {
+                document.getElementById(id)?.replaceChildren();
+            }
+            document.getElementById('exterior-grid')?.replaceChildren();
+            const pdf = document.getElementById('pdf-content');
+            if (pdf) pdf.style.display = 'none';
+            const adminPdf = document.getElementById('admin-pdf-section');
+            if (adminPdf) adminPdf.style.display = 'none';
+            renderRoomsList();
+            const draftsCleared = clearPrivateDeviceDrafts();
+            showView('view-auth');
+            const notice = document.getElementById('login-notice');
+            if (notice) notice.textContent = draftsCleared ?
+                'Signed out. Private device drafts were cleared; cloud-saved surveys remain available.' :
+                'Signed out. Browser storage could not be fully cleared; avoid this device for private work.';
+        }
+
         async function handleLogout() {
+            // Give the user an opportunity to save current work to the cloud first.
             saveDraft();
+            // Warn even if browser storage is unavailable but an active survey is open.
+            if ((currentPropertyId || hasPrivateDeviceDrafts()) &&
+                !confirm('Signing out removes private survey drafts stored on this device. Save progress to the cloud first if you need to keep unsaved work. Sign out now?')) return;
+            const signedOutUserId = currentUser?.id || lockedSessionSurvey?.userId;
+            intentionalSignOut = true;
             try {
                 await requireResult(sb.auth.signOut(), 'Sign out');
-                currentUser = null;
-                currentPropertyId = null;
-                signedPhotoUrls.clear();
-                showView('view-auth');
+                lockedSessionSurvey = null;
+                clearSignedOutSurveyData();
+                logoutChannel?.postMessage({type:'deliberate-signout',userId:signedOutUserId});
             } catch (error) { alert(error.message); }
+            finally { intentionalSignOut = false; }
         }
 
         function activatePasswordRecovery(session) {
@@ -257,6 +404,8 @@
 
         async function loadDashboard() {
             if (!currentUser) { showView('view-auth'); return; }
+            if (await restoreUnexpectedSession()) return;
+            const dashboardUserId = currentUser.id;
             saveDraft();
             showView('view-dashboard');
             handlePaymentReturn();
@@ -266,6 +415,8 @@
                 let query = sb.from('properties').select('*').order('created_at', { ascending: false });
                 if (currentUser.email !== ADMIN_EMAIL) query = query.eq('user_id', currentUser.id);
                 const data = await requireResult(query, 'Load surveys');
+                // Do not resurrect a previous customer's survey after signing out or switching users.
+                if (!currentUser || currentUser.id !== dashboardUserId) return;
                 list.replaceChildren();
                 if (!data?.length) { list.textContent = 'No surveys yet. Start a new one above!'; return; }
                 for (const prop of data) {
@@ -292,7 +443,7 @@
                     }
                     list.appendChild(item);
                 }
-            } catch (error) { list.textContent = 'Unable to load surveys: ' + error.message; }
+            } catch (error) { if (currentUser?.id === dashboardUserId) list.textContent = 'Unable to load surveys: ' + error.message; }
         }
 
         function readableRooms(rooms, photos = {}) {
@@ -504,7 +655,8 @@
             return { bucket: match[1], path: decodeURIComponent(match[2]) };
         }
 
-        async function preparePhotoLinks(snapshot) {
+        async function preparePhotoLinks(snapshot, token = privateSessionToken()) {
+            requirePrivateSession(token);
             const references = [...new Set(['photos', 'roomPhotos'].flatMap(group =>
                 Object.values(snapshot.appState[group]).flat()))].filter(reference => !reference.startsWith('data:'));
             const groups = new Map();
@@ -517,6 +669,7 @@
             }
             await Promise.all(Array.from(groups, async ([bucket, entries]) => {
                 const data = await requireResult(sb.storage.from(bucket).createSignedUrls(entries.map(entry => entry.path), 3600), `Open private ${bucket}`);
+                requirePrivateSession(token);
                 for (const entry of entries) {
                     const result = data?.find(item => item.path === entry.path);
                     if (!result?.signedUrl || result.error) throw new Error(`A private photo in ${bucket} could not be opened. Check its storage permissions.`);
@@ -526,18 +679,24 @@
         }
 
         async function photoDisplayUrl(reference) {
+            const token = privateSessionToken();
+            requirePrivateSession(token);
             if (reference.startsWith('data:')) return reference;
-            await preparePhotoLinks({ appState: { photos: { photo: [reference] }, roomPhotos: {} } });
+            await preparePhotoLinks({ appState: { photos: { photo: [reference] }, roomPhotos: {} } }, token);
+            requirePrivateSession(token);
             return signedPhotoUrls.get(reference).url;
         }
 
-        async function fetchSurveySnapshot(id) {
+        async function fetchSurveySnapshot(id, token = privateSessionToken()) {
+                requirePrivateSession(token);
                 const { data, error } = await sb.from('properties').select('*').eq('id', id).single();
+                requirePrivateSession(token);
                 if (error) throw error;
                 if (!data) throw new Error('Survey could not be found.');
                 const readRows = async (table) => {
                     const result = await sb.from(table).select('*').eq('property_id', id)
                         .order('created_at', { ascending: true, nullsFirst: true }).order('id', { ascending: true });
+                    requirePrivateSession(token);
                     if (result.error) throw new Error(`${table}: ${result.error.message}`);
                     return result.data || [];
                 };
@@ -545,9 +704,11 @@
                     readRows('extensions'), readRows('rooms'), readRows('exterior_photos'),
                     readRows('extension_photos'), readRows('sketch_photos')
                 ]);
+                requirePrivateSession(token);
                 let roomPhotos = [];
                 if (rooms.length) {
                     const result = await sb.from('room_photos').select('*').in('room_id', rooms.map(room => room.id));
+                    requirePrivateSession(token);
                     if (result.error) throw new Error(`room_photos: ${result.error.message}`);
                     roomPhotos = result.data || [];
                 }
@@ -582,7 +743,8 @@
                         if (!photos.includes(photo.photo_url)) photos.push(photo.photo_url);
                     }
                 }
-            await preparePhotoLinks(restored);
+            await preparePhotoLinks(restored, token);
+            requirePrivateSession(token);
             return { snapshot: restored, hasCloudProgress: Boolean(hasSubmittedData) };
         }
 
@@ -606,6 +768,8 @@
         }
 
         async function resumeSurvey(id) {
+            const token = privateSessionToken();
+            if (!isPrivateSessionCurrent(token)) return;
             if (photoJobs.size || savingProgress || submittingSurvey || savingDetails) return alert('Please wait for the current operation to finish.');
             setLoading(true, "Opening survey...");
             draftWritesEnabled = false;
@@ -625,7 +789,8 @@
                     activeCloudVersion = draft.baseCloudVersion || activeCloudVersion;
                     showSurveySource('Draft from this device. Changes have not been submitted.');
                 };
-                const { snapshot: restored, hasCloudProgress } = await fetchSurveySnapshot(id);
+                const { snapshot: restored, hasCloudProgress } = await fetchSurveySnapshot(id, token);
+                requirePrivateSession(token);
                 activeCloudVersion = surveyVersion(restored);
                 const currentDeviceEdits = matchingDraft && draft.unsaved === true && draft.baseCloudVersion === activeCloudVersion;
                 if (matchingDraft && (!hasCloudProgress || currentDeviceEdits)) {
@@ -640,8 +805,8 @@
                     ? 'Saved survey loaded from the database. A separate draft on this device is also available.'
                     : 'Saved survey loaded from the database.', matchingDraft ? openDeviceDraft : null);
             } catch (error) {
-                alert('Unable to open survey: ' + error.message);
-            } finally { setLoading(false); }
+                if (isPrivateSessionCurrent(token)) alert('Unable to open survey: ' + error.message);
+            } finally { if (isPrivateSessionCurrent(token)) setLoading(false); }
         }
         function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
 
@@ -782,8 +947,14 @@
                 const image = document.createElement('img');
                 if (src.startsWith('data:')) image.src = src;
                 else {
-                    photoDisplayUrl(src).then(url => { if (image.isConnected) image.src = url; })
-                        .catch(error => { image.alt = 'Photo unavailable'; setSaveStatus(error.message, 'error'); });
+                    const photoSession = privateSessionToken();
+                    photoDisplayUrl(src).then(url => {
+                        if (isPrivateSessionCurrent(photoSession) && image.isConnected) image.src = url;
+                    }).catch(error => {
+                        if (!isPrivateSessionCurrent(photoSession)) return;
+                        image.alt = 'Photo unavailable';
+                        setSaveStatus(error.message, 'error');
+                    });
                 }
                 image.alt = `${id} photo ${index + 1}`;
                 const button = document.createElement('button');
@@ -1339,6 +1510,29 @@
         // The callback does not await auth operations, avoiding the auth client's lock.
         if (typeof sb.auth.onAuthStateChange === 'function') {
             sb.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT' && currentUser) {
+                    if (intentionalSignOut) {
+                        lockedSessionSurvey = null;
+                        clearSignedOutSurveyData();
+                    } else {
+                        lockUnexpectedSession();
+                    }
+                }
+                if (['SIGNED_IN','TOKEN_REFRESHED','USER_UPDATED'].includes(event) && session?.user) {
+                    if (lockedSessionSurvey && lockedSessionSurvey.userId !== session.user.id) {
+                        lockedSessionSurvey = null;
+                    }
+                    // Switching accounts cannot leave another user's data visible.
+                    if (currentUser && currentUser.id !== session.user.id) {
+                        clearSignedOutSurveyData();
+                        currentUser = session.user;
+                        queueMicrotask(() => {
+                            if (currentUser?.id === session.user.id && !passwordRecoveryActive) void loadDashboard();
+                        });
+                    } else if (currentUser?.id === session.user.id) {
+                        currentUser = session.user;
+                    }
+                }
                 if (event === 'PASSWORD_RECOVERY' && (recoveryLinkRequested || passwordRecoveryActive)) activatePasswordRecovery(session);
             });
         }
