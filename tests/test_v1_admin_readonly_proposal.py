@@ -33,6 +33,14 @@ def main():
         else: raise AssertionError('Postgres did not start')
         sql((ROOT/'tests/database_fixture.sql').read_text())
         sql((ROOT/'supabase/001_secure_access.sql').read_text())
+        # Capture the exact policy definitions before the proposed change.
+        policy_query = """SELECT coalesce(json_agg(row_to_json(t) ORDER BY t.schemaname,t.tablename,t.policyname),'[]'::json)
+            FROM (SELECT schemaname,tablename,policyname,cmd,permissive,roles,qual,with_check
+              FROM pg_policies WHERE (schemaname='public' AND tablename IN
+              ('properties','extensions','rooms','exterior_photos','extension_photos',
+               'sketch_photos','room_photos'))
+              OR (schemaname='storage' AND tablename='objects')) t;"""
+        original_policies = json.loads(sql(policy_query))
         a,b,admin = [str(uuid.uuid4()) for _ in range(3)]
         pa,pb,room = [str(uuid.uuid4()) for _ in range(3)]
         sql(f"INSERT INTO auth.users VALUES('{a}'),('{b}'),('{admin}');"
@@ -64,6 +72,39 @@ def main():
         assert sql(adm(f"WITH changed AS (DELETE FROM rooms WHERE id='{room}' RETURNING id) SELECT count(*) FROM changed;")) == '0'
         assert sql(user(a,f"SELECT notes FROM properties WHERE id='{pa}';")) == 'owner edit'
         print('PASS: owners read/write, admin read only, other customers and anonymous denied, private photo storage')
+        # Reconstruct a rollback from the actual pre-migration policies, not from
+        # assumptions about their expressions. Exercise rollback only in this
+        # isolated Docker database. Live rollout needs a fresh policy snapshot.
+        originals = {(p['schemaname'],p['tablename'],p['policyname']):p for p in original_policies}
+        current = json.loads(sql(policy_query))
+        new_policies = [p for p in current if (p['schemaname'],p['tablename'],p['policyname']) not in originals]
+        assert len(new_policies) == 6 and all(p['policyname']=='urbanfold_v1_admin_select' for p in new_policies)
+        rollback = ['BEGIN;']
+        for p in new_policies:
+            assert p['schemaname']=='public' and p['tablename'] in (
+                'extensions','rooms','exterior_photos','extension_photos','sketch_photos','room_photos')
+            rollback.append(f"DROP POLICY {p['policyname']} ON {p['schemaname']}.{p['tablename']};")
+        for p in original_policies:
+            assert p['schemaname'] in ('public','storage')
+            assert p['policyname'] in ('urbanfold_manage','urbanfold_storage_insert',
+                'urbanfold_storage_select','urbanfold_properties_select',
+                'urbanfold_properties_insert','urbanfold_properties_update')
+            command = f"ALTER POLICY {p['policyname']} ON {p['schemaname']}.{p['tablename']} TO authenticated"
+            if p['qual'] is not None:
+                command += f" USING ({p['qual']})"
+            if p['with_check'] is not None:
+                command += f" WITH CHECK ({p['with_check']})"
+            rollback.append(command + ';')
+        rollback.append('COMMIT;')
+        sql('\n'.join(rollback))
+        restored = json.loads(sql(policy_query))
+        assert restored == original_policies, 'Rollback did not restore exact initial pg_policies snapshot'
+        # Original admin write behaviour must be restored by the simulated rollback.
+        result = sql(adm(f"BEGIN; UPDATE properties SET notes='rollback-test' "
+                         f"WHERE id='{pa}' RETURNING id; ROLLBACK;"))
+        assert pa in result, 'Rollback failed to restore original admin policy'
+        assert sql(user(a,f"SELECT notes FROM properties WHERE id='{pa}';")) == 'owner edit'
+        print('PASS: isolated rollback restores all original policies and admin access without changing survey records')
     finally:
         subprocess.run(['docker','rm','-f',name],capture_output=True)
 
