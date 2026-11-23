@@ -105,6 +105,24 @@ def main():
         assert pa in result, 'Rollback failed to restore original admin policy'
         assert sql(user(a,f"SELECT notes FROM properties WHERE id='{pa}';")) == 'owner edit'
         print('PASS: isolated rollback restores all original policies and admin access without changing survey records')
+        # Reapply the migration, then execute the *actual saved live-snapshot
+        # rollback script* rather than only a dynamically generated substitute.
+        # Its SQL expressions were captured read-only from live, but are run
+        # solely against this disposable PostgreSQL fixture.
+        sql((ROOT/'docs/V1_LIVE_ADMIN_READONLY_RLS_REVIEW.sql').read_text())
+        assert sql(adm('SELECT count(*) FROM properties;')) == '2'
+        assert sql(adm(f"WITH changed AS (UPDATE properties SET notes='bad' WHERE id='{pa}' RETURNING id) SELECT count(*) FROM changed;")) == '0'
+        sql((ROOT/'docs/V1_ADMIN_RLS_ROLLBACK_SNAPSHOT_2026-11-23.sql').read_text())
+        exact_restored = json.loads(sql(policy_query))
+        assert exact_restored == original_policies, (
+            'Saved live-snapshot rollback differs from isolated fixture baseline: '
+            + json.dumps([{'old':a,'new':b} for a,b in zip(original_policies,exact_restored)
+                          if a!=b],indent=2))
+        assert pa in sql(adm(f"BEGIN; UPDATE properties SET notes='undo' "
+                             f"WHERE id='{pa}' RETURNING id; ROLLBACK;"))
+        assert sql(user(a,f"SELECT notes FROM properties WHERE id='{pa}';")) == 'owner edit'
+        print('PASS: exact saved live-snapshot rollback restores baseline on isolated PostgreSQL')
+
     finally:
         subprocess.run(['docker','rm','-f',name],capture_output=True)
 
