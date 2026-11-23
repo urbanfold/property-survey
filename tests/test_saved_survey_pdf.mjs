@@ -11,7 +11,7 @@ test('live administrator saved-survey PDF button is admin-only and not a submit 
   assert.match(dashboard, /if \(currentUser\) \{/);
   assert.match(dashboard, /pdfButton\.textContent = 'Download Measurements PDF';/);
   assert.match(dashboard, /pdfButton\.onclick = event => \{ event\.stopPropagation\(\); downloadSavedSurveyPDF\(prop\.id\); \};/);
-  assert.ok(dashboard.indexOf('pdfButton.textContent') > dashboard.indexOf('if (isStagingExportAdmin())'));
+  assert.ok(dashboard.indexOf('pdfButton.textContent') > dashboard.indexOf('if (currentUser.email === ADMIN_EMAIL)'));
   assert.doesNotMatch(dashboard, /finishSurvey\(/);
 });
 
