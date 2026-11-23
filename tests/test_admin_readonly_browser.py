@@ -71,7 +71,11 @@ def main():
             print('PDF PREVIEW:', page.evaluate("({display:getComputedStyle(document.getElementById('pdf-content')).display, text:document.getElementById('pdf-content').innerText.slice(0,140)})"), flush=True)
             raise
         assert pdf_bytes.startswith(b'%PDF-')
-        assert len(pdf_bytes) > 25000, 'Suspiciously small PDF report'
+        # Native jsPDF reports are compact; filesize is not a reliable content test.
+        # Confirm the actual PDF drawing stream contains the saved customer's data.
+        assert b'Customer Property' in pdf_bytes, 'Address is missing from PDF text'
+        assert b'4.2 m' in pdf_bytes, 'Kitchen measurements are missing from PDF text'
+        assert b'URBANFOLD' in pdf_bytes, 'Report title is missing from PDF text'
         assert json.dumps(fixture.tables,sort_keys=True) == before
         assert not errors, errors
         assert not fixture.unexpected,fixture.unexpected
