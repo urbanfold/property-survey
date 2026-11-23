@@ -53,7 +53,8 @@ def main():
         page.get_by_role("button",name="Log In",exact=True).click()
         expect(page.locator("#view-dashboard")).to_be_visible(timeout=15000)
         expect(page.locator(".survey-item").first).to_be_visible()
-        page.locator(".survey-item").first.click()
+        # Click the survey heading; the card also contains dedicated export buttons.
+        page.locator(".survey-item").first.locator("h3").click()
         expect(page.locator("#view-details")).to_be_visible(timeout=15000)
         assert page.locator("#detail-address").input_value()=="FIXTURE PRIVATE ADDRESS"
         assert not errors, errors
