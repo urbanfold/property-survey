@@ -1091,6 +1091,7 @@
             const address = document.getElementById('detail-address').value.trim();
             const postcode = document.getElementById('detail-postcode').value.trim();
             if (!address || !postcode) return alert('Address and postcode are required.');
+            const sessionToken = privateSessionToken();
             savingDetails = true;
             draftWritesEnabled = true;
             setLoading(true, 'Saving property details...');
@@ -1098,15 +1099,36 @@
                 const payload = { surveyor_name: document.getElementById('detail-name').value,
                     client_email: document.getElementById('detail-client-email').value, address, postcode,
                     notes: document.getElementById('detail-notes').value };
+                // Free surveys and existing property updates do not require Stripe.
+                if (!currentPropertyId && currentUser.email !== ADMIN_EMAIL) {
+                    const allowance = await requireResult(sb.rpc('get_survey_allowance'), 'Check survey allowance');
+                    if (!isPrivateSessionCurrent(sessionToken)) return;
+                    if (!allowance?.free_available && !allowance?.unlimited) {
+                        const { data: recovery, error } = await sb.functions.invoke('recover-survey-payment', { body: {} });
+                        if (!isPrivateSessionCurrent(sessionToken)) return;
+                        if (error || !Number.isInteger(recovery?.checked) || !Number.isInteger(recovery?.recorded))
+                            throw new Error('Payment verification unavailable. Your details have not been submitted. Please retry before paying again.');
+                        const refreshed = await requireResult(sb.rpc('get_survey_allowance'), 'Check verified credit');
+                        if (!isPrivateSessionCurrent(sessionToken)) return;
+                        if (!refreshed?.can_create) {
+                            alert('No available credit was confirmed. If you have already paid, contact survey@urbanfold.uk before paying again.');
+                            return;
+                        }
+                    }
+                }
+                if (!isPrivateSessionCurrent(sessionToken)) return;
                 const data = await requireResult(currentPropertyId
                     ? sb.from('properties').update(payload).eq('id', currentPropertyId).select().single()
                     : sb.from('properties').upsert({ ...payload, id: newPropertyId ||= crypto.randomUUID(), user_id: currentUser.id }, { onConflict: 'id' }).select().single(), 'Save property details');
+                if (!isPrivateSessionCurrent(sessionToken)) return;
                 if (!data?.id) throw new Error('The saved property could not be verified.');
                 currentPropertyId = data.id;
                 saveDraft();
                 showView('view-type');
             } catch (error) {
-                if (error.message.includes('URBANFOLD_SURVEY_LIMIT')) showAdditionalSurveyDialog();
+                if (!isPrivateSessionCurrent(sessionToken)) return;
+                if (error.message.includes('URBANFOLD_CREDIT_REVERIFY')) alert('Your payment needs to be verified again. Please retry Save & Continue. Do not pay again.');
+                else if (error.message.includes('URBANFOLD_SURVEY_LIMIT')) alert('No available survey credit was confirmed. Return to My Surveys to check payment confirmation before buying again.');
                 else if (error.message.includes('URBANFOLD_ADDRESS_LOCKED')) alert('This submitted property address is locked. Contact survey@urbanfold.uk for a correction, or start an additional survey for a different property.');
                 else alert(error.message);
             }
