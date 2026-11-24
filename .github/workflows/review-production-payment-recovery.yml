@@ -7,6 +7,9 @@ on:
     paths:
       - 'supabase/functions/_shared/billing.mjs'
       - 'tests/test_production_payment_recovery.mjs'
+      - 'tests/test_production_payment_frontend.mjs'
+      - 'app.js'
+      - 'index.html'
       - '.github/workflows/review-production-payment-recovery.yml'
   workflow_dispatch:
 permissions:
@@ -19,4 +22,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/test_production_payment_recovery.mjs tests/test_production_billing_mode_isolation.mjs
+      - run: node --test tests/test_production_payment_recovery.mjs tests/test_production_billing_mode_isolation.mjs tests/test_production_payment_frontend.mjs
