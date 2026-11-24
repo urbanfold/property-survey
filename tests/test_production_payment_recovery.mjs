@@ -24,7 +24,7 @@ function fixture(opts = {}) {
       }
       if (u.pathname.startsWith('/rest/v1/rpc/')) {
         writes.push({ path: u.pathname.split('/').pop(), body: JSON.parse(init.body) });
-        return response({}, opts.writeStatus || 200);
+        return response({}, opts.writeStatuses?.[u.pathname.split('/').pop()] || opts.writeStatus || 200);
       }
     }
     if (u.hostname === 'api.stripe.com') {
@@ -42,7 +42,10 @@ function fixture(opts = {}) {
 test('account recovery without browser reference', async () => {
   const f = fixture(); const r = await f.run(); assert.equal(r.status, 200);
   assert.equal((await r.json()).recorded, 1);
-  assert.deepEqual(f.writes, [{ path: 'record_survey_purchase', body: { session_id: id, intent_id: 'pi_mock123', buyer_id: owner, paid_amount: 600, paid_currency: 'gbp', is_live: true } }]);
+  assert.deepEqual(f.writes, [
+    { path: 'record_survey_purchase', body: { session_id: id, intent_id: 'pi_mock123', buyer_id: owner, paid_amount: 600, paid_currency: 'gbp', is_live: true } },
+    { path: 'attest_survey_credit_verification', body: { session_id: id, intent_id: 'pi_mock123', buyer_id: owner } }
+  ]);
 });
 for (const [name, opts, status] of [
   ['disabled mode', { env: { SURVEY_PAYMENTS_MODE: 'disabled' } }, 503],
@@ -81,4 +84,20 @@ test('failed revocation returns error', async () => {
 });
 test('failed purchase record returns error', async () => {
   const f = fixture({ writeStatus: 500 }); assert.equal((await f.run()).status, 503);
+});
+
+test('failed attestation fails closed', async () => {
+  const f = fixture({ writeStatuses: { attest_survey_credit_verification: 500 } });
+  assert.equal((await f.run()).status, 503);
+  assert.deepEqual(f.writes.map(w => w.path), ['record_survey_purchase', 'attest_survey_credit_verification']);
+});
+test('failed purchase write never attests credit', async () => {
+  const f = fixture({ writeStatuses: { record_survey_purchase: 500 } });
+  assert.equal((await f.run()).status, 503);
+  assert.deepEqual(f.writes.map(w => w.path), ['record_survey_purchase']);
+});
+test('missing account checkout records never attests', async () => {
+  const f = fixture({ rows: [] }); const r = await f.run();
+  assert.equal(r.status, 200); assert.equal((await r.json()).recorded, 0);
+  assert.equal(f.writes.length, 0);
 });
