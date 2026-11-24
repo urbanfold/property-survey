@@ -135,3 +135,66 @@ export async function stripeWebhook(request, { env, fetcher = fetch, now = Date.
     return json({ received: true });
   } catch { return json({ error: 'Payment acknowledgement could not be saved. Retry this webhook.' }, 500); }
 }
+
+// Explicit, authenticated recovery of a known Checkout Session.
+// No browser-provided ownership, amount, mode or payment status is trusted.
+export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
+  let config;
+  try { config = settings(env); } catch { return json({ error: 'Payment recovery unavailable.' }, 503); }
+  const origin = request.headers.get('origin');
+  if (origin && origin !== config.app.origin) return json({ error: 'Origin not permitted.' }, 403);
+  const cors = origin || null;
+  if (request.method === 'OPTIONS') return json({}, 200, cors);
+  if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, cors);
+  // Production recovery must never convert a sandbox payment into a live credit.
+  if (!config.enabled || config.mode !== 'live' || !config.url || !config.anon || !config.service)
+    return json({ error: 'Payment recovery unavailable.' }, 503, cors);
+  const authorization = request.headers.get('authorization') || '';
+  if (!/^Bearer \\S+$/.test(authorization)) return json({ error: 'Sign in first.' }, 401, cors);
+  try {
+    const userResponse = await fetcher(config.url + '/auth/v1/user', { headers: { apikey: config.anon, authorization } });
+    const user = await parsed(userResponse);
+    if (!userResponse.ok || !UUID.test(user?.id || '')) return json({ error: 'Sign in again.' }, 401, cors);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid request.' }, 400, cors); }
+    const id = body?.checkout_session_id;
+    if (typeof id !== 'string' || id.length > 255 || !/^cs_live_[A-Za-z0-9]+$/.test(id))
+      return json({ error: 'A live checkout reference is required.' }, 400, cors);
+    const stripeGet = async path => {
+      const response = await fetcher('https://api.stripe.com/v1/' + path, { headers: { Authorization: 'Bearer ' + config.key } });
+      if (!response.ok) throw new Error('Stripe lookup failed');
+      const result = await parsed(response);
+      if (!result) throw new Error('Invalid Stripe response');
+      return result;
+    };
+    const session = await stripeGet('checkout/sessions/' + encodeURIComponent(id));
+    if (session.id !== id || session.livemode !== true || session.client_reference_id !== user.id ||
+        session.metadata?.user_id !== user.id || session.metadata?.product !== PRODUCT)
+      return json({ error: 'Payment reference unavailable for this account.' }, 404, cors);
+    if (session.mode !== 'payment' || session.status !== 'complete' || session.payment_status !== 'paid' ||
+        session.currency !== 'gbp' || session.amount_total !== 600 || !INTENT.test(session.payment_intent || ''))
+      return json({ error: 'Payment not confirmed.' }, 409, cors);
+    const intent = await stripeGet('payment_intents/' + encodeURIComponent(session.payment_intent));
+    if (intent.id !== session.payment_intent || intent.livemode !== true || intent.status !== 'succeeded' ||
+        intent.amount_received !== 600 || intent.currency !== 'gbp' ||
+        intent.metadata?.user_id !== user.id || intent.metadata?.product !== PRODUCT ||
+        typeof intent.latest_charge !== 'string' || !/^ch_[A-Za-z0-9]+$/.test(intent.latest_charge))
+      return json({ error: 'Payment not confirmed.' }, 409, cors);
+    const charge = await stripeGet('charges/' + encodeURIComponent(intent.latest_charge));
+    if (charge.id !== intent.latest_charge || charge.payment_intent !== intent.id || charge.livemode !== true ||
+        charge.paid !== true || charge.captured !== true || charge.amount !== 600 || charge.currency !== 'gbp' ||
+        charge.amount_refunded !== 0 || charge.refunded !== false || charge.disputed !== false)
+      return json({ error: 'Payment is not eligible for recovery.' }, 409, cors);
+    const response = await fetcher(config.url + '/rest/v1/rpc/record_survey_purchase', {
+      method: 'POST', headers: { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: id, intent_id: intent.id, buyer_id: user.id,
+        paid_amount: 600, paid_currency: 'gbp', is_live: true })
+    });
+    if (!response.ok) throw new Error('Ledger update failed');
+    // Recording a payment does not override an existing refund hold or redemption.
+    // The caller must re-read its database allowance before presenting credit availability.
+    return json({ verified: true, recorded: true }, 200, cors);
+  } catch {
+    return json({ error: 'Payment recovery could not be completed. Do not pay again; contact survey@urbanfold.uk.' }, 503, cors);
+  }
+}
