@@ -69,6 +69,27 @@ export async function createCheckout(request, { env, fetcher = fetch }) {
     if (!stripeResponse.ok || !SESSION.test(session?.id || '')) return json({ error: 'Checkout could not be opened. Please return to My Surveys and try again.' }, 502, cors);
     const destination = new URL(session.url);
     if (destination.protocol !== 'https:' || destination.hostname !== 'checkout.stripe.com') throw new Error('Invalid checkout destination');
+    // Persist live checkout ownership before exposing the checkout URL.
+    // Test mode retains the existing checkout behavior.
+    if (config.mode === 'live') {
+      if (!config.service || !session.id.startsWith('cs_live_') || session.livemode !== true) throw new Error('Invalid live session');
+      const ledgerHeaders = { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' };
+      const tracking = config.url + '/rest/v1/survey_checkout_attempts';
+      const saved = await fetcher(tracking + '?on_conflict=checkout_session_id', {
+        method: 'POST', headers: { ...ledgerHeaders, Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify({ checkout_session_id: session.id, user_id: user.id, attempt_id: body.attempt_id, live_mode: true })
+      });
+      if (!saved.ok) throw new Error('Checkout tracking failed');
+      const check = await fetcher(tracking + '?' + new URLSearchParams({
+        select: 'checkout_session_id,user_id,attempt_id,live_mode',
+        checkout_session_id: 'eq.' + session.id
+      }), { headers: ledgerHeaders });
+      const rows = await parsed(check);
+      if (!check.ok || !Array.isArray(rows) || rows.length !== 1 ||
+          rows[0].checkout_session_id !== session.id || rows[0].user_id !== user.id ||
+          rows[0].attempt_id !== body.attempt_id || rows[0].live_mode !== true)
+        throw new Error('Checkout tracking identity mismatch');
+    }
     return json({ url: destination.href, test_mode: config.mode === 'test' }, 200, cors);
   } catch {
     return json({ error: 'Checkout could not be confirmed. Please try again using the same purchase button.' }, 502, cors);
@@ -150,7 +171,7 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
   if (!config.enabled || config.mode !== 'live' || !config.url || !config.anon || !config.service)
     return json({ error: 'Payment recovery unavailable.' }, 503, cors);
   const authorization = request.headers.get('authorization') || '';
-  if (!/^Bearer \\S+$/.test(authorization)) return json({ error: 'Sign in first.' }, 401, cors);
+  if (!/^Bearer \S+$/.test(authorization)) return json({ error: 'Sign in first.' }, 401, cors);
   try {
     const userResponse = await fetcher(config.url + '/auth/v1/user', { headers: { apikey: config.anon, authorization } });
     const user = await parsed(userResponse);
