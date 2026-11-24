@@ -183,38 +183,18 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
     if (reference !== undefined && (typeof reference !== 'string' || reference.length > 255 || !/^cs_live_[A-Za-z0-9]+$/.test(reference)))
       return json({ error: 'Invalid live checkout reference.' }, 400, cors);
     const ledgerHeaders = { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' };
-    const query = new URLSearchParams({
-      select: 'checkout_session_id,user_id,live_mode',
-      user_id: 'eq.' + user.id, live_mode: 'eq.true',
-      order: 'created_at.desc,checkout_session_id.desc', limit: '6'
+    const selection = await fetcher(config.url + '/rest/v1/rpc/list_recoverable_survey_sessions', {
+      method: 'POST', headers: ledgerHeaders,
+      body: JSON.stringify({ buyer_id: user.id, session_reference: reference ?? null })
     });
-    if (reference !== undefined) query.set('checkout_session_id', 'eq.' + reference);
-    else query.set('created_at', 'gte.' + new Date(Date.now() - 30 * 86400000).toISOString());
-    const tracking = await fetcher(config.url + '/rest/v1/survey_checkout_attempts?' + query, { headers: ledgerHeaders });
-    const tracked = await parsed(tracking);
-    const candidates = tracked;
-    if (!tracking.ok || !Array.isArray(candidates) || candidates.length > 6 ||
-        candidates.some(row => row.user_id !== user.id || row.live_mode !== true ||
+    const ordered = await parsed(selection);
+    if (!selection.ok || !Array.isArray(ordered) || ordered.length > 6 ||
+        new Set(ordered.map(row => row?.checkout_session_id)).size !== ordered.length ||
+        ordered.some(row => !row || row.user_id !== user.id || row.live_mode !== true ||
           typeof row.checkout_session_id !== 'string' || row.checkout_session_id.length > 255 ||
           !/^cs_live_[A-Za-z0-9]+$/.test(row.checkout_session_id) ||
           (reference !== undefined && row.checkout_session_id !== reference)))
-      throw new Error('Checkout tracking lookup failed');
-    // Existing unused purchases take priority, including those predating checkout tracking.
-    const purchaseQuery = new URLSearchParams({
-      select: 'checkout_session_id,user_id,live_mode',
-      user_id: 'eq.' + user.id, live_mode: 'eq.true', redeemed_property_id: 'is.null',
-      order: 'purchased_at.asc,checkout_session_id.asc', limit: '6'
-    });
-    if (reference !== undefined) purchaseQuery.set('checkout_session_id', 'eq.' + reference);
-    const purchases = await fetcher(config.url + '/rest/v1/survey_credit_purchases?' + purchaseQuery, { headers: ledgerHeaders });
-    const unused = await parsed(purchases);
-    if (!purchases.ok || !Array.isArray(unused) || unused.length > 6 ||
-        unused.some(row => row.user_id !== user.id || row.live_mode !== true ||
-          typeof row.checkout_session_id !== 'string' || row.checkout_session_id.length > 255 ||
-          !/^cs_live_[A-Za-z0-9]+$/.test(row.checkout_session_id) ||
-          (reference !== undefined && row.checkout_session_id !== reference)))
-      throw new Error('Purchase lookup failed');
-    const ordered = [...new Map([...unused, ...candidates].map(row => [row.checkout_session_id, row])).values()];
+      throw new Error('Recoverable checkout selection failed');
     if (reference !== undefined && ordered.length !== 1)
       return json({ error: 'Payment reference unavailable for this account.' }, 404, cors);
     // Bound Stripe API work; older unrecorded attempts may require support.
