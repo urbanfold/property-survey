@@ -17,17 +17,15 @@ function fixture(opts = {}) {
     const u = new URL(url); calls.push(u);
     if (u.hostname === 'mock.invalid') {
       if (u.pathname === '/auth/v1/user') return response({ id: owner }, opts.authStatus || 200);
-      if (u.pathname === '/rest/v1/survey_checkout_attempts') {
-        assert.equal(u.searchParams.get('user_id'), 'eq.' + owner);
-        assert.equal(u.searchParams.get('live_mode'), 'eq.true');
-        return response(opts.rows ?? [{ checkout_session_id: id, user_id: owner, live_mode: true }]);
-      }
-      if (u.pathname === '/rest/v1/survey_credit_purchases') {
-        assert.equal(u.searchParams.get('user_id'), 'eq.' + owner);
-        assert.equal(u.searchParams.get('live_mode'), 'eq.true');
-        assert.equal(u.searchParams.get('redeemed_property_id'), 'is.null');
-        assert.equal(u.searchParams.has('created_at'), false);
-        return response(opts.purchases ?? []);
+      if (u.pathname === '/rest/v1/rpc/list_recoverable_survey_sessions') {
+        assert.equal(init.method, 'POST');
+        assert.equal(init.headers.Authorization, 'Bearer mock-service');
+        const args = JSON.parse(init.body);
+        assert.equal(args.buyer_id, owner);
+        assert(args.session_reference === null || args.session_reference === id);
+        const rows = opts.rows ?? [{ checkout_session_id: id, user_id: owner, live_mode: true }];
+        const selected = opts.selection ?? [...new Map([...(opts.purchases ?? []), ...rows].map(row => [row.checkout_session_id,row])).values()];
+        return response(selected, opts.selectionStatus ?? 200);
       }
       if (u.pathname.startsWith('/rest/v1/rpc/')) {
         writes.push({ path: u.pathname.split('/').pop(), body: JSON.parse(init.body) });
@@ -131,4 +129,16 @@ test('older refunded purchase is revoked rather than attested', async () => {
   const f = fixture({ rows: [], purchases: [{checkout_session_id:id,user_id:owner,live_mode:true}], charge:{amount_refunded:600,refunded:true} });
   const r = await f.run(); assert.equal(r.status,200); assert.equal((await r.json()).ineligible,1);
   assert.deepEqual(f.writes.map(w=>w.path),['revoke_survey_purchase']);
+});
+
+test('selection failure fails closed', async () => {
+  const f = fixture({ selectionStatus: 503 }); assert.equal((await f.run()).status,503); assert.equal(f.writes.length,0);
+});
+test('duplicate selection rejected', async () => {
+  const row = {checkout_session_id:id,user_id:owner,live_mode:true};
+  const f = fixture({ selection:[row,row] }); assert.equal((await f.run()).status,503); assert.equal(f.writes.length,0);
+});
+test('sandbox selection rejected', async () => {
+  const f = fixture({ selection:[{checkout_session_id:'cs_test_mock',user_id:owner,live_mode:false}] });
+  assert.equal((await f.run()).status,503); assert.equal(f.writes.length,0);
 });
