@@ -195,18 +195,34 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
     if (reference !== undefined) query.set('checkout_session_id', 'eq.' + reference);
     else query.set('created_at', 'gte.' + new Date(Date.now() - 30 * 86400000).toISOString());
     const tracking = await fetcher(config.url + '/rest/v1/survey_checkout_attempts?' + query, { headers: ledgerHeaders });
-    const candidates = await parsed(tracking);
+    const tracked = await parsed(tracking);
+    const candidates = tracked;
     if (!tracking.ok || !Array.isArray(candidates) || candidates.length > 6 ||
         candidates.some(row => row.user_id !== user.id || row.live_mode !== true ||
           typeof row.checkout_session_id !== 'string' || row.checkout_session_id.length > 255 ||
           !/^cs_live_[A-Za-z0-9]+$/.test(row.checkout_session_id) ||
           (reference !== undefined && row.checkout_session_id !== reference)))
       throw new Error('Checkout tracking lookup failed');
-    if (reference !== undefined && candidates.length !== 1)
+    // Existing unused purchases take priority, including those predating checkout tracking.
+    const purchaseQuery = new URLSearchParams({
+      select: 'checkout_session_id,user_id,live_mode',
+      user_id: 'eq.' + user.id, live_mode: 'eq.true', redeemed_property_id: 'is.null',
+      order: 'purchased_at.asc,checkout_session_id.asc', limit: '6'
+    });
+    if (reference !== undefined) purchaseQuery.set('checkout_session_id', 'eq.' + reference);
+    const purchases = await fetcher(config.url + '/rest/v1/survey_credit_purchases?' + purchaseQuery, { headers: ledgerHeaders });
+    const unused = await parsed(purchases);
+    if (!purchases.ok || !Array.isArray(unused) || unused.length > 6 ||
+        unused.some(row => row.user_id !== user.id || row.live_mode !== true ||
+          typeof row.checkout_session_id !== 'string' || row.checkout_session_id.length > 255 ||
+          !/^cs_live_[A-Za-z0-9]+$/.test(row.checkout_session_id) ||
+          (reference !== undefined && row.checkout_session_id !== reference)))
+      throw new Error('Purchase lookup failed');
+    const ordered = [...new Map([...unused, ...candidates].map(row => [row.checkout_session_id, row])).values()];
+    if (reference !== undefined && ordered.length !== 1)
       return json({ error: 'Payment reference unavailable for this account.' }, 404, cors);
-    // Bound Stripe API work to five recent checkout attempts per request.
-    // Older or additional attempts require support or an explicit tracked reference.
-    const additionalAttempts = candidates.length > 5;
+    // Bound Stripe API work; older unrecorded attempts may require support.
+    const additionalAttempts = ordered.length > 5;
     let recorded = 0;
     let pending = 0;
     let ineligible = 0;
@@ -217,7 +233,7 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
       if (!result) throw new Error('Invalid Stripe response');
       return result;
     };
-    for (const candidate of candidates.slice(0, 5)) {
+    for (const candidate of ordered.slice(0, 5)) {
     const id = candidate.checkout_session_id;
     const session = await stripeGet('checkout/sessions/' + encodeURIComponent(id));
     if (session.id !== id || session.livemode !== true || session.client_reference_id !== user.id ||
@@ -265,7 +281,7 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
     // The caller must re-read its database allowance before presenting credit availability.
     recorded++;
     }
-    return json({ checked: Math.min(candidates.length, 5), recorded, pending, ineligible, additional_attempts: additionalAttempts }, 200, cors);
+    return json({ checked: Math.min(ordered.length, 5), recorded, pending, ineligible, additional_attempts: additionalAttempts }, 200, cors);
   } catch {
     return json({ error: 'Payment recovery could not be completed. Do not pay again; contact survey@urbanfold.uk.' }, 503, cors);
   }
