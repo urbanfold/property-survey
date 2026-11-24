@@ -231,8 +231,21 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
     const charge = await stripeGet('charges/' + encodeURIComponent(intent.latest_charge));
     if (charge.id !== intent.latest_charge || charge.payment_intent !== intent.id || charge.livemode !== true ||
         charge.paid !== true || charge.captured !== true || charge.amount !== 600 || charge.currency !== 'gbp' ||
-        charge.amount_refunded !== 0 || charge.refunded !== false || charge.disputed !== false)
-      { ineligible++; continue; }
+        !Number.isInteger(charge.amount_refunded) || charge.amount_refunded < 0 || charge.amount_refunded > 600 ||
+        typeof charge.refunded !== 'boolean' || typeof charge.disputed !== 'boolean')
+      throw new Error('Stripe charge validation failed');
+    if (charge.amount_refunded > 0 || charge.refunded || charge.disputed) {
+      // Persist the verified revocation even if the original webhook was missed.
+      // The existing ledger excludes this intent from future credit redemption.
+      const revoked = await fetcher(config.url + '/rest/v1/rpc/revoke_survey_purchase', {
+        method: 'POST', headers: ledgerHeaders,
+        body: JSON.stringify({ intent_id: intent.id,
+          revocation_reason: charge.disputed ? 'reconciliation.disputed' : 'reconciliation.refunded' })
+      });
+      if (!revoked.ok) throw new Error('Refund reconciliation failed');
+      ineligible++;
+      continue;
+    }
     const response = await fetcher(config.url + '/rest/v1/rpc/record_survey_purchase', {
       method: 'POST', headers: { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: id, intent_id: intent.id, buyer_id: user.id,
