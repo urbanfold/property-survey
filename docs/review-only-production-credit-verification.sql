@@ -74,6 +74,31 @@ BEGIN
     WHERE checkout_session_id = purchase;
   RETURN NEW;
 END $$;
+-- Service-only recovery selection. Filter consumed/revoked records BEFORE limiting.
+CREATE FUNCTION public.list_recoverable_survey_sessions(buyer_id uuid, session_reference text DEFAULT NULL)
+RETURNS TABLE(checkout_session_id text,user_id uuid,live_mode boolean)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $
+ WITH candidates AS (
+   SELECT p.checkout_session_id,p.user_id,p.live_mode,0 AS priority,p.purchased_at AS sort_time
+   FROM public.survey_credit_purchases p
+   WHERE p.user_id=buyer_id AND p.live_mode AND p.redeemed_property_id IS NULL
+     AND NOT EXISTS (SELECT 1 FROM public.survey_credit_revocations r WHERE r.payment_intent_id=p.payment_intent_id)
+     
+     AND (session_reference IS NULL OR p.checkout_session_id=session_reference)
+   UNION ALL
+   SELECT t.checkout_session_id,t.user_id,t.live_mode,1,-1 * extract(epoch FROM t.created_at) * interval '1 second' + timestamptz 'epoch'
+   FROM public.survey_checkout_attempts t
+   WHERE t.user_id=buyer_id AND t.live_mode
+     AND NOT EXISTS (SELECT 1 FROM public.survey_credit_purchases p WHERE p.checkout_session_id=t.checkout_session_id)
+     AND (session_reference IS NOT NULL OR t.created_at >= now()-interval '30 days')
+     AND (session_reference IS NULL OR t.checkout_session_id=session_reference)
+ )
+ SELECT c.checkout_session_id,c.user_id,c.live_mode FROM candidates c
+ ORDER BY c.priority,c.sort_time,c.checkout_session_id LIMIT 6;
+$;
+REVOKE ALL ON FUNCTION public.list_recoverable_survey_sessions(uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.list_recoverable_survey_sessions(uuid,text) TO service_role;
+
 COMMIT;
 -- Release blockers: verify exact existing grants and trigger definitions;
 -- verify server-only column writes; ensure all save paths handle re-verification;
