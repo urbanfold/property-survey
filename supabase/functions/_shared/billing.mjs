@@ -252,6 +252,11 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
         paid_amount: 600, paid_currency: 'gbp', is_live: true })
     });
     if (!response.ok) throw new Error('Ledger update failed');
+    const attestation = await fetcher(config.url + '/rest/v1/rpc/attest_survey_credit_verification', {
+      method: 'POST', headers: ledgerHeaders,
+      body: JSON.stringify({ session_id: id, intent_id: intent.id, buyer_id: user.id })
+    });
+    if (!attestation.ok) throw new Error('Credit verification could not be recorded');
     // Recording a payment does not override an existing refund hold or redemption.
     // The caller must re-read its database allowance before presenting credit availability.
     recorded++;
