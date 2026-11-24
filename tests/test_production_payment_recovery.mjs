@@ -22,6 +22,13 @@ function fixture(opts = {}) {
         assert.equal(u.searchParams.get('live_mode'), 'eq.true');
         return response(opts.rows ?? [{ checkout_session_id: id, user_id: owner, live_mode: true }]);
       }
+      if (u.pathname === '/rest/v1/survey_credit_purchases') {
+        assert.equal(u.searchParams.get('user_id'), 'eq.' + owner);
+        assert.equal(u.searchParams.get('live_mode'), 'eq.true');
+        assert.equal(u.searchParams.get('redeemed_property_id'), 'is.null');
+        assert.equal(u.searchParams.has('created_at'), false);
+        return response(opts.purchases ?? []);
+      }
       if (u.pathname.startsWith('/rest/v1/rpc/')) {
         writes.push({ path: u.pathname.split('/').pop(), body: JSON.parse(init.body) });
         return response({}, opts.writeStatuses?.[u.pathname.split('/').pop()] || opts.writeStatus || 200);
@@ -100,4 +107,28 @@ test('missing account checkout records never attests', async () => {
   const f = fixture({ rows: [] }); const r = await f.run();
   assert.equal(r.status, 200); assert.equal((await r.json()).recorded, 0);
   assert.equal(f.writes.length, 0);
+});
+
+test('older unused purchase recoverable without tracking row', async () => {
+  const f = fixture({ rows: [], purchases: [{checkout_session_id:id,user_id:owner,live_mode:true}] });
+  const r = await f.run(); assert.equal(r.status,200); assert.equal((await r.json()).recorded,1);
+  assert.deepEqual(f.writes.map(w=>w.path),['record_survey_purchase','attest_survey_credit_verification']);
+});
+test('older unused purchase with explicit reference recoverable', async () => {
+  const f = fixture({ rows: [], purchases: [{checkout_session_id:id,user_id:owner,live_mode:true}] });
+  const r = await f.run({checkout_session_id:id}); assert.equal(r.status,200); assert.equal((await r.json()).recorded,1);
+});
+test('foreign recorded purchase fails closed', async () => {
+  const f = fixture({ rows: [], purchases: [{checkout_session_id:id,user_id:other,live_mode:true}] });
+  assert.equal((await f.run()).status,503); assert.equal(f.writes.length,0);
+});
+test('tracked and recorded purchase is verified once', async () => {
+  const f = fixture({ purchases: [{checkout_session_id:id,user_id:owner,live_mode:true}] });
+  const r = await f.run(); assert.equal(r.status,200); assert.equal((await r.json()).checked,1);
+  assert.equal(f.writes.length,2);
+});
+test('older refunded purchase is revoked rather than attested', async () => {
+  const f = fixture({ rows: [], purchases: [{checkout_session_id:id,user_id:owner,live_mode:true}], charge:{amount_refunded:600,refunded:true} });
+  const r = await f.run(); assert.equal(r.status,200); assert.equal((await r.json()).ineligible,1);
+  assert.deepEqual(f.writes.map(w=>w.path),['revoke_survey_purchase']);
 });
