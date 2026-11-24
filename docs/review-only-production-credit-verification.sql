@@ -77,7 +77,7 @@ END $$;
 -- Service-only recovery selection. Filter consumed/revoked records BEFORE limiting.
 CREATE FUNCTION public.list_recoverable_survey_sessions(buyer_id uuid, session_reference text DEFAULT NULL)
 RETURNS TABLE(checkout_session_id text,user_id uuid,live_mode boolean)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
  WITH candidates AS (
    SELECT p.checkout_session_id,p.user_id,p.live_mode,0 AS priority,p.purchased_at AS sort_time
    FROM public.survey_credit_purchases p
@@ -95,7 +95,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $
  )
  SELECT c.checkout_session_id,c.user_id,c.live_mode FROM candidates c
  ORDER BY c.priority,c.sort_time,c.checkout_session_id LIMIT 6;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.list_recoverable_survey_sessions(uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.list_recoverable_survey_sessions(uuid,text) TO service_role;
 
