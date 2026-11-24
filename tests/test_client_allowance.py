@@ -18,6 +18,8 @@ class ClientFixture(Fixture):
         self.checkouts=[]
         self.checkout_disabled=True
         self.migration_pending=False
+        self.recovery_requests=[]
+        self.recovery_unavailable=False
     def route(self, route):
         req=route.request
         path=urlparse(req.url).path
@@ -28,6 +30,12 @@ class ClientFixture(Fixture):
         if req.method!='OPTIONS' and path.endswith('/rpc/get_survey_allowance'):
             if self.migration_pending:return reply({'code':'PGRST202','message':'function not installed'},404)
             return reply({'can_create':not self.free_used or self.credits>0,'free_available':not self.free_used,'paid_credits':self.credits})
+        if req.method=='POST' and path.endswith('/functions/v1/recover-survey-payment'):
+            payload=req.post_data_json
+            self.recovery_requests.append(payload)
+            if self.recovery_unavailable:return reply({'error':'Recovery unavailable'},503)
+            if payload.get('checkout_session_id'):return reply({'error':'Payment reference unavailable for this account.'},404)
+            return reply({'checked':int(self.credits>0),'recorded':int(self.credits>0),'additional_attempts':False})
         if req.method!='OPTIONS' and path.endswith('/functions/v1/create-survey-checkout'):
             self.checkouts.append(req.post_data_json)
             if self.checkout_disabled:return reply({'error':'Payments are not available yet. Please contact survey@urbanfold.uk.'},503)
@@ -87,7 +95,9 @@ def main():
         # This is merely a navigation URL, not evidence of a real payment.
         page.goto(ORIGIN+'?payment=success&checkout_session_id=cs_live_Forged')
         expect(page.locator('#view-dashboard')).to_be_visible()
-        expect(page.locator('#payment-notice')).to_contain_text('No additional survey credit')
+        expect(page.locator('#payment-notice')).to_contain_text('Payment confirmation could not be checked')
+        assert fixture.recovery_requests[-1]=={'checkout_session_id':'cs_live_Forged'}
+        assert fixture.credits==0
         page.get_by_role('button',name='+ Start New Survey').click()
         expect(page.locator('#additional-survey-dialog')).to_be_visible()
         page.get_by_role('button',name='Continue existing surveys',exact=True).click()
@@ -105,7 +115,13 @@ def main():
         assert fixture.credits==0
         page.evaluate('checkPurchasedCredit()')
         expect(page.locator('#payment-notice')).to_contain_text('No additional survey credit')
-        fixture.credits=1  # Only the separate, tested server webhook may do this in production.
+        assert fixture.recovery_requests[-1]=={}
+        fixture.recovery_unavailable=True
+        page.get_by_role('button',name='Check payment confirmation',exact=True).click()
+        expect(page.locator('#payment-notice')).to_contain_text('Payment confirmation could not be checked')
+        assert fixture.credits==0
+        fixture.recovery_unavailable=False
+        fixture.credits=1  # Simulate a credit recorded by the trusted server.
         page.get_by_role('button',name='Check payment confirmation',exact=True).click()
         expect(page.locator('#payment-notice')).to_contain_text('Payment confirmed')
         page.get_by_role('button',name='+ Start New Survey').click()
@@ -117,6 +133,7 @@ def main():
         page.get_by_role('button',name='Save & Continue',exact=True).click()
         expect(page.locator('#view-type')).to_be_visible()
         assert fixture.credits==0 and len(fixture.tables['properties'])==2
+        assert fixture.recovery_requests[-1]=={}
         page.locator('#prop-type').select_option('detached')
         page.evaluate("document.querySelector('#len-Porch').value='4.37';document.querySelector('#wid-Porch').value='2.18';document.querySelector('#hei-Porch').value='2.4'")
         page.evaluate('openSurveyReview()')
