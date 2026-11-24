@@ -194,6 +194,7 @@
             // Disable writes before switching views: showView() otherwise saves drafts.
             draftWritesEnabled = false;
             currentUser = null;
+             resetPaymentNotice();
             currentPropertyId = null;
             newPropertyId = null;
             activeCloudVersion = null;
@@ -306,6 +307,7 @@
             if (passwordRecoveryActive) {
                 try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
                 currentUser = null;
+                 resetPaymentNotice();
                 currentPropertyId = null;
             }
             clearRecoveryState();
@@ -361,6 +363,7 @@
                 // Password update succeeded independently of a subsequent sign-out request.
                 try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
                 currentUser = null;
+                 resetPaymentNotice();
                 currentPropertyId = null;
                 clearRecoveryState();
                 showView('view-auth');
@@ -408,7 +411,9 @@
             const dashboardUserId = currentUser.id;
             saveDraft();
             showView('view-dashboard');
+            document.getElementById('refresh-survey-credit').hidden = currentUser.email === ADMIN_EMAIL;
             handlePaymentReturn();
+            void refreshConfirmedCreditNotice();
             const list = document.getElementById('dashboard-list');
             list.textContent = 'Loading surveys...';
             try {
@@ -704,9 +709,47 @@
         }
 
         let checkingPurchasedCredit = false;
-        async function checkPurchasedCredit() {
-            if (!currentUser || checkingPurchasedCredit) return;
+        let paymentNoticeReady = false;
+        let paymentNoticeRevision = 0;
+        function resetPaymentNotice() {
+            paymentNoticeRevision++;
+            paymentNoticeReady = false;
+            checkingPurchasedCredit = false;
+            const notice = document.getElementById('payment-notice');
+            const button = document.getElementById('refresh-survey-credit');
+            notice.textContent = '';
+            notice.hidden = true;
+            button.disabled = false;
+            button.hidden = false;
+        }
+        async function refreshConfirmedCreditNotice() {
+            if (!currentUser || !paymentNoticeReady || checkingPurchasedCredit) return;
+            const owner = currentUser.id;
+            const generation = privateSessionGeneration;
+            const revision = ++paymentNoticeRevision;
+            const valid = () => currentUser?.id === owner && privateSessionGeneration === generation &&
+                revision === paymentNoticeRevision && paymentNoticeReady;
+            try {
+                const allowance = await requireResult(sb.rpc('get_survey_allowance'), 'Refresh available credit');
+                if (!valid()) return;
+                if (allowance?.paid_credits === 0) resetPaymentNotice();
+                else if (!(allowance?.paid_credits > 0)) throw new Error('Invalid allowance response');
+            } catch (_) {
+                if (!valid()) return;
+                paymentNoticeReady = false;
+                document.getElementById('payment-notice').textContent =
+                    'Your available survey credit could not be refreshed. Check payment confirmation before paying again.';
+            }
+        }
+        async function checkPurchasedCredit(checkoutReference) {
+            if (!currentUser || checkingPurchasedCredit || currentUser.email === ADMIN_EMAIL) return;
+            const owner = currentUser.id;
+            const generation = privateSessionGeneration;
+            const revision = ++paymentNoticeRevision;
+            const valid = () => currentUser?.id === owner && privateSessionGeneration === generation &&
+                revision === paymentNoticeRevision;
             checkingPurchasedCredit = true;
+            paymentNoticeReady = false;
             const notice = document.getElementById('payment-notice');
             const button = document.getElementById('refresh-survey-credit');
             notice.hidden = false;
@@ -714,26 +757,41 @@
             button.disabled = true;
             notice.textContent = 'Checking verified payment confirmation...';
             try {
+                const body = typeof checkoutReference === 'string' && /^cs_live_[A-Za-z0-9]+$/.test(checkoutReference)
+                    ? { checkout_session_id: checkoutReference } : {};
+                const { data, error } = await sb.functions.invoke('recover-survey-payment', { body });
+                if (!valid()) return;
+                if (error || !Number.isInteger(data?.checked) || !Number.isInteger(data?.recorded))
+                    throw new Error('Payment recovery unavailable');
                 const allowance = await requireResult(sb.rpc('get_survey_allowance'), 'Check payment confirmation');
+                if (!valid()) return;
                 if (allowance.paid_credits > 0) {
+                    paymentNoticeReady = true;
                     notice.textContent = 'Payment confirmed. Your additional survey credit is ready—choose Start New Survey.';
-                    button.hidden = true;
-                } else notice.textContent = 'No additional survey credit has been confirmed yet. Payment confirmation can take a short time. Check again before paying again; contact survey@urbanfold.uk if needed.';
-            } catch (_) { notice.textContent = 'Payment confirmation could not be checked. Your existing surveys remain available. Please try again or contact survey@urbanfold.uk.'; }
-            finally { checkingPurchasedCredit = false; button.disabled = false; }
+                } else if (data.additional_attempts) {
+                    notice.textContent = 'Recent payments checked. Older attempts may require support. Do not pay again; contact survey@urbanfold.uk.';
+                } else {
+                    notice.textContent = 'No additional survey credit has been confirmed. If you have paid, do not pay again; contact survey@urbanfold.uk if needed.';
+                }
+            } catch (_) {
+                if (valid()) notice.textContent = 'Payment confirmation could not be checked. Your existing surveys remain available. Please try again or contact survey@urbanfold.uk before paying again.';
+            } finally {
+                if (valid()) { checkingPurchasedCredit = false; button.disabled = false; }
+            }
         }
 
         function handlePaymentReturn() {
             const params = new URLSearchParams(location.search);
             const state = params.get('payment');
             if (!['success','cancelled'].includes(state)) return;
+            resetPaymentNotice();
             const notice = document.getElementById('payment-notice');
             notice.hidden = false;
             try { sessionStorage.removeItem(`urbanfold_checkout_attempt_${currentUser.id}`); } catch (_) {}
             if (state === 'cancelled') notice.textContent = 'Checkout was cancelled. Your existing surveys are still available.';
             else if ((params.get('checkout_session_id') || '').startsWith('cs_test_')) {
                 notice.textContent = 'Stripe test checkout returned. Test payments do not unlock live survey credits.';
-            } else void checkPurchasedCredit();
+            } else void checkPurchasedCredit(params.get('checkout_session_id'));
             // Query parameters are navigation messages only, never proof of payment.
             params.delete('payment'); params.delete('checkout_session_id');
             history.replaceState(null, '', location.pathname + (params.size ? '?' + params : '') + location.hash);
