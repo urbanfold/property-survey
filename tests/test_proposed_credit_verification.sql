@@ -85,3 +85,35 @@ DO $$ BEGIN
  IF (SELECT count(*) FROM public.survey_credit_purchases WHERE redeemed_property_id IS NOT NULL) <> 1 THEN RAISE EXCEPTION 'Unexpected redemption count'; END IF;
 END $$;
 \echo Isolated credit verification assertions passed
+
+-- Recovery selection regression: revoked rows must not consume the bounded result.
+INSERT INTO public.survey_credit_purchases(checkout_session_id,payment_intent_id,user_id,live_mode,purchased_at)
+SELECT 'cs_live_revoked'||n,'pi_revoked'||n,'11111111-1111-4111-8111-111111111111',true,now()-interval '90 days'
+FROM generate_series(1,8) n;
+INSERT INTO public.survey_credit_revocations(payment_intent_id,reason)
+SELECT 'pi_revoked'||n,'fixture' FROM generate_series(1,8) n;
+INSERT INTO public.survey_credit_purchases(checkout_session_id,payment_intent_id,user_id,live_mode,purchased_at)
+VALUES ('cs_live_oldvalid','pi_oldvalid','11111111-1111-4111-8111-111111111111',true,now()-interval '100 days'),
+('cs_live_other','pi_other','22222222-2222-4222-8222-222222222222',true,now()),
+('cs_test_fixture','pi_testfixture','11111111-1111-4111-8111-111111111111',false,now());
+INSERT INTO public.survey_checkout_attempts(checkout_session_id,user_id,attempt_id,live_mode)
+VALUES ('cs_live_pending','11111111-1111-4111-8111-111111111111','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',true),
+('cs_live_fixture2','11111111-1111-4111-8111-111111111111','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',true);
+SET ROLE authenticated;
+DO $$ BEGIN
+ BEGIN
+ PERFORM public.list_recoverable_survey_sessions('11111111-1111-4111-8111-111111111111',NULL);
+ RAISE EXCEPTION 'Client recovery selection unexpectedly allowed';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
+RESET ROLE;
+SET ROLE service_role;
+DO $$ DECLARE ids text[]; BEGIN
+ SELECT array_agg(s.checkout_session_id ORDER BY s.checkout_session_id) INTO ids
+ FROM public.list_recoverable_survey_sessions('11111111-1111-4111-8111-111111111111',NULL) s;
+ IF ids IS DISTINCT FROM ARRAY['cs_live_oldvalid','cs_live_pending']::text[] THEN RAISE EXCEPTION 'Unexpected recoverable candidates: %',ids; END IF;
+ IF EXISTS(SELECT 1 FROM public.list_recoverable_survey_sessions('11111111-1111-4111-8111-111111111111','cs_live_other')) THEN RAISE EXCEPTION 'Foreign checkout exposed'; END IF;
+ IF EXISTS(SELECT 1 FROM public.list_recoverable_survey_sessions('11111111-1111-4111-8111-111111111111','cs_live_fixture2')) THEN RAISE EXCEPTION 'Revoked checkout exposed'; END IF;
+END $$;
+RESET ROLE;
+\echo Recovery filtering assertions passed
