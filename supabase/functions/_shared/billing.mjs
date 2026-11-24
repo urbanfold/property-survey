@@ -12,7 +12,8 @@ function settings(env) {
   const key = (mode === 'live' ? env('STRIPE_LIVE_SECRET_KEY') : env('STRIPE_SECRET_KEY')) || '';
   const enabled = (mode === 'test' && /^(?:sk|rk)_test_/.test(key)) || (mode === 'live' && /^(?:sk|rk)_live_/.test(key));
   return { app, mode, key, enabled, url: env('SUPABASE_URL'), anon: env('SUPABASE_ANON_KEY'),
-    service: env('SUPABASE_SERVICE_ROLE_KEY'), webhook: env('STRIPE_WEBHOOK_SECRET') };
+    service: env('SUPABASE_SERVICE_ROLE_KEY'),
+    webhook: mode === 'live' ? env('STRIPE_LIVE_WEBHOOK_SECRET') : env('STRIPE_WEBHOOK_SECRET') };
 }
 function json(body, status = 200, origin = null) {
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
