@@ -27,7 +27,7 @@ function fixture(opts = {}) {
     requireResult: async value => { const result = await value; if (result.error) throw result.error; return result.data; },
     sb: {
       rpc: async name => { calls.push(name); return { data: allowances.shift() ?? { free_available: false, can_create: false, paid_credits: 0 } }; },
-      functions: { invoke: async (name, args) => { calls.push(name); if (opts.switchUser) { context.currentUser = { id: 'customer-b' }; context.privateSessionGeneration++; } return opts.recovery ?? { data: { checked: 1, recorded: 1 } }; } },
+      functions: { invoke: async (name, args) => { calls.push(name); if (opts.switchUser) { context.currentUser = { id: 'customer-b' }; context.privateSessionGeneration++; } return opts.invokeRecovery ? opts.invokeRecovery(name, args) : opts.recovery ?? { data: { checked: 1, recorded: 1 } }; } },
       from: table => {
         assert.equal(table, 'properties');
         const query = { eq: () => query, select: () => query, single: async () => opts.saveError ? { error: new Error(opts.saveError) } : { data: { id: 'saved-id' } } };
@@ -79,4 +79,59 @@ test('account switch cannot display old confirmation', async () => {
 });
 test('back to dashboard reloads actual survey list', () => {
   assert.match(html,/onclick="loadDashboard\(\)">Back to Dashboard/);
+});
+
+test('paid save uses the registered recovery endpoint with mocked Stripe and Supabase', async t => {
+  const owner = '11111111-1111-4111-8111-111111111111';
+  const session = 'cs_live_mock';
+  const intent = 'pi_mock';
+  const charge = 'ch_mock';
+  const metadata = { user_id: owner, product: 'urbanfold_additional_survey' };
+  const env = {
+    SURVEY_PAYMENTS_MODE: 'live', STRIPE_LIVE_SECRET_KEY: 'sk_live_mock_not_real',
+    SUPABASE_URL: 'https://mock.invalid', SUPABASE_ANON_KEY: 'mock-anon',
+    SUPABASE_SERVICE_ROLE_KEY: 'mock-service'
+  };
+  const responses = new Map([
+    ['https://mock.invalid/auth/v1/user', { id: owner }],
+    ['https://mock.invalid/rest/v1/rpc/list_recoverable_survey_sessions', [{ checkout_session_id: session, user_id: owner, live_mode: true }]],
+    ['https://api.stripe.com/v1/checkout/sessions/' + session, { id: session, livemode: true, client_reference_id: owner, metadata, mode: 'payment', status: 'complete', payment_status: 'paid', currency: 'gbp', amount_total: 600, payment_intent: intent }],
+    ['https://api.stripe.com/v1/payment_intents/' + intent, { id: intent, livemode: true, status: 'succeeded', amount_received: 600, currency: 'gbp', metadata, latest_charge: charge }],
+    ['https://api.stripe.com/v1/charges/' + charge, { id: charge, payment_intent: intent, livemode: true, paid: true, captured: true, amount: 600, currency: 'gbp', amount_refunded: 0, refunded: false, disputed: false }],
+    ['https://mock.invalid/rest/v1/rpc/record_survey_purchase', {}],
+    ['https://mock.invalid/rest/v1/rpc/attest_survey_credit_verification', {}],
+  ]);
+  let handler, stripeUnavailable = false, attestations = 0;
+  t.mock.method(globalThis, 'fetch', async url => {
+    assert.ok(responses.has(url), 'Only fixture endpoints may be called');
+    if (stripeUnavailable && new URL(url).hostname === 'api.stripe.com') return Response.json({}, { status: 503 });
+    if (url.endsWith('/attest_survey_credit_verification')) attestations++;
+    return Response.json(responses.get(url));
+  });
+  globalThis.Deno = { serve(fn) { handler = fn; }, env: { get: name => env[name] } };
+  t.after(() => { delete globalThis.Deno; });
+  await import('../supabase/functions/recover-survey-payment/index.ts');
+  assert.equal(typeof handler, 'function');
+
+  const invokeRecovery = async (route, { body }) => {
+    assert.equal(route, 'recover-survey-payment');
+    const response = await handler(new Request('https://mock.invalid/functions/v1/' + route, {
+      method: 'POST', headers: { authorization: 'Bearer fixture-user' }, body: JSON.stringify(body)
+    }));
+    return response.ok ? { data: await response.json() } : { error: new Error(String(response.status)) };
+  };
+  const makeFixture = () => fixture({
+    allowances: [{ free_available: false, can_create: true }, { can_create: true }], invokeRecovery
+  });
+  const success = makeFixture();
+  await success.run('saveDetails()');
+  assert.ok(success.calls.includes('upsert'));
+  assert.equal(attestations, 1);
+
+  stripeUnavailable = true;
+  const unavailable = makeFixture();
+  await unavailable.run('saveDetails()');
+  assert.ok(!unavailable.calls.includes('upsert'));
+  assert.equal(attestations, 1);
+  assert.match(unavailable.alerts[0], /Payment verification unavailable/);
 });

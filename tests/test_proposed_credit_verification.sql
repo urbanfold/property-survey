@@ -59,7 +59,7 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 INSERT INTO public.survey_credit_purchases(checkout_session_id,payment_intent_id,user_id,live_mode,stripe_verified_at)
-VALUES('cs_live_fixture2','pi_fixture2','11111111-1111-4111-8111-111111111111',true,clock_timestamp()-interval '121 seconds');
+VALUES('cs_live_fixture2','pi_fixture2','11111111-1111-4111-8111-111111111111',true,clock_timestamp()-interval '61 seconds');
 SET ROLE authenticated;
 DO $$ BEGIN
  BEGIN

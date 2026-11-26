@@ -38,7 +38,7 @@ END $$;
 REVOKE ALL ON FUNCTION public.revoke_survey_purchase(text,text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.revoke_survey_purchase(text,text) TO service_role;
 -- Preserve original enforcement, adding a narrowly scoped freshness requirement.
--- Proposed maximum age: 120 seconds. This is a risk reduction, not an atomic
+-- Proposed maximum age: 60 seconds. This is a risk reduction, not an atomic
 -- guarantee across Stripe and PostgreSQL. Never use browser time as attestation.
 CREATE OR REPLACE FUNCTION public.enforce_survey_allowance()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
@@ -59,7 +59,7 @@ BEGIN
   IF allocated IS NOT NULL THEN RETURN NEW; END IF;
   SELECT p.checkout_session_id INTO purchase FROM public.survey_credit_purchases p
     WHERE p.user_id = NEW.user_id AND p.live_mode AND p.redeemed_property_id IS NULL
-      AND p.stripe_verified_at >= clock_timestamp() - interval '120 seconds'
+      AND p.stripe_verified_at >= clock_timestamp() - interval '60 seconds'
       AND p.stripe_verified_at <= clock_timestamp()
       AND NOT EXISTS(SELECT 1 FROM public.survey_credit_revocations r WHERE r.payment_intent_id = p.payment_intent_id)
     ORDER BY p.purchased_at,p.checkout_session_id FOR UPDATE LIMIT 1;

@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/_shared/billing.mjs'
+      - 'supabase/functions/recover-survey-payment/index.ts'
+      - 'supabase/config.toml'
       - 'tests/test_production_payment_recovery.mjs'
       - 'tests/test_production_payment_frontend.mjs'
       - 'app.js'
