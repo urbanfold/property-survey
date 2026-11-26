@@ -1,0 +1,27 @@
+name: Review production payment recovery
+on:
+  push:
+    branches:
+      - review/production-payment-recovery-2026-11-24
+  pull_request:
+    paths:
+      - 'supabase/functions/_shared/billing.mjs'
+      - 'supabase/functions/recover-survey-payment/index.ts'
+      - 'supabase/config.toml'
+      - 'tests/test_production_payment_recovery.mjs'
+      - 'tests/test_production_payment_frontend.mjs'
+      - 'app.js'
+      - 'index.html'
+      - '.github/workflows/review-production-payment-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/test_production_payment_recovery.mjs tests/test_production_billing_mode_isolation.mjs tests/test_production_payment_frontend.mjs

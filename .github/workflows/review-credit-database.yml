@@ -1,0 +1,35 @@
+name: Review proposed credit database safeguards
+on:
+  pull_request:
+    paths:
+      - 'docs/review-only-production-credit-verification.sql'
+      - 'docs/review-only-production-checkout-tracking.sql'
+      - 'tests/test_proposed_credit_verification.sql'
+      - '.github/workflows/review-credit-database.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable_fixture_only
+          POSTGRES_DB: credit_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d credit_fixture"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Run disposable credit verification assertions
+        env:
+          PGPASSWORD: disposable_fixture_only
+        run: psql --no-psqlrc --set=ON_ERROR_STOP=1 --host=127.0.0.1 --port=5432 --username=postgres --dbname=credit_fixture --file=tests/test_proposed_credit_verification.sql

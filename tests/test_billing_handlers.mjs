@@ -60,8 +60,18 @@ test('matching restricted Stripe keys work in test and live modes; mismatched ke
   const mock = async (url, options) => {
     if (url.endsWith('/auth/v1/user')) return response({ id: USER });
     if (url.includes('get_survey_allowance')) return response({ can_create: false });
+    if (url.includes('/rest/v1/survey_checkout_attempts?')) {
+      assert.equal(options.headers.Authorization, 'Bearer fixture-service');
+      if (options.method === 'POST') {
+        assert.deepEqual(JSON.parse(options.body), { checkout_session_id: 'cs_live_Fixture', user_id: USER, attempt_id: ATTEMPT, live_mode: true });
+        return response({});
+      }
+      assert.equal(new URL(url).searchParams.get('checkout_session_id'), 'eq.cs_live_Fixture');
+      return response([{ checkout_session_id: 'cs_live_Fixture', user_id: USER, attempt_id: ATTEMPT, live_mode: true }]);
+    }
+    assert.equal(url, 'https://api.stripe.com/v1/checkout/sessions');
     requests.push(options);
-    return response({ id: 'cs_live_Fixture', url: 'https://checkout.stripe.com/c/pay/cs_live_Fixture' });
+    return response({ id: 'cs_live_Fixture', livemode: true, url: 'https://checkout.stripe.com/c/pay/cs_live_Fixture' });
   };
   const modeEnv = values => name => ({ ...config, ...values })[name];
   const live = await createCheckout(checkout(), { env: modeEnv({

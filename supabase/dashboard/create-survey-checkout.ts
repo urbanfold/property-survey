@@ -73,6 +73,27 @@ export async function createCheckout(request, { env, fetcher = fetch }) {
     if (!stripeResponse.ok || !SESSION.test(session?.id || '')) return json({ error: 'Checkout could not be opened. Please return to My Surveys and try again.' }, 502, cors);
     const destination = new URL(session.url);
     if (destination.protocol !== 'https:' || destination.hostname !== 'checkout.stripe.com') throw new Error('Invalid checkout destination');
+    // Persist live checkout ownership before exposing the checkout URL.
+    // Test mode retains the existing checkout behavior.
+    if (config.mode === 'live') {
+      if (!config.service || !session.id.startsWith('cs_live_') || session.livemode !== true) throw new Error('Invalid live session');
+      const ledgerHeaders = { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' };
+      const tracking = config.url + '/rest/v1/survey_checkout_attempts';
+      const saved = await fetcher(tracking + '?on_conflict=checkout_session_id', {
+        method: 'POST', headers: { ...ledgerHeaders, Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify({ checkout_session_id: session.id, user_id: user.id, attempt_id: body.attempt_id, live_mode: true })
+      });
+      if (!saved.ok) throw new Error('Checkout tracking failed');
+      const check = await fetcher(tracking + '?' + new URLSearchParams({
+        select: 'checkout_session_id,user_id,attempt_id,live_mode',
+        checkout_session_id: 'eq.' + session.id
+      }), { headers: ledgerHeaders });
+      const rows = await parsed(check);
+      if (!check.ok || !Array.isArray(rows) || rows.length !== 1 ||
+          rows[0].checkout_session_id !== session.id || rows[0].user_id !== user.id ||
+          rows[0].attempt_id !== body.attempt_id || rows[0].live_mode !== true)
+        throw new Error('Checkout tracking identity mismatch');
+    }
     return json({ url: destination.href, test_mode: config.mode === 'test' }, 200, cors);
   } catch {
     return json({ error: 'Checkout could not be confirmed. Please try again using the same purchase button.' }, 502, cors);
@@ -138,6 +159,118 @@ export async function stripeWebhook(request, { env, fetcher = fetch, now = Date.
     }
     return json({ received: true });
   } catch { return json({ error: 'Payment acknowledgement could not be saved. Retry this webhook.' }, 500); }
+}
+
+// Explicit, authenticated recovery of a known Checkout Session.
+// No browser-provided ownership, amount, mode or payment status is trusted.
+export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
+  let config;
+  try { config = settings(env); } catch { return json({ error: 'Payment recovery unavailable.' }, 503); }
+  const origin = request.headers.get('origin');
+  if (origin && origin !== config.app.origin) return json({ error: 'Origin not permitted.' }, 403);
+  const cors = origin || null;
+  if (request.method === 'OPTIONS') return json({}, 200, cors);
+  if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, cors);
+  // Production recovery must never convert a sandbox payment into a live credit.
+  if (!config.enabled || config.mode !== 'live' || !config.url || !config.anon || !config.service)
+    return json({ error: 'Payment recovery unavailable.' }, 503, cors);
+  const authorization = request.headers.get('authorization') || '';
+  if (!/^Bearer \S+$/.test(authorization)) return json({ error: 'Sign in first.' }, 401, cors);
+  try {
+    const userResponse = await fetcher(config.url + '/auth/v1/user', { headers: { apikey: config.anon, authorization } });
+    const user = await parsed(userResponse);
+    if (!userResponse.ok || !UUID.test(user?.id || '')) return json({ error: 'Sign in again.' }, 401, cors);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid request.' }, 400, cors); }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'Invalid request.' }, 400, cors);
+    const reference = body.checkout_session_id;
+    if (reference !== undefined && (typeof reference !== 'string' || reference.length > 255 || !/^cs_live_[A-Za-z0-9]+$/.test(reference)))
+      return json({ error: 'Invalid live checkout reference.' }, 400, cors);
+    const ledgerHeaders = { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' };
+    const slot = await fetcher(config.url + '/rest/v1/rpc/take_survey_payment_recovery_slot', {
+      method: 'POST', headers: ledgerHeaders, body: JSON.stringify({ buyer_id: user.id })
+    });
+    const allowed = await parsed(slot);
+    if (!slot.ok || typeof allowed !== 'boolean') throw new Error('Recovery request limit unavailable');
+    if (!allowed) return json({ error: 'Too many payment checks. Wait a minute and try again.' }, 429, cors);
+    const selection = await fetcher(config.url + '/rest/v1/rpc/list_recoverable_survey_sessions', {
+      method: 'POST', headers: ledgerHeaders,
+      body: JSON.stringify({ buyer_id: user.id, session_reference: reference ?? null })
+    });
+    const ordered = await parsed(selection);
+    if (!selection.ok || !Array.isArray(ordered) || ordered.length > 6 ||
+        new Set(ordered.map(row => row?.checkout_session_id)).size !== ordered.length ||
+        ordered.some(row => !row || row.user_id !== user.id || row.live_mode !== true ||
+          typeof row.checkout_session_id !== 'string' || row.checkout_session_id.length > 255 ||
+          !/^cs_live_[A-Za-z0-9]+$/.test(row.checkout_session_id) ||
+          (reference !== undefined && row.checkout_session_id !== reference)))
+      throw new Error('Recoverable checkout selection failed');
+    if (reference !== undefined && ordered.length !== 1)
+      return json({ error: 'Payment reference unavailable for this account.' }, 404, cors);
+    // Bound Stripe API work; older unrecorded attempts may require support.
+    const additionalAttempts = ordered.length > 5;
+    let recorded = 0;
+    let pending = 0;
+    let ineligible = 0;
+    const stripeGet = async path => {
+      const response = await fetcher('https://api.stripe.com/v1/' + path, { headers: { Authorization: 'Bearer ' + config.key } });
+      if (!response.ok) throw new Error('Stripe lookup failed');
+      const result = await parsed(response);
+      if (!result) throw new Error('Invalid Stripe response');
+      return result;
+    };
+    for (const candidate of ordered.slice(0, 5)) {
+    const id = candidate.checkout_session_id;
+    const session = await stripeGet('checkout/sessions/' + encodeURIComponent(id));
+    if (session.id !== id || session.livemode !== true || session.client_reference_id !== user.id ||
+        session.metadata?.user_id !== user.id || session.metadata?.product !== PRODUCT)
+      throw new Error('Stripe checkout ownership mismatch');
+    if (session.mode !== 'payment' || session.status !== 'complete' || session.payment_status !== 'paid' ||
+        session.currency !== 'gbp' || session.amount_total !== 600 || !INTENT.test(session.payment_intent || ''))
+      { pending++; continue; }
+    const intent = await stripeGet('payment_intents/' + encodeURIComponent(session.payment_intent));
+    if (intent.id !== session.payment_intent || intent.livemode !== true || intent.status !== 'succeeded' ||
+        intent.amount_received !== 600 || intent.currency !== 'gbp' ||
+        intent.metadata?.user_id !== user.id || intent.metadata?.product !== PRODUCT ||
+        typeof intent.latest_charge !== 'string' || !/^ch_[A-Za-z0-9]+$/.test(intent.latest_charge))
+      { pending++; continue; }
+    const charge = await stripeGet('charges/' + encodeURIComponent(intent.latest_charge));
+    if (charge.id !== intent.latest_charge || charge.payment_intent !== intent.id || charge.livemode !== true ||
+        charge.paid !== true || charge.captured !== true || charge.amount !== 600 || charge.currency !== 'gbp' ||
+        !Number.isInteger(charge.amount_refunded) || charge.amount_refunded < 0 || charge.amount_refunded > 600 ||
+        typeof charge.refunded !== 'boolean' || typeof charge.disputed !== 'boolean')
+      throw new Error('Stripe charge validation failed');
+    if (charge.amount_refunded > 0 || charge.refunded || charge.disputed) {
+      // Persist the verified revocation even if the original webhook was missed.
+      // The existing ledger excludes this intent from future credit redemption.
+      const revoked = await fetcher(config.url + '/rest/v1/rpc/revoke_survey_purchase', {
+        method: 'POST', headers: ledgerHeaders,
+        body: JSON.stringify({ intent_id: intent.id,
+          revocation_reason: charge.disputed ? 'reconciliation.disputed' : 'reconciliation.refunded' })
+      });
+      if (!revoked.ok) throw new Error('Refund reconciliation failed');
+      ineligible++;
+      continue;
+    }
+    const response = await fetcher(config.url + '/rest/v1/rpc/record_survey_purchase', {
+      method: 'POST', headers: { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: id, intent_id: intent.id, buyer_id: user.id,
+        paid_amount: 600, paid_currency: 'gbp', is_live: true })
+    });
+    if (!response.ok) throw new Error('Ledger update failed');
+    const attestation = await fetcher(config.url + '/rest/v1/rpc/attest_survey_credit_verification', {
+      method: 'POST', headers: ledgerHeaders,
+      body: JSON.stringify({ session_id: id, intent_id: intent.id, buyer_id: user.id })
+    });
+    if (!attestation.ok) throw new Error('Credit verification could not be recorded');
+    // Recording a payment does not override an existing refund hold or redemption.
+    // The caller must re-read its database allowance before presenting credit availability.
+    recorded++;
+    }
+    return json({ checked: Math.min(ordered.length, 5), recorded, pending, ineligible, additional_attempts: additionalAttempts }, 200, cors);
+  } catch {
+    return json({ error: 'Payment recovery could not be completed. Do not pay again; contact survey@urbanfold.uk.' }, 503, cors);
+  }
 }
 
 Deno.serve((request) => createCheckout(request, { env: (name) => Deno.env.get(name) }));
