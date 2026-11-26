@@ -94,6 +94,7 @@ test('paid save uses the registered recovery endpoint with mocked Stripe and Sup
   };
   const responses = new Map([
     ['https://mock.invalid/auth/v1/user', { id: owner }],
+    ['https://mock.invalid/rest/v1/rpc/take_survey_payment_recovery_slot', true],
     ['https://mock.invalid/rest/v1/rpc/list_recoverable_survey_sessions', [{ checkout_session_id: session, user_id: owner, live_mode: true }]],
     ['https://api.stripe.com/v1/checkout/sessions/' + session, { id: session, livemode: true, client_reference_id: owner, metadata, mode: 'payment', status: 'complete', payment_status: 'paid', currency: 'gbp', amount_total: 600, payment_intent: intent }],
     ['https://api.stripe.com/v1/payment_intents/' + intent, { id: intent, livemode: true, status: 'succeeded', amount_received: 600, currency: 'gbp', metadata, latest_charge: charge }],

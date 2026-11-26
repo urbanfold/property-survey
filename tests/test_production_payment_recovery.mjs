@@ -17,6 +17,11 @@ function fixture(opts = {}) {
     const u = new URL(url); calls.push(u);
     if (u.hostname === 'mock.invalid') {
       if (u.pathname === '/auth/v1/user') return response({ id: owner }, opts.authStatus || 200);
+      if (u.pathname === '/rest/v1/rpc/take_survey_payment_recovery_slot') {
+        assert.equal(init.headers.Authorization, 'Bearer mock-service');
+        assert.deepEqual(JSON.parse(init.body), { buyer_id: owner });
+        return response(opts.slot ?? true, opts.slotStatus ?? 200);
+      }
       if (u.pathname === '/rest/v1/rpc/list_recoverable_survey_sessions') {
         assert.equal(init.method, 'POST');
         assert.equal(init.headers.Authorization, 'Bearer mock-service');
@@ -141,4 +146,11 @@ test('duplicate selection rejected', async () => {
 test('sandbox selection rejected', async () => {
   const f = fixture({ selection:[{checkout_session_id:'cs_test_mock',user_id:owner,live_mode:false}] });
   assert.equal((await f.run()).status,503); assert.equal(f.writes.length,0);
+});
+
+test('recovery stops before selecting or calling Stripe when the account limit is reached', async () => {
+  const f = fixture({ slot: false });
+  assert.equal((await f.run()).status, 429);
+  assert.deepEqual(f.calls.map(url => url.pathname), ['/auth/v1/user', '/rest/v1/rpc/take_survey_payment_recovery_slot']);
+  assert.equal(f.writes.length, 0);
 });

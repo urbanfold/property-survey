@@ -99,6 +99,32 @@ $$;
 REVOKE ALL ON FUNCTION public.list_recoverable_survey_sessions(uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.list_recoverable_survey_sessions(uuid,text) TO service_role;
 
+-- Bound repeated Stripe lookups with one server-owned counter per account.
+CREATE TABLE public.survey_payment_recovery_limits (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  window_start timestamptz NOT NULL,
+  request_count integer NOT NULL CHECK (request_count BETWEEN 1 AND 10)
+);
+ALTER TABLE public.survey_payment_recovery_limits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.survey_payment_recovery_limits FROM PUBLIC, anon, authenticated;
+
+CREATE FUNCTION public.take_survey_payment_recovery_slot(buyer_id uuid)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
+DECLARE
+  current_window timestamptz := date_trunc('minute', clock_timestamp());
+BEGIN
+  INSERT INTO public.survey_payment_recovery_limits AS limits(user_id,window_start,request_count)
+  VALUES (buyer_id,current_window,1)
+  ON CONFLICT (user_id) DO UPDATE SET
+    window_start = excluded.window_start,
+    request_count = CASE WHEN limits.window_start < excluded.window_start THEN 1 ELSE limits.request_count + 1 END
+  WHERE limits.window_start < excluded.window_start
+     OR (limits.window_start = excluded.window_start AND limits.request_count < 10);
+  RETURN FOUND;
+END $$;
+REVOKE ALL ON FUNCTION public.take_survey_payment_recovery_slot(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.take_survey_payment_recovery_slot(uuid) TO service_role;
+
 COMMIT;
 -- Release blockers: verify exact existing grants and trigger definitions;
 -- verify server-only column writes; ensure all save paths handle re-verification;

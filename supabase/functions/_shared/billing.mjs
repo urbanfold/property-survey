@@ -183,6 +183,12 @@ export async function recoverSurveyPayment(request, { env, fetcher = fetch }) {
     if (reference !== undefined && (typeof reference !== 'string' || reference.length > 255 || !/^cs_live_[A-Za-z0-9]+$/.test(reference)))
       return json({ error: 'Invalid live checkout reference.' }, 400, cors);
     const ledgerHeaders = { apikey: config.service, Authorization: 'Bearer ' + config.service, 'Content-Type': 'application/json' };
+    const slot = await fetcher(config.url + '/rest/v1/rpc/take_survey_payment_recovery_slot', {
+      method: 'POST', headers: ledgerHeaders, body: JSON.stringify({ buyer_id: user.id })
+    });
+    const allowed = await parsed(slot);
+    if (!slot.ok || typeof allowed !== 'boolean') throw new Error('Recovery request limit unavailable');
+    if (!allowed) return json({ error: 'Too many payment checks. Wait a minute and try again.' }, 429, cors);
     const selection = await fetcher(config.url + '/rest/v1/rpc/list_recoverable_survey_sessions', {
       method: 'POST', headers: ledgerHeaders,
       body: JSON.stringify({ buyer_id: user.id, session_reference: reference ?? null })

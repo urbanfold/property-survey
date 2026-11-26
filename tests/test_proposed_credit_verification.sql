@@ -117,3 +117,41 @@ DO $$ DECLARE ids text[]; BEGIN
 END $$;
 RESET ROLE;
 \echo Recovery filtering assertions passed
+
+RESET ROLE;
+SET ROLE service_role;
+DO $$
+DECLARE
+  owner_id constant uuid := '11111111-1111-4111-8111-111111111111';
+  other_id constant uuid := '22222222-2222-4222-8222-222222222222';
+  window_checked timestamptz := date_trunc('minute', clock_timestamp());
+  allowed integer := 0;
+BEGIN
+  FOR attempt IN 1..11 LOOP
+    IF public.take_survey_payment_recovery_slot(owner_id) THEN allowed := allowed + 1; END IF;
+  END LOOP;
+  IF window_checked = date_trunc('minute', clock_timestamp()) AND allowed <> 10 THEN
+    RAISE EXCEPTION 'Per-account request limit failed';
+  END IF;
+  IF NOT public.take_survey_payment_recovery_slot(other_id) THEN
+    RAISE EXCEPTION 'One account exhausted another account’s recovery limit';
+  END IF;
+END $$;
+RESET ROLE;
+UPDATE public.survey_payment_recovery_limits SET window_start = clock_timestamp() - interval '2 minutes';
+SET ROLE service_role;
+DO $$ BEGIN
+  IF NOT public.take_survey_payment_recovery_slot('11111111-1111-4111-8111-111111111111') THEN
+    RAISE EXCEPTION 'Recovery limit did not reset for the next window';
+  END IF;
+END $$;
+RESET ROLE;
+SET ROLE authenticated;
+DO $$ BEGIN
+  BEGIN
+    PERFORM public.take_survey_payment_recovery_slot('11111111-1111-4111-8111-111111111111');
+    RAISE EXCEPTION 'Customer could invoke the service-only rate limit function';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+END $$;
+RESET ROLE;
